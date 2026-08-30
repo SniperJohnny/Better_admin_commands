@@ -19,6 +19,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.UUID;
@@ -61,6 +62,7 @@ public final class Custom_SMP_Plugin extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+
         instance = this;
 
         // Save default config
@@ -90,7 +92,6 @@ public final class Custom_SMP_Plugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new Leave_Listener(this), this);
 
         // Register Commands
-        getCommand("fly").setExecutor(new Fly_Command());
         getCommand("smite").setExecutor(new Smite_Command());
         getCommand("revive").setExecutor(new Revive_Command());
         getCommand("revivebeaconrecipe").setExecutor(new Revive_beacon_recipe_commands());
@@ -99,6 +100,7 @@ public final class Custom_SMP_Plugin extends JavaPlugin implements Listener {
             getCommand("gm").setExecutor(new Gamemode_Command());
             getCommand("unban").setExecutor(new Unban_Command());
             getCommand("enchant").setExecutor(new Enchant_Command());
+            getCommand("fly").setExecutor(new Fly_Command());
         }
 
         getLogger().info("Custom_SMP_Plugin_started");
@@ -106,7 +108,15 @@ public final class Custom_SMP_Plugin extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        // Save all player data when server stops
+        for (Player player : getServer().getOnlinePlayers()) {
+            // Ensure player file exists and save any pending data
+            yamlPlayerCreator.createPlayerFileIfNotExists(player);
+            // Note: YamlSaveDataCreator saves immediately, so no additional saving needed
+            // for data stored through it. For YamlPlayerCreator, we ensure the file exists.
+        }
+        
+        getLogger().info("Custom_SMP_Plugin_disabled");
     }
 
     public static Custom_SMP_Plugin get_Instance() {

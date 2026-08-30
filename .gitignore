@@ -6,7 +6,7 @@
 *.iws
 #files i want not being send
 .mimocode
-
+SESSION_SUMMARY.md
 
 
 
