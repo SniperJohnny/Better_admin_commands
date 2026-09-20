@@ -1,8 +1,7 @@
-
-
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("com.gradleup.shadow") version "8.3.5"
 }
 
 group = 'io.sniperjohnny.github'
@@ -14,20 +13,44 @@ repositories {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
     }
+    // Vault API is only published through JitPack
+    maven {
+        name = "jitpack"
+        url = "https://jitpack.io"
+    }
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+
+    // Vault economy API - provided by the Vault plugin at runtime
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7") {
+        exclude group: "org.bukkit", module: "bukkit"
+    }
+
+    // MySQL / MariaDB driver - bundled into the plugin jar by shadowJar
+    implementation("com.mysql:mysql-connector-j:9.1.0")
 }
-def serverdir= "D:\\development\\minecraft\\Test_server-1.21.11\\plugins"
-tasks.jar{
+
+def serverdir = "D:\\devlopment\\Minecraft\\Plugins\\TestServer\\1.21.11\\plugins"
+
+tasks.shadowJar {
+    archiveClassifier.set("")
     destinationDirectory = file(serverdir)
+    relocate("com.mysql", "io.sniperjohnny.github.better_admin_commands.libs.mysql")
 }
+
+tasks.jar {
+    enabled = false
+    dependsOn(tasks.shadowJar)
+}
+
 tasks {
+    build {
+        dependsOn(tasks.shadowJar)
+    }
     runServer {
         // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
         minecraftVersion("1.21")
     }
 }

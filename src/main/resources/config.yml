@@ -1,21 +1,156 @@
-#Pls swap out this join message and leave message
+# #############################################################################
+#  Better_Admin_Commands
+#  All settings for the plugin. Changes require a restart (except kit entries
+#  which are read on every use).
+# #############################################################################
 
-join.message: "Welcome &player&, thanks for joining!" #0 will be no message
-leave.message: "&player& left the server!" #0 will be no message
+# ----------------------------------------------------------------- MySQL -----
+# Credentials for the MySQL / MariaDB server where economy, homes and
+# player data are stored. A database has to exist already - the plugin only
+# creates its tables, not the database itself.
+database:
+  host: "127.0.0.1"
+  port: 3306
+  name: "better_admin_commands"
+  user: "root"
+  password: "change_me"
+  # Prefix for every table the plugin creates.
+  table-prefix: "bac_"
+  # Number of pooled connections. 2-8 is fine for a single server.
+  pool-size: 4
+  use-ssl: false
+  # Extra JDBC parameters, appended to the connection url.
+  connection-parameters: "useUnicode=true&characterEncoding=utf8&serverTimezone=UTC"
 
-qol.revamp_normal_commands: true #if false then you wont have /unban or /gm 1 or /gamemode 1 as it was back then
+# --------------------------------------------------------------- economy -----
+# The built-in economy is stored in MySQL and is exposed to other plugins
+# through Vault, so any Vault-aware plugin can read and change balances.
+economy:
+  enabled: true
+  currency-name-singular: "Dollar"
+  currency-name-plural: "Dollars"
+  currency-symbol: "$"
+  # Balance given to a player the first time they are seen.
+  starting-balance: 100.0
+  # Balances above this cannot be reached.
+  max-balance: 1000000000.0
+  # How often dirty balances are written to the database, in seconds.
+  save-interval-seconds: 300
+  # Allow /pay between players.
+  allow-payments: true
+  # Smallest payment, to avoid pointless 0.0 transactions.
+  minimum-payment: 0.01
 
-#Quality of Live Dependent
-join.feed: true
-join.tpspawn: true
-join.setfullhealth: true
-join.give.speed.for.30.seconds: true
+# ---------------------------------------------------------------- spawn ------
+# Spawn coordinates are stored in spawn.yml next to config.yml, written by
+# /setspawn.
+spawn:
+  teleport-on-join: false
+  teleport-on-first-join: false
+  respawn-at-spawn: false
 
+# ----------------------------------------------------------------- homes -----
+homes:
+  # Default amount of homes per player. Override per player with the
+  # permission "betteradmincommands.homes.limit.<amount>".
+  max: 3
 
+# ------------------------------------------------------------ teleporting ----
+teleport:
+  # Seconds a player has to stand still before a delayed teleport happens.
+  warmup-seconds: 3
+  # Seconds before a teleport request from /tpa expires.
+  request-expire-seconds: 60
+  # Seconds before /back can be used again.
+  back-cooldown-seconds: 0
+  # Remember the previous location of every teleport so /back works.
+  back-enabled: true
 
+# ------------------------------------------------------------ moderation -----
+moderation:
+  # Default mute length in seconds when none is given, -1 means permanent.
+  default-mute-seconds: -1
+  # Kick message players see when they try to chat while muted.
+  mute-message: "&cYou are muted. &7Reason: &f%reason%"
 
+# ------------------------------------------------------------------- afk -----
+afk:
+  # Automatically mark players as away after the given idle time.
+  auto-afk-enabled: true
+  auto-afk-minutes: 10
 
+# ------------------------------------------------------------------ jail -----
+jail:
+  # How far a jailed player may move away from their cell before being pulled back.
+  radius: 8.0
 
-#PvP Logic dependent
-pvp.kill_bonus_effects: true
-pvp.default_lives: 3
+# ------------------------------------------------------------------- rtp -----
+# Random teleport targets for /rtp.
+rtp:
+  max-radius: 2000
+  min-radius: 200
+  max-attempts: 30
+  disabled-worlds:
+    - "world_nether"
+    - "world_the_end"
+
+# ---------------------------------------------------------------- worth -----
+# Prices used by /worth and /sell. Only listed items can be sold.
+worth:
+  STONE: 1.0
+  COBBLESTONE: 0.8
+  DIRT: 0.5
+  SAND: 0.6
+  OAK_LOG: 1.5
+  COAL: 2.0
+  IRON_INGOT: 12.0
+  GOLD_INGOT: 18.0
+  DIAMOND: 60.0
+  EMERALD: 55.0
+  REDSTONE: 1.5
+  LAPIS_LAZULI: 2.0
+  COPPER_INGOT: 4.0
+  NETHERITE_INGOT: 400.0
+  WHEAT: 1.2
+  CARROT: 1.0
+  POTATO: 1.0
+  BREAD: 2.5
+  APPLE: 2.0
+  STRING: 1.5
+  LEATHER: 3.0
+  BONE: 1.0
+  FEATHER: 0.8
+  GUNPOWDER: 4.0
+
+# ------------------------------------------------------------------ kits -----
+# Kits are defined here. Item format: "MATERIAL[:AMOUNT]" or
+# "MATERIAL:AMOUNT:ENCHANTMENT:LEVEL". Cooldown of -1 disables the cooldown.
+kits:
+  starter:
+    cooldown-seconds: 86400
+    permission: "betteradmincommands.kit.starter"
+    items:
+      - "STONE_SWORD"
+      - "BREAD:8"
+      - "OAK_LOG:16"
+      - "LEATHER_CHESTPLATE"
+  tools:
+    cooldown-seconds: 3600
+    permission: "betteradmincommands.kit.tools"
+    items:
+      - "IRON_PICKAXE:1:EFFICIENCY:2"
+      - "IRON_AXE"
+      - "IRON_SHOVEL"
+
+# ---------------------------------------------------------------- message ----
+messages:
+  prefix: "&8[&6BetterAdmin&8] &r"
+  # Shown by /motd
+  motd:
+    - "&6Welcome to the server!"
+    - "&7Use &f/rules &7to read the rules."
+  # Shown by /rules
+  rules:
+    - "Be nice to each other."
+    - "No griefing or stealing."
+    - "No cheating or exploiting bugs."

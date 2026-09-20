@@ -1,0 +1,53 @@
+package io.sniperjohnny.github.better_admin_commands.commands.teleport;
+
+import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.util.Msg;
+import io.sniperjohnny.github.better_admin_commands.util.Targets;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.List;
+
+/** Teleports another player to the sender. */
+public class Tphere_Command implements TabExecutor {
+
+    private final Better_Admin_Commands plugin;
+
+    public Tphere_Command(Better_Admin_Commands plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
+                             @NotNull String label, @NotNull String @NotNull[] args) {
+        if (!(sender instanceof Player self)) {
+            Msg.playerOnly(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            Msg.usage(sender, command);
+            return true;
+        }
+        Player target = Targets.online(sender, args[0]);
+        if (target == null) {
+            return true;
+        }
+        plugin.teleports().teleportNow(target, self.getLocation());
+        Msg.success(self, "Teleported " + target.getName() + " to you.");
+        return true;
+    }
+
+    @Override
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
+                                                @NotNull String label, @NotNull String @NotNull[] args) {
+        if (args.length == 1) {
+            return Targets.complete(args[0]);
+        }
+        return Collections.emptyList();
+    }
+}

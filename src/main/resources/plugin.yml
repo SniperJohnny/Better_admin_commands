@@ -1,49 +1,731 @@
-name: Custom_SMP_Plugin
-version: '1.0-SNAPSHOT'
-main: io.sniperjohnny.github.custom_smp_plugin.Custom_SMP_Plugin
+name: Better_Admin_Commands
+version: '$version'
+main: io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands
 api-version: '1.21'
-
+authors: [ SniperJohnny ]
+description: Admin, teleport, economy, social and moderation commands with MySQL storage and Vault economy.
+softdepend: [ Vault ]
 
 commands:
+  # ---------------------------------------------------------------- admin ---
   enchant:
-    permission: "smpplugin.enchant"
+    permission: "betteradmincommands.enchant"
     description: "enchants the item in your mainhand"
-    aliases:
-      - e
+    aliases: [ e ]
+    usage: /enchant <enchantment> [level]
   gm:
-    permission: "smpplugin.gamemode"
+    permission: "betteradmincommands.gamemode"
     description: "lets you do /gm1- 1 for creative and so on."
-    aliases:
-      - gamemode
+    aliases: [ gamemode ]
+    usage: /gm <mode> [player]
   fly:
-    permission: "smpplugin.fly"
+    permission: "betteradmincommands.fly"
     description: "lets you fly"
-    aliases:
-      - flying
-      - f
+    aliases: [ flying, f ]
+    usage: /fly [player]
   smite:
-    permission: "smpplugin.smite"
+    permission: "betteradmincommands.smite"
     description: "lets you choose who gets hit by lightning"
-    aliases:
-      - sm
-      - electrocute
-  revive:
-    permission: "smpplugin.revive"
-    description: "lets you choose who gets hit by lightning"
-    aliases:
-      - res
-      - resurrect
+    aliases: [ sm, electrocute ]
+    usage: /smite [player]
+  heal:
+    permission: "betteradmincommands.heal"
+    description: "heals you or another player"
+    aliases: [ he ]
+    usage: /heal [player]
+  feed:
+    permission: "betteradmincommands.feed"
+    description: "feeds you or another player"
+    usage: /feed [player]
+  god:
+    permission: "betteradmincommands.god"
+    description: "toggles invulnerability"
+    aliases: [ godmode ]
+    usage: /god [player]
+  speed:
+    permission: "betteradmincommands.speed"
+    description: "changes your walk or fly speed"
+    usage: /speed <walk|fly> <0-10>
+  repair:
+    permission: "betteradmincommands.repair"
+    description: "repairs the item in your hand or your whole inventory"
+    aliases: [ fix ]
+    usage: /repair [hand|all]
+  vanish:
+    permission: "betteradmincommands.vanish"
+    description: "hides you from other players"
+    aliases: [ v ]
+    usage: /vanish [player]
+  near:
+    permission: "betteradmincommands.near"
+    description: "lists players close to you"
+    usage: /near [radius]
+  give:
+    permission: "betteradmincommands.give"
+    description: "gives an item to a player"
+    aliases: [ i, item ]
+    usage: /give <player> <item> [amount]
+  clear:
+    permission: "betteradmincommands.clear"
+    description: "clears an inventory"
+    aliases: [ clearinventory, ci ]
+    usage: /clear [player]
+  kit:
+    permission: "betteradmincommands.kit"
+    description: "gives you a configured kit"
+    usage: /kit <name>
+  broadcast:
+    permission: "betteradmincommands.broadcast"
+    description: "broadcasts a message to the whole server"
+    aliases: [ bc ]
+    usage: /broadcast <message>
+  nick:
+    permission: "betteradmincommands.nick"
+    description: "changes your nickname"
+    usage: /nick [player] <nickname|off>
+  hat:
+    permission: "betteradmincommands.hat"
+    description: "puts the held item on your head"
+    usage: /hat
+  craft:
+    permission: "betteradmincommands.craft"
+    description: "opens a portable crafting table"
+    usage: /craft
+  enderchest:
+    permission: "betteradmincommands.enderchest"
+    description: "opens an ender chest"
+    aliases: [ ec ]
+    usage: /enderchest [player]
+  invsee:
+    permission: "betteradmincommands.invsee"
+    description: "shows the inventory of another player"
+    usage: /invsee <player>
+  sudo:
+    permission: "betteradmincommands.sudo"
+    description: "forces a player to run a command"
+    usage: /sudo <player> <command>
+  exp:
+    permission: "betteradmincommands.exp"
+    description: "manages experience points"
+    aliases: [ xp ]
+    usage: /exp <show|give|set> [player] [amount]
+  time:
+    permission: "betteradmincommands.time"
+    description: "changes the time of a world"
+    usage: /time <set|add> <value> [world]
+  weather:
+    permission: "betteradmincommands.weather"
+    description: "changes the weather of a world"
+    usage: /weather <sun|rain|thunder> [world]
+  ptime:
+    permission: "betteradmincommands.ptime"
+    description: "sets your personal time"
+    usage: /ptime <reset|day|noon|night|midnight|ticks>
+  pweather:
+    permission: "betteradmincommands.pweather"
+    description: "sets your personal weather"
+    usage: /pweather <reset|sun|rain>
+  world:
+    permission: "betteradmincommands.world"
+    description: "lists or teleports you to a world"
+    aliases: [ worlds ]
+    usage: /world [name]
+
+  # ----------------------------------------------------------- moderation ---
+  kick:
+    permission: "betteradmincommands.kick"
+    description: "kicks a player"
+    usage: /kick <player> [reason]
+  kickall:
+    permission: "betteradmincommands.kickall"
+    description: "kicks every player"
+    usage: /kickall [reason]
+  ban:
+    permission: "betteradmincommands.ban"
+    description: "bans a player"
+    usage: /ban <player> [reason]
+  tempban:
+    permission: "betteradmincommands.tempban"
+    description: "bans a player for a limited time"
+    usage: /tempban <player> <duration> [reason]
+  ipban:
+    permission: "betteradmincommands.ipban"
+    description: "bans the IP of a player"
+    aliases: [ banip ]
+    usage: /ipban <player> [reason]
   unban:
-    permission: "smpplugin.unban"
+    permission: "betteradmincommands.unban"
     description: "lets you unban an Player"
-  revivebeaconrecipe:
-    description: "shows the recipe for the revive beacon"
-    aliases:
-      - resrecipe
-      - reciperes
-      - reviverecipe
-      - reciperevive
-  lives:
-    description: lets you see your remaining lives
-    aliases:
-      - seelives
+    aliases: [ pardon ]
+    usage: /unban <player>
+  banlist:
+    permission: "betteradmincommands.banlist"
+    description: "lists every ban"
+    usage: /banlist
+  mute:
+    permission: "betteradmincommands.mute"
+    description: "mutes a player so they cannot chat"
+    usage: /mute <player> [duration] [reason]
+  unmute:
+    permission: "betteradmincommands.unmute"
+    description: "unmutes a player"
+    usage: /unmute <player>
+
+  # -------------------------------------------------------------- economy ---
+  balance:
+    permission: "betteradmincommands.balance"
+    description: "shows a balance"
+    aliases: [ bal, money ]
+    usage: /balance [player]
+  baltop:
+    permission: "betteradmincommands.baltop"
+    description: "shows the richest players"
+    aliases: [ balancetop, moneytop ]
+    usage: /baltop [page]
+  pay:
+    permission: "betteradmincommands.pay"
+    description: "sends money to another player"
+    usage: /pay <player> <amount>
+  eco:
+    permission: "betteradmincommands.eco"
+    description: "manages the economy"
+    aliases: [ economy ]
+    usage: /eco <give|take|set|reset|balance> <player> [amount]
+
+  # ------------------------------------------------------------ teleports ---
+  spawn:
+    permission: "betteradmincommands.spawn"
+    description: "teleports you to the server spawn"
+    usage: /spawn
+  setspawn:
+    permission: "betteradmincommands.setspawn"
+    description: "saves your position as the server spawn"
+    usage: /setspawn
+  tpa:
+    permission: "betteradmincommands.tpa"
+    description: "requests to teleport to a player"
+    aliases: [ tpask ]
+    usage: /tpa <player>
+  tpahere:
+    permission: "betteradmincommands.tpahere"
+    description: "requests a player to teleport to you"
+    aliases: [ tpaskhere ]
+    usage: /tpahere <player>
+  tpaall:
+    permission: "betteradmincommands.tpaall"
+    description: "requests every player to teleport to you"
+    usage: /tpaall
+  tpaccept:
+    permission: "betteradmincommands.tpaccept"
+    description: "accepts a teleport request"
+    aliases: [ tpyes ]
+    usage: /tpaccept [player]
+  tpdeny:
+    permission: "betteradmincommands.tpdeny"
+    description: "denies a teleport request"
+    aliases: [ tpno ]
+    usage: /tpdeny [player]
+  tptoggle:
+    permission: "betteradmincommands.tptoggle"
+    description: "toggles incoming teleport requests"
+    usage: /tptoggle
+  tp:
+    permission: "betteradmincommands.tp"
+    description: "teleports you or another player"
+    aliases: [ teleport ]
+    usage: /tp <player> | /tp <x> <y> <z> | /tp <player> <target>
+  tphere:
+    permission: "betteradmincommands.tphere"
+    description: "teleports a player to you"
+    aliases: [ s ]
+    usage: /tphere <player>
+  tpall:
+    permission: "betteradmincommands.tpall"
+    description: "teleports everyone to you"
+    usage: /tpall
+  tppos:
+    permission: "betteradmincommands.tppos"
+    description: "teleports you to coordinates"
+    usage: /tppos <x> <y> <z> [world]
+  back:
+    permission: "betteradmincommands.back"
+    description: "teleports you to your previous location"
+    usage: /back
+  warps:
+    permission: "betteradmincommands.warps"
+    description: "lists all warps"
+    usage: /warps
+  warp:
+    permission: "betteradmincommands.warp"
+    description: "teleports you to a warp"
+    usage: /warp <name>
+  setwarp:
+    permission: "betteradmincommands.setwarp"
+    description: "creates a warp at your position"
+    aliases: [ createwarp ]
+    usage: /setwarp <name>
+  delwarp:
+    permission: "betteradmincommands.delwarp"
+    description: "deletes a warp"
+    aliases: [ deletewarp, removewarp ]
+    usage: /delwarp <name>
+  home:
+    permission: "betteradmincommands.home"
+    description: "teleports you to one of your homes"
+    usage: /home [name]
+  sethome:
+    permission: "betteradmincommands.sethome"
+    description: "sets one of your homes"
+    usage: /sethome [name]
+  delhome:
+    permission: "betteradmincommands.delhome"
+    description: "deletes one of your homes"
+    usage: /delhome <name>
+  homes:
+    permission: "betteradmincommands.homes"
+    description: "lists your homes"
+    usage: /homes
+
+  # --------------------------------------------------------------- social ---
+  msg:
+    permission: "betteradmincommands.msg"
+    description: "sends a private message"
+    aliases: [ tell, whisper, w, m ]
+    usage: /msg <player> <message>
+  reply:
+    permission: "betteradmincommands.reply"
+    description: "replies to the last private message"
+    aliases: [ r ]
+    usage: /reply <message>
+  socialspy:
+    permission: "betteradmincommands.socialspy"
+    description: "shows private messages of other players"
+    usage: /socialspy
+  ignore:
+    permission: "betteradmincommands.ignore"
+    description: "ignores a player"
+    usage: /ignore <player>
+  ignorelist:
+    permission: "betteradmincommands.ignorelist"
+    description: "lists the players you ignore"
+    usage: /ignorelist
+  me:
+    permission: "betteradmincommands.me"
+    description: "broadcasts an action message"
+    aliases: [ action ]
+    usage: /me <action>
+  mail:
+    permission: "betteradmincommands.mail"
+    description: "sends and reads offline messages"
+    aliases: [ email ]
+    usage: /mail <send|read|clear> [player] [message]
+
+  # ----------------------------------------------------------------- info ---
+  whois:
+    permission: "betteradmincommands.whois"
+    description: "shows information about a player"
+    aliases: [ info, playerinfo ]
+    usage: /whois [player]
+  seen:
+    permission: "betteradmincommands.seen"
+    description: "shows when a player was last online"
+    usage: /seen <player>
+  list:
+    permission: "betteradmincommands.list"
+    description: "lists all online players"
+    aliases: [ who, playerlist ]
+    usage: /list
+  ping:
+    permission: "betteradmincommands.ping"
+    description: "shows the connection latency"
+    usage: /ping [player]
+  gc:
+    permission: "betteradmincommands.gc"
+    description: "shows server and memory information"
+    aliases: [ mem, memory ]
+    usage: /gc
+  afk:
+    permission: "betteradmincommands.afk"
+    description: "marks you as away"
+    aliases: [ away ]
+    usage: /afk [reason]
+
+  # ---------------------------------------------------------------- items ---
+  more:
+    permission: "betteradmincommands.more"
+    description: "fills the held stack"
+    usage: /more
+  rename:
+    permission: "betteradmincommands.rename"
+    description: "renames the held item"
+    aliases: [ itemname ]
+    usage: /rename <name|off>
+  lore:
+    permission: "betteradmincommands.lore"
+    description: "edits the lore of the held item"
+    usage: /lore <add|set|clear> [line] [text]
+  skull:
+    permission: "betteradmincommands.skull"
+    description: "gives you a player head"
+    usage: /skull [player]
+  book:
+    permission: "betteradmincommands.book"
+    description: "gives and edits books"
+    usage: /book <give|author|title|unlock> [args]
+  condense:
+    permission: "betteradmincommands.condense"
+    description: "condenses loose materials into blocks"
+    usage: /condense
+  stack:
+    permission: "betteradmincommands.stack"
+    description: "merges identical items"
+    usage: /stack
+  sort:
+    permission: "betteradmincommands.sort"
+    description: "sorts your inventory"
+    usage: /sort
+  unlimited:
+    permission: "betteradmincommands.unlimited"
+    description: "places and uses items without using them up"
+    usage: /unlimited [toggle|list|clear]
+  disposal:
+    permission: "betteradmincommands.disposal"
+    description: "opens a trash can"
+    usage: /disposal
+  powertool:
+    permission: "betteradmincommands.powertool"
+    description: "binds a command to the held item"
+    aliases: [ pt ]
+    usage: /powertool <command|clear|list>
+
+  # ----------------------------------------------------------- movement -----
+  top:
+    permission: "betteradmincommands.top"
+    description: "teleports you to the highest safe spot"
+    usage: /top
+  bottom:
+    permission: "betteradmincommands.bottom"
+    description: "teleports you to the lowest safe spot"
+    usage: /bottom
+  descend:
+    permission: "betteradmincommands.descend"
+    description: "teleports you to a safe spot below"
+    usage: /descend
+  jump:
+    permission: "betteradmincommands.jump"
+    description: "teleports you to the block you look at"
+    usage: /jump
+  rtp:
+    permission: "betteradmincommands.rtp"
+    description: "teleports you to a random safe spot"
+    aliases: [ randomteleport, wild ]
+    usage: /rtp
+
+  # ------------------------------------------------------ world and mobs ---
+  break:
+    permission: "betteradmincommands.break"
+    description: "breaks the block you look at"
+    aliases: [ breakblock ]
+    usage: /break
+  tree:
+    permission: "betteradmincommands.tree"
+    description: "grows a tree"
+    usage: /tree [type]
+  bigtree:
+    permission: "betteradmincommands.tree"
+    description: "grows a big tree"
+    usage: /bigtree [type]
+  spawner:
+    permission: "betteradmincommands.spawner"
+    description: "changes the type of a mob spawner"
+    usage: /spawner <type>
+  spawnmob:
+    permission: "betteradmincommands.spawnmob"
+    description: "spawns mobs"
+    aliases: [ mob ]
+    usage: /spawnmob <type> [amount] [player]
+  nuke:
+    permission: "betteradmincommands.nuke"
+    description: "drops TNT on a player"
+    usage: /nuke [player]
+  fireball:
+    permission: "betteradmincommands.fireball"
+    description: "launches a fireball"
+    usage: /fireball [small] [power]
+  potion:
+    permission: "betteradmincommands.potion"
+    description: "applies a potion effect"
+    usage: /potion <type> [player] [duration] [amplifier]
+  burn:
+    permission: "betteradmincommands.burn"
+    description: "sets a player on fire"
+    usage: /burn <player> [seconds]
+  ext:
+    permission: "betteradmincommands.ext"
+    description: "puts out a burning player"
+    aliases: [ extinguish ]
+    usage: /ext [player]
+  recipe:
+    permission: "betteradmincommands.recipe"
+    description: "shows how an item is made"
+    aliases: [ recipes ]
+    usage: /recipe [item]
+  killall:
+    permission: "betteradmincommands.killall"
+    description: "removes every entity of a type"
+    usage: /killall [type]
+  butcher:
+    permission: "betteradmincommands.butcher"
+    description: "removes nearby mobs"
+    usage: /butcher [radius]
+  remove:
+    permission: "betteradmincommands.remove"
+    description: "removes entities of one type nearby"
+    usage: /remove <type> [radius]
+  kill:
+    permission: "betteradmincommands.kill"
+    description: "kills a player"
+    usage: /kill [player]
+  suicide:
+    permission: "betteradmincommands.suicide"
+    description: "kills yourself"
+    usage: /suicide
+
+  # ----------------------------------------------------------------- jail ---
+  jail:
+    permission: "betteradmincommands.jail"
+    description: "jails a player"
+    usage: /jail <player> [cell] [duration]
+  setjail:
+    permission: "betteradmincommands.setjail"
+    description: "creates a jail cell here"
+    aliases: [ createjail ]
+    usage: /setjail <name>
+  deljail:
+    permission: "betteradmincommands.deljail"
+    description: "deletes a jail cell"
+    aliases: [ deletejail ]
+    usage: /deljail <name>
+  jails:
+    permission: "betteradmincommands.jails"
+    description: "lists every jail"
+    usage: /jails
+  unjail:
+    permission: "betteradmincommands.unjail"
+    description: "releases a player"
+    usage: /unjail <player>
+  togglejail:
+    permission: "betteradmincommands.togglejail"
+    description: "jails or releases a player"
+    usage: /togglejail <player> [cell]
+
+  # -------------------------------------------------- economy and info -----
+  worth:
+    permission: "betteradmincommands.worth"
+    description: "shows what an item is worth"
+    aliases: [ price ]
+    usage: /worth [item]
+  sell:
+    permission: "betteradmincommands.sell"
+    description: "sells items"
+    usage: /sell <hand|all|amount>
+  depth:
+    permission: "betteradmincommands.depth"
+    description: "shows how deep you are"
+    usage: /depth
+  getpos:
+    permission: "betteradmincommands.getpos"
+    description: "shows your position"
+    aliases: [ pos, coords, whereami ]
+    usage: /getpos [player]
+  playtime:
+    permission: "betteradmincommands.playtime"
+    description: "shows how long a player has been online"
+    usage: /playtime [player]
+  realname:
+    permission: "betteradmincommands.realname"
+    description: "finds the player behind a nickname"
+    usage: /realname <nickname>
+  motd:
+    permission: "betteradmincommands.motd"
+    description: "shows the message of the day"
+    usage: /motd
+  rules:
+    permission: "betteradmincommands.rules"
+    description: "shows the server rules"
+    usage: /rules
+  unbanip:
+    permission: "betteradmincommands.unbanip"
+    description: "removes an IP ban"
+    usage: /unbanip <address|player>
+
+  # -------------------------------------------------------- plugin admin ---
+  betteradmincommands:
+    permission: "betteradmincommands.command"
+    description: "manages the plugin"
+    aliases: [ bac, betteradmin ]
+    usage: /betteradmincommands <reload|backup|info>
+
+permissions:
+  betteradmincommands.*:
+    description: "Grants every Better_Admin_Commands permission."
+    default: op
+    children:
+      betteradmincommands.player: true
+      betteradmincommands.mod: true
+      betteradmincommands.admin: true
+
+  betteradmincommands.player:
+    description: "Commands every player may use."
+    default: true
+    children:
+      betteradmincommands.spawn: true
+      betteradmincommands.home: true
+      betteradmincommands.sethome: true
+      betteradmincommands.delhome: true
+      betteradmincommands.homes: true
+      betteradmincommands.tpa: true
+      betteradmincommands.tpahere: true
+      betteradmincommands.tpaccept: true
+      betteradmincommands.tpdeny: true
+      betteradmincommands.tptoggle: true
+      betteradmincommands.back: true
+      betteradmincommands.warp: true
+      betteradmincommands.warps: true
+      betteradmincommands.balance: true
+      betteradmincommands.baltop: true
+      betteradmincommands.pay: true
+      betteradmincommands.msg: true
+      betteradmincommands.reply: true
+      betteradmincommands.ignore: true
+      betteradmincommands.ignorelist: true
+      betteradmincommands.me: true
+      betteradmincommands.mail: true
+      betteradmincommands.whois: true
+      betteradmincommands.seen: true
+      betteradmincommands.list: true
+      betteradmincommands.ping: true
+      betteradmincommands.afk: true
+      betteradmincommands.hat: true
+      betteradmincommands.craft: true
+      betteradmincommands.enderchest: true
+      betteradmincommands.nick: true
+      betteradmincommands.ptime: true
+      betteradmincommands.pweather: true
+      betteradmincommands.kit: true
+      betteradmincommands.worth: true
+      betteradmincommands.sell: true
+      betteradmincommands.depth: true
+      betteradmincommands.getpos: true
+      betteradmincommands.playtime: true
+      betteradmincommands.motd: true
+      betteradmincommands.rules: true
+      betteradmincommands.condense: true
+      betteradmincommands.stack: true
+      betteradmincommands.sort: true
+      betteradmincommands.ext: true
+      betteradmincommands.suicide: true
+      betteradmincommands.rtp: true
+      betteradmincommands.top: true
+      betteradmincommands.bottom: true
+      betteradmincommands.descend: true
+      betteradmincommands.jump: true
+      betteradmincommands.disposal: true
+      betteradmincommands.rename: true
+      betteradmincommands.lore: true
+      betteradmincommands.book: true
+      betteradmincommands.realname: true
+      betteradmincommands.recipe: true
+
+  betteradmincommands.mod:
+    description: "Moderation commands."
+    default: op
+    children:
+      betteradmincommands.kick: true
+      betteradmincommands.kickall: true
+      betteradmincommands.ban: true
+      betteradmincommands.tempban: true
+      betteradmincommands.ipban: true
+      betteradmincommands.unban: true
+      betteradmincommands.banlist: true
+      betteradmincommands.mute: true
+      betteradmincommands.unmute: true
+      betteradmincommands.socialspy: true
+      betteradmincommands.vanish: true
+      betteradmincommands.vanish.see: true
+      betteradmincommands.invsee: true
+      betteradmincommands.sudo: true
+      betteradmincommands.speed: true
+      betteradmincommands.gc: true
+      betteradmincommands.list: true
+      betteradmincommands.jail: true
+      betteradmincommands.setjail: true
+      betteradmincommands.deljail: true
+      betteradmincommands.jails: true
+      betteradmincommands.unjail: true
+      betteradmincommands.togglejail: true
+      betteradmincommands.kill: true
+      betteradmincommands.killall: true
+      betteradmincommands.butcher: true
+      betteradmincommands.remove: true
+      betteradmincommands.burn: true
+      betteradmincommands.unbanip: true
+      betteradmincommands.skull: true
+      betteradmincommands.getpos.others: true
+      betteradmincommands.playtime.others: true
+
+  betteradmincommands.admin:
+    description: "Full administrative access."
+    default: op
+    children:
+      betteradmincommands.setspawn: true
+      betteradmincommands.setwarp: true
+      betteradmincommands.delwarp: true
+      betteradmincommands.tp: true
+      betteradmincommands.tphere: true
+      betteradmincommands.tpall: true
+      betteradmincommands.tpaall: true
+      betteradmincommands.tppos: true
+      betteradmincommands.give: true
+      betteradmincommands.clear: true
+      betteradmincommands.heal: true
+      betteradmincommands.feed: true
+      betteradmincommands.god: true
+      betteradmincommands.fly: true
+      betteradmincommands.repair: true
+      betteradmincommands.smite: true
+      betteradmincommands.gamemode: true
+      betteradmincommands.enchant: true
+      betteradmincommands.near: true
+      betteradmincommands.broadcast: true
+      betteradmincommands.broadcast.receive: true
+      betteradmincommands.exp: true
+      betteradmincommands.time: true
+      betteradmincommands.weather: true
+      betteradmincommands.world: true
+      betteradmincommands.eco: true
+      betteradmincommands.balance.others: true
+      betteradmincommands.nick.others: true
+      betteradmincommands.nick.color: true
+      betteradmincommands.enderchest.others: true
+      betteradmincommands.command: true
+      betteradmincommands.kick.notify: true
+      betteradmincommands.ban.notify: true
+      betteradmincommands.unban.notify: true
+      betteradmincommands.more: true
+      betteradmincommands.unlimited: true
+      betteradmincommands.unlimited.list: true
+      betteradmincommands.powertool: true
+      betteradmincommands.break: true
+      betteradmincommands.tree: true
+      betteradmincommands.spawner: true
+      betteradmincommands.spawnmob: true
+      betteradmincommands.nuke: true
+      betteradmincommands.fireball: true
+      betteradmincommands.potion: true
+      betteradmincommands.world.manage: true
+
+  # A public warp created with /setwarp is usable by everyone by default.
+  betteradmincommands.warp.public:
+    description: "Allows using every warp. Warps can also be limited with betteradmincommands.warp.<name>."
+    default: true
