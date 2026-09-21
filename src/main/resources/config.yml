@@ -4,11 +4,42 @@
 #  which are read on every use).
 # #############################################################################
 
+# Version of this file. Do not change it by hand - the plugin uses it to add
+# new options to an existing config.yml. Values you changed are never replaced.
+config-version: 5
+
+# --------------------------------------------------------------- commands ---
+# Name and aliases of the plugin management command. The permission stays
+# "betteradmincommands.command". Changes take effect after a restart or a
+# reload of the plugin.
+commands:
+  root-name: "betteradmincommands"
+  root-aliases:
+    - "bac"
+    - "betteradmin"
+
 # ----------------------------------------------------------------- MySQL -----
 # Credentials for the MySQL / MariaDB server where economy, homes and
 # player data are stored. A database has to exist already - the plugin only
 # creates its tables, not the database itself.
+#
+# The database is optional at runtime: when it cannot be reached the plugin
+# still starts and keeps working from the local safe files in data/. Every
+# write is mirrored into those files, so nothing is lost while MySQL is down.
 database:
+  # EASIEST WAY TO CONNECT: paste the connection string your hosting panel or
+  # database gives you here, for example
+  #   mysql://user:password@127.0.0.1:3306/better_admin_commands
+  #   jdbc:mysql://user:password@127.0.0.1:3306/better_admin_commands?useSSL=false
+  # The plugin works out the database type, the address, the database name and
+  # the login from it, and decodes escapes such as %2B and %40. While this is
+  # set, only fill in the fields below that the string does not already contain.
+  connection-string: ""
+  # Create the database itself when it does not exist yet. Needs an account that
+  # may run CREATE DATABASE; if yours may not, create it by hand.
+  create-if-missing: true
+
+  # Used when no connection string is set above.
   host: "127.0.0.1"
   port: 3306
   name: "better_admin_commands"
@@ -19,8 +50,36 @@ database:
   # Number of pooled connections. 2-8 is fine for a single server.
   pool-size: 4
   use-ssl: false
+  # How often the plugin retries the connection while MySQL is unavailable,
+  # in minutes. When the connection comes back the local safe files are
+  # pushed into the database automatically. An admin can also force an
+  # attempt right away with /betteradmincommands reconnect.
+  reconnect-interval-minutes: 30
   # Extra JDBC parameters, appended to the connection url.
   connection-parameters: "useUnicode=true&characterEncoding=utf8&serverTimezone=UTC"
+
+# ------------------------------------------------------------------ skin -----
+# /skinchange puts the skin of a premium account on a player. The skin is read
+# from the Mojang API - the same data NameMC shows, because NameMC itself has no
+# public API. The borrowed skin is stored and applied again on every join.
+skin:
+  # How long a skin fetched from Mojang stays cached, in minutes. This keeps the
+  # server from being rate limited when a name is requested often.
+  cache-minutes: 60
+  # How long to wait for an answer from Mojang, in seconds.
+  timeout-seconds: 10
+
+# ------------------------------------------------------------------ nick -----
+# /nick renames a player in the tab list, above their head and in chat. The
+# optional group argument borrows the prefix of a LuckPerms group, so a nick can
+# be shown with a rank tag without changing any of the player's permissions.
+# Requires LuckPerms to be installed; without it /nick still renames, just
+# without a group prefix.
+nick:
+  # Nicks and groups that only server operators may use.
+  restricted:
+    - "dev"
+    - "owner"
 
 # --------------------------------------------------------------- economy -----
 # The built-in economy is stored in MySQL and is exposed to other plugins
@@ -72,6 +131,9 @@ moderation:
   default-mute-seconds: -1
   # Kick message players see when they try to chat while muted.
   mute-message: "&cYou are muted. &7Reason: &f%reason%"
+  # Shown in the tab list in front of a vanished player. Only staff with the
+  # permission betteradmincommands.vanish.see can see them at all.
+  vanish-tab-cue: "&7[&8V&7] &r"
 
 # ------------------------------------------------------------------- afk -----
 afk:

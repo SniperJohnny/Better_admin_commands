@@ -1,6 +1,9 @@
 package io.sniperjohnny.github.better_admin_commands.teleport;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.util.Msg;
+import net.kyori.adventure.text.Component;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +31,25 @@ public class TpaService {
 
     public TpaService(Better_Admin_Commands plugin) {
         this.expireMillis = Math.max(5, plugin.getConfig().getInt("teleport.request-expire-seconds", 60)) * 1000L;
+    }
+
+    /**
+     * Sends the request notice to the player who has to answer it. The notice
+     * carries clickable buttons that run {@code /tpaaccept} and {@code /tpadeny}
+     * for the player who sent the request.
+     */
+    public static void sendNotice(Player target, String senderName, boolean targetTeleportsToSender) {
+        Component notice = Msg.prefixed(Msg.component("&f" + senderName + " &7"
+                        + (targetTeleportsToSender
+                        ? "wants you to teleport to them."
+                        : "wants to teleport to you."))
+                .append(Component.space())
+                .append(Msg.button("&a[Accept]", "/tpaaccept " + senderName,
+                        "&7Click to accept the request from &f" + senderName))
+                .append(Component.space())
+                .append(Msg.button("&c[Deny]", "/tpadeny " + senderName,
+                        "&7Click to deny the request from &f" + senderName)));
+        target.sendMessage(notice);
     }
 
     /** Registers a new request, replacing any previous one from the same sender. */

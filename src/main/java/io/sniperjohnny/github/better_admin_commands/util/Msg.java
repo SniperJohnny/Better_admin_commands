@@ -28,9 +28,25 @@ public final class Msg {
                 .legacySection().deserialize(color(message));
     }
 
+    /** Prepends the configured plugin prefix to a component. */
+    public static net.kyori.adventure.text.Component prefixed(net.kyori.adventure.text.Component message) {
+        return component(prefix).append(message);
+    }
+
     /** Sends a message prefixed with the configured plugin prefix. */
     public static void send(CommandSender to, String message) {
         to.sendMessage(color(prefix + message));
+    }
+
+    /**
+     * A chat button: clicking the label runs the given command as the player
+     * who clicked. {@code command} is sent exactly as written, so it has to
+     * start with a slash.
+     */
+    public static net.kyori.adventure.text.Component button(String label, String command, String hover) {
+        return component(label)
+                .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(command))
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(component(hover)));
     }
 
     /** Sends a message without the plugin prefix. */

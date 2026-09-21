@@ -4,7 +4,7 @@ main: io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands
 api-version: '1.21'
 authors: [ SniperJohnny ]
 description: Admin, teleport, economy, social and moderation commands with MySQL storage and Vault economy.
-softdepend: [ Vault ]
+softdepend: [ Vault, LuckPerms ]
 
 commands:
   # ---------------------------------------------------------------- admin ---
@@ -82,11 +82,15 @@ commands:
   nick:
     permission: "betteradmincommands.nick"
     description: "changes your nickname"
-    usage: /nick [player] <nickname|off>
+    usage: /nick [player] <nickname|off> [luckperms-group]
   hat:
     permission: "betteradmincommands.hat"
     description: "puts the held item on your head"
     usage: /hat
+  skinchange:
+    permission: "betteradmincommands.skinchange"
+    description: "puts the skin of another account on you"
+    usage: /skinchange [player] <username|off>
   craft:
     permission: "betteradmincommands.craft"
     description: "opens a portable crafting table"
@@ -215,16 +219,16 @@ commands:
     permission: "betteradmincommands.tpaall"
     description: "requests every player to teleport to you"
     usage: /tpaall
-  tpaccept:
+  tpaaccept:
     permission: "betteradmincommands.tpaccept"
     description: "accepts a teleport request"
-    aliases: [ tpyes ]
-    usage: /tpaccept [player]
-  tpdeny:
+    aliases: [ tpaccept, tpyes ]
+    usage: /tpaaccept [player]
+  tpadeny:
     permission: "betteradmincommands.tpdeny"
     description: "denies a teleport request"
-    aliases: [ tpno ]
-    usage: /tpdeny [player]
+    aliases: [ tpdeny, tpno ]
+    usage: /tpadeny [player]
   tptoggle:
     permission: "betteradmincommands.tptoggle"
     description: "toggles incoming teleport requests"
@@ -564,7 +568,7 @@ commands:
     permission: "betteradmincommands.command"
     description: "manages the plugin"
     aliases: [ bac, betteradmin ]
-    usage: /betteradmincommands <reload|backup|info>
+    usage: /betteradmincommands <reload|backup|reconnect|info|disable|enable>
 
 permissions:
   betteradmincommands.*:
@@ -610,6 +614,7 @@ permissions:
       betteradmincommands.craft: true
       betteradmincommands.enderchest: true
       betteradmincommands.nick: true
+      betteradmincommands.skinchange: true
       betteradmincommands.ptime: true
       betteradmincommands.pweather: true
       betteradmincommands.kit: true
@@ -686,6 +691,7 @@ permissions:
       betteradmincommands.tpall: true
       betteradmincommands.tpaall: true
       betteradmincommands.tppos: true
+      betteradmincommands.teleport.bypass: true
       betteradmincommands.give: true
       betteradmincommands.clear: true
       betteradmincommands.heal: true
@@ -707,6 +713,7 @@ permissions:
       betteradmincommands.balance.others: true
       betteradmincommands.nick.others: true
       betteradmincommands.nick.color: true
+      betteradmincommands.skinchange.others: true
       betteradmincommands.enderchest.others: true
       betteradmincommands.command: true
       betteradmincommands.kick.notify: true
@@ -724,6 +731,22 @@ permissions:
       betteradmincommands.fireball: true
       betteradmincommands.potion: true
       betteradmincommands.world.manage: true
+
+  # Vanished players stay visible to whoever holds this, with a cue in the tab
+  # list so they can be told apart from normal players.
+  betteradmincommands.vanish.see:
+    description: "See vanished players, marked in the tab list."
+    default: op
+
+  # /skinchange <player> <username> renames someone else's skin.
+  betteradmincommands.skinchange.others:
+    description: "Changes the skin of another player."
+    default: op
+
+  # Staff teleport instantly instead of waiting for the configured warm-up.
+  betteradmincommands.teleport.bypass:
+    description: "Skips the teleport warm-up and the /back cooldown."
+    default: op
 
   # A public warp created with /setwarp is usable by everyone by default.
   betteradmincommands.warp.public:

@@ -28,6 +28,10 @@ dependencies {
         exclude group: "org.bukkit", module: "bukkit"
     }
 
+    // LuckPerms API - provided by the LuckPerms plugin at runtime. Used to read
+    // group prefixes for /nick only; the plugin never writes to LuckPerms.
+    compileOnly("net.luckperms:api:5.5")
+
     // MySQL / MariaDB driver - bundled into the plugin jar by shadowJar
     implementation("com.mysql:mysql-connector-j:9.1.0")
 }

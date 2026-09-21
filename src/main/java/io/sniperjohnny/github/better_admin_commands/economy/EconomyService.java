@@ -2,6 +2,7 @@ package io.sniperjohnny.github.better_admin_commands.economy;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 import io.sniperjohnny.github.better_admin_commands.storage.Database;
+import io.sniperjohnny.github.better_admin_commands.storage.LocalStore;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -31,6 +32,7 @@ public class EconomyService {
 
     private final Better_Admin_Commands plugin;
     private final Database database;
+    private final LocalStore local;
 
     private final Map<UUID, Double> balances = new ConcurrentHashMap<>();
     private final Map<UUID, String> names = new ConcurrentHashMap<>();
@@ -41,9 +43,10 @@ public class EconomyService {
     private final DecimalFormat format;
     private final String currencySymbol;
 
-    public EconomyService(Better_Admin_Commands plugin, Database database) {
+    public EconomyService(Better_Admin_Commands plugin, Database database, LocalStore local) {
         this.plugin = plugin;
         this.database = database;
+        this.local = local;
         this.startingBalance = plugin.getConfig().getDouble("economy.starting-balance", 100.0);
         this.maxBalance = plugin.getConfig().getDouble("economy.max-balance", 1_000_000_000.0);
         this.currencySymbol = plugin.getConfig().getString("economy.currency-symbol", "$");
@@ -61,25 +64,73 @@ public class EconomyService {
         return currencySymbol + format.format(amount);
     }
 
-    /** Reads every stored balance into memory. Called once at start-up. */
+    /**
+     * Reads every stored balance into memory. Called once at start-up. Uses the
+     * local safe file when the database is unavailable and always refreshes the
+     * safe file when the database is the source.
+     */
     public void loadAll() throws SQLException {
         balances.clear();
         names.clear();
+        if (database.isAvailable()) {
+            try {
+                loadFromDatabase();
+                return;
+            } catch (SQLException e) {
+                database.markUnavailable();
+                plugin.getLogger().warning("Could not read balances from MySQL, using the local safe file: "
+                        + e.getMessage());
+            }
+        }
+        loadFromLocal();
+    }
+
+    private void loadFromDatabase() throws SQLException {
+        Map<String, Map<String, Object>> localRows = new java.util.LinkedHashMap<>();
         database.withConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(
-                    "SELECT `uuid`, `name`, `balance` FROM `" + database.table("players") + "`");
+                    "SELECT `uuid`, `name`, `balance`, `last_seen` FROM `" + database.table("players") + "`");
                  ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
                     UUID uuid = parseUuid(result.getString("uuid"));
                     if (uuid == null) {
                         continue;
                     }
-                    balances.put(uuid, result.getDouble("balance"));
-                    names.put(uuid, result.getString("name"));
+                    double balance = result.getDouble("balance");
+                    String name = result.getString("name");
+                    long lastSeen = result.getLong("last_seen");
+                    balances.put(uuid, balance);
+                    names.put(uuid, name);
+                    localRows.put(uuid.toString(), playerRow(uuid.toString(), name, balance, lastSeen));
                 }
             }
             return null;
         });
+        local.mergeAll(localRows);
+    }
+
+    private void loadFromLocal() {
+        for (Map<String, Object> row : local.snapshot()) {
+            UUID uuid = parseUuid(LocalStore.string(row, "uuid"));
+            if (uuid == null) {
+                continue;
+            }
+            balances.put(uuid, LocalStore.doubleValue(row, "balance", 0.0));
+            String name = LocalStore.string(row, "name");
+            if (name != null) {
+                names.put(uuid, name);
+            }
+        }
+        plugin.getLogger().info("Loaded " + balances.size() + " balance(s) from the local safe file.");
+    }
+
+    private static Map<String, Object> playerRow(String uuid, String name, double balance, long lastSeen) {
+        Map<String, Object> row = new java.util.LinkedHashMap<>();
+        row.put("uuid", uuid);
+        row.put("name", name);
+        row.put("balance", balance);
+        row.put("last_seen", lastSeen);
+        return row;
     }
 
     /** Creates the account in memory and in the database when it does not exist yet. */
@@ -175,13 +226,32 @@ public class EconomyService {
         return maxBalance;
     }
 
-    /** Writes all dirty balances back to MySQL. Blocking - call from an async task. */
+    /**
+     * Writes all dirty balances back to MySQL. Blocking - call from an async
+     * task. The local safe file is always written first, so nothing is lost if
+     * the database is down or the write fails.
+     */
     public void saveDirty() {
         if (dirty.isEmpty()) {
             return;
         }
         List<UUID> pending = new ArrayList<>(dirty);
         dirty.removeAll(pending);
+
+        long now = System.currentTimeMillis();
+        Map<String, Map<String, Object>> localRows = new java.util.LinkedHashMap<>();
+        for (UUID uuid : pending) {
+            Double balance = balances.get(uuid);
+            if (balance == null) {
+                continue;
+            }
+            localRows.put(uuid.toString(), playerRow(uuid.toString(), nameOf(uuid), balance, now));
+        }
+        local.mergeAll(localRows);
+
+        if (!database.isAvailable()) {
+            return;
+        }
 
         String sql = "INSERT INTO `" + database.table("players") + "`"
                 + " (`uuid`, `name`, `balance`, `last_seen`) VALUES (?, ?, ?, ?)"
@@ -199,7 +269,7 @@ public class EconomyService {
                         statement.setString(1, uuid.toString());
                         statement.setString(2, nameOf(uuid));
                         statement.setDouble(3, balance);
-                        statement.setLong(4, System.currentTimeMillis());
+                        statement.setLong(4, now);
                         statement.addBatch();
                     }
                     statement.executeBatch();
@@ -208,7 +278,41 @@ public class EconomyService {
             });
         } catch (SQLException e) {
             plugin.getLogger().severe("Could not save balances to MySQL: " + e.getMessage());
-            dirty.addAll(pending);
+            database.markUnavailable();
+        }
+    }
+
+    /** Pushes every locally stored profile back into MySQL after a reconnect. */
+    public void resyncToDatabase() {
+        if (!database.isAvailable()) {
+            return;
+        }
+        List<Map<String, Object>> rows = local.snapshot();
+        String sql = "INSERT INTO `" + database.table("players") + "`"
+                + " (`uuid`, `name`, `balance`, `last_seen`) VALUES (?, ?, ?, ?)"
+                + " ON DUPLICATE KEY UPDATE `name` = VALUES(`name`),"
+                + " `balance` = VALUES(`balance`), `last_seen` = VALUES(`last_seen`)";
+        try {
+            database.withConnection(connection -> {
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    for (Map<String, Object> row : rows) {
+                        String uuid = LocalStore.string(row, "uuid");
+                        if (uuid == null || !row.containsKey("balance")) {
+                            continue;
+                        }
+                        statement.setString(1, uuid);
+                        statement.setString(2, LocalStore.string(row, "name"));
+                        statement.setDouble(3, LocalStore.doubleValue(row, "balance", 0.0));
+                        statement.setLong(4, LocalStore.longValue(row, "last_seen", 0L));
+                        statement.addBatch();
+                    }
+                    statement.executeBatch();
+                }
+                return null;
+            });
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Could not sync balances back to MySQL: " + e.getMessage());
+            database.markUnavailable();
         }
     }
 
@@ -237,6 +341,9 @@ public class EconomyService {
     }
 
     private static UUID parseUuid(String raw) {
+        if (raw == null) {
+            return null;
+        }
         try {
             return UUID.fromString(raw);
         } catch (IllegalArgumentException e) {

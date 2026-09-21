@@ -2,6 +2,7 @@ package io.sniperjohnny.github.better_admin_commands.backup;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 import io.sniperjohnny.github.better_admin_commands.storage.Database;
+import io.sniperjohnny.github.better_admin_commands.storage.LocalStore;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Dumps every table the plugin owns into human readable YAML files inside
@@ -37,10 +39,19 @@ public class BackupService {
 
     private final Better_Admin_Commands plugin;
     private final Database database;
+    private final LocalStore localPlayers;
+    private final LocalStore localHomes;
+    private final LocalStore localSettings;
+    private final LocalStore localMail;
 
-    public BackupService(Better_Admin_Commands plugin, Database database) {
+    public BackupService(Better_Admin_Commands plugin, Database database, LocalStore localPlayers,
+                         LocalStore localHomes, LocalStore localSettings, LocalStore localMail) {
         this.plugin = plugin;
         this.database = database;
+        this.localPlayers = localPlayers;
+        this.localHomes = localHomes;
+        this.localSettings = localSettings;
+        this.localMail = localMail;
     }
 
     /** Runs a full backup. Blocking - call from an async task. */
@@ -69,26 +80,39 @@ public class BackupService {
         return new BackupResult(folder, counts);
     }
 
-    /** Reads a whole table into a YAML file and returns the row count. */
+    /**
+     * Reads a whole table into a YAML file and returns the row count. Falls
+     * back to the local safe file when the database is unavailable.
+     */
     public int dumpTable(String shortName, File target) throws SQLException, IOException {
         String table = database.table(shortName);
-        List<Map<String, Object>> rows = database.withConnection(connection -> {
-            List<Map<String, Object>> result = new ArrayList<>();
-            try (Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery("SELECT * FROM `" + table + "`")) {
-                int columns = resultSet.getMetaData().getColumnCount();
-                while (resultSet.next()) {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    for (int index = 1; index <= columns; index++) {
-                        Object value = resultSet.getObject(index);
-                        row.put(resultSet.getMetaData().getColumnLabel(index),
-                                value instanceof byte[] bytes ? new String(bytes) : value);
+        List<Map<String, Object>> rows;
+        if (database.isAvailable()) {
+            try {
+                rows = database.withConnection(connection -> {
+                    List<Map<String, Object>> result = new ArrayList<>();
+                    try (Statement statement = connection.createStatement();
+                         ResultSet resultSet = statement.executeQuery("SELECT * FROM `" + table + "`")) {
+                        int columns = resultSet.getMetaData().getColumnCount();
+                        while (resultSet.next()) {
+                            Map<String, Object> row = new LinkedHashMap<>();
+                            for (int index = 1; index <= columns; index++) {
+                                Object value = resultSet.getObject(index);
+                                row.put(resultSet.getMetaData().getColumnLabel(index),
+                                        value instanceof byte[] bytes ? new String(bytes) : value);
+                            }
+                            result.add(row);
+                        }
                     }
-                    result.add(row);
-                }
+                    return result;
+                });
+            } catch (SQLException e) {
+                database.markUnavailable();
+                rows = localRows(shortName).get();
             }
-            return result;
-        });
+        } else {
+            rows = localRows(shortName).get();
+        }
 
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("table", table);
@@ -101,5 +125,15 @@ public class BackupService {
         }
         yaml.save(target);
         return rows.size();
+    }
+
+    private Supplier<List<Map<String, Object>>> localRows(String shortName) {
+        return switch (shortName) {
+            case "players" -> localPlayers::snapshot;
+            case "homes" -> localHomes::snapshot;
+            case "player_settings" -> localSettings::snapshot;
+            case "mail" -> localMail::snapshot;
+            default -> List::of;
+        };
     }
 }

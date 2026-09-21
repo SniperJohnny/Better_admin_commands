@@ -2,6 +2,7 @@ package io.sniperjohnny.github.better_admin_commands.commands.teleport;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 import io.sniperjohnny.github.better_admin_commands.player.PlayerPreferences;
+import io.sniperjohnny.github.better_admin_commands.teleport.TpaService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import org.bukkit.command.Command;
@@ -48,8 +49,7 @@ public class Tpahere_Command implements TabExecutor {
         }
         plugin.tpa().add(self.getUniqueId(), target.getUniqueId(), true);
         Msg.success(self, "Teleport request sent to " + target.getName() + ".");
-        Msg.send(target, "&f" + self.getName() + " &7wants you to teleport to them.");
-        Msg.send(target, "&a/tpaccept &7to accept or &c/tpdeny &7to deny.");
+        TpaService.sendNotice(target, self.getName(), true);
         return true;
     }
 

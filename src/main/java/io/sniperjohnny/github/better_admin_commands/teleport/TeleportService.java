@@ -16,6 +16,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TeleportService {
 
+    /**
+     * Permission that skips the teleport warm-up and the /back cooldown, so
+     * staff teleport instantly. Granted to everyone with
+     * {@code betteradmincommands.admin}.
+     */
+    public static final String BYPASS_PERMISSION = "betteradmincommands.teleport.bypass";
+
     private final Better_Admin_Commands plugin;
     private final Map<UUID, Location> backLocations = new ConcurrentHashMap<>();
     private final Map<UUID, Long> backCooldowns = new ConcurrentHashMap<>();
@@ -59,7 +66,8 @@ public class TeleportService {
         }
         remember(player);
 
-        if (warmupSeconds <= 0) {
+        // Staff teleport immediately: no warm-up, no "don't move" message.
+        if (warmupSeconds <= 0 || bypassesWarmup(player)) {
             player.teleport(destination);
             return;
         }
@@ -103,9 +111,10 @@ public class TeleportService {
             Msg.error(player, "/back is disabled on this server.");
             return false;
         }
+        boolean bypass = bypassesWarmup(player);
         Long until = backCooldowns.get(player.getUniqueId());
         long now = System.currentTimeMillis();
-        if (until != null && until > now) {
+        if (!bypass && until != null && until > now) {
             Msg.error(player, "You have to wait " + ((until - now) / 1000L) + "s before using /back again.");
             return false;
         }
@@ -114,9 +123,16 @@ public class TeleportService {
             Msg.error(player, "There is no previous location to go back to.");
             return false;
         }
-        backCooldowns.put(player.getUniqueId(), now + backCooldownMillis);
+        if (!bypass) {
+            backCooldowns.put(player.getUniqueId(), now + backCooldownMillis);
+        }
         player.teleport(destination);
         Msg.success(player, "Teleported back.");
         return true;
+    }
+
+    /** Whether this player teleports without the warm-up and cooldowns. */
+    public boolean bypassesWarmup(Player player) {
+        return player.hasPermission(BYPASS_PERMISSION);
     }
 }

@@ -2,12 +2,22 @@ package io.sniperjohnny.github.better_admin_commands.storage;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * A deliberately small JDBC connection pool around the MySQL/MariaDB driver.
@@ -21,17 +31,32 @@ public class Database {
         T apply(Connection connection) throws SQLException;
     }
 
+    /** One step of the connection check behind {@code /betteradmincommands database}. */
+    public record Check(String label, boolean ok, String detail) {
+    }
+
     private final Better_Admin_Commands plugin;
     private final String url;
+    /** The same url without the database, used to create a missing database. */
+    private final String serverUrl;
     private final String user;
     private final String password;
     private final int poolSize;
     private final String tablePrefix;
 
+    private final DatabaseSettings.Engine engine;
+    private final String host;
+    private final int port;
+    private final String databaseName;
+    private final boolean createIfMissing;
+    /** Where the settings came from, so a diagnosis can say so. */
+    private final String source;
+
     private final Deque<Connection> idle = new ArrayDeque<>();
     private final Object lock = new Object();
     private int openConnections = 0;
     private volatile boolean closed = false;
+    private volatile boolean available = false;
 
     public Database(Better_Admin_Commands plugin) {
         this.plugin = plugin;
@@ -40,17 +65,92 @@ public class Database {
             throw new IllegalStateException("The 'database' section is missing from config.yml");
         }
 
-        String host = config.getString("host", "127.0.0.1");
-        int port = config.getInt("port", 3306);
-        String database = config.getString("name", "better_admin_commands");
-        this.user = config.getString("user", "root");
-        this.password = config.getString("password", "");
+        // A connection string, when given, wins over the single fields - but the
+        // fields still fill in whatever the string leaves out.
+        DatabaseSettings.Connection parsed =
+                DatabaseSettings.parse(config.getString("connection-string", ""));
+        this.source = parsed != null ? "connection-string" : "host/port/name/user/password";
+        this.engine = parsed != null ? parsed.engine() : DatabaseSettings.Engine.MYSQL;
+
+        this.host = fill(parsed == null ? null : parsed.host(), config.getString("host", "127.0.0.1"));
+        this.port = parsed != null && parsed.port() > 0
+                ? parsed.port() : config.getInt("port", engine.defaultPort());
+        this.databaseName = fill(parsed == null ? null : parsed.database(),
+                config.getString("name", "better_admin_commands")).replace("`", "");
+        this.user = fill(parsed == null ? null : parsed.user(), config.getString("user", "root"));
+        this.password = fill(parsed == null ? null : parsed.password(), config.getString("password", ""));
         this.poolSize = Math.max(1, config.getInt("pool-size", 4));
         this.tablePrefix = config.getString("table-prefix", "bac_");
-        boolean useSsl = config.getBoolean("use-ssl", false);
-        String extra = config.getString("connection-parameters", "");
+        this.createIfMissing = config.getBoolean("create-if-missing", true);
 
-        StringBuilder urlBuilder = new StringBuilder("jdbc:mysql://")
+        boolean useSsl = config.getBoolean("use-ssl", false);
+        String extra = fill(parsed == null ? null : parsed.parameters(),
+                config.getString("connection-parameters", ""));
+        this.serverUrl = buildUrl(host, port, "", useSsl, extra);
+        this.url = buildUrl(host, port, databaseName, useSsl, extra);
+    }
+
+    /**
+     * Opens one connection to verify the credentials, creates the database when
+     * it does not exist yet, and then creates the tables.
+     */
+    public void connect() throws SQLException {
+        if (!engine.supported()) {
+            throw new SQLException("The connection details point at " + engine.label()
+                    + ", which this plugin cannot talk to. Use a MySQL or MariaDB database, or remove "
+                    + "database.connection-string and fill in the fields below it.");
+        }
+        // Validate credentials eagerly so configuration mistakes show up at start-up.
+        try {
+            verifyConnection();
+        } catch (SQLException failure) {
+            if (!tryCreateDatabase(failure)) {
+                throw hint(failure);
+            }
+        }
+        createTables();
+        available = true;
+    }
+
+    /** Opens and closes one connection, to prove the credentials work. */
+    private void verifyConnection() throws SQLException {
+        closeQuietly(openRawConnection());
+    }
+
+    /**
+     * Creates the configured database when the only problem is that it does not
+     * exist yet.
+     *
+     * @return {@code true} when the database is usable afterwards
+     */
+    private boolean tryCreateDatabase(SQLException failure) throws SQLException {
+        boolean missing = failure.getMessage() != null
+                && failure.getMessage().toLowerCase(Locale.ROOT).contains("unknown database");
+        if (!createIfMissing || databaseName.isBlank() || !missing) {
+            return false;
+        }
+        plugin.getLogger().info("The database '" + databaseName + "' does not exist yet - creating it.");
+        try (Connection connection = DriverManager.getConnection(serverUrl, user, password);
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate("CREATE DATABASE IF NOT EXISTS `" + databaseName + "` "
+                    + "CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
+        } catch (SQLException createFailure) {
+            throw new SQLException("Could not create the database '" + databaseName + "' ("
+                    + createFailure.getMessage() + "). Create it yourself or ask your host to.", createFailure);
+        }
+        verifyConnection();
+        plugin.getLogger().info("Created the database '" + databaseName + "'.");
+        return true;
+    }
+
+    /** Adds a suggestion to the message of a failure that looks familiar. */
+    private static SQLException hint(SQLException failure) {
+        String hint = DatabaseSettings.hintFor(failure.getMessage());
+        return hint == null ? failure : new SQLException(failure.getMessage() + " - " + hint, failure);
+    }
+
+    private static String buildUrl(String host, int port, String database, boolean useSsl, String extra) {
+        StringBuilder url = new StringBuilder("jdbc:mysql://")
                 .append(host).append(':').append(port).append('/').append(database)
                 .append("?useSSL=").append(useSsl)
                 .append("&allowPublicKeyRetrieval=true")
@@ -58,17 +158,147 @@ public class Database {
                 .append("&connectTimeout=10000")
                 .append("&socketTimeout=30000");
         if (extra != null && !extra.isBlank()) {
-            urlBuilder.append('&').append(extra);
+            url.append('&').append(extra);
         }
-        this.url = urlBuilder.toString();
+        return url.toString();
     }
 
-    /** Opens one connection to verify the credentials and then creates the tables. */
-    public void connect() throws SQLException {
-        // Validate credentials eagerly so configuration mistakes show up at start-up.
-        Connection connection = openRawConnection();
-        closeQuietly(connection);
-        createTables();
+    /** Prefers the value from the connection string, else the config field. */
+    private static String fill(String preferred, String fallback) {
+        return preferred != null && !preferred.isBlank() ? preferred : (fallback == null ? "" : fallback);
+    }
+
+    /* ---------------------------------------------------------- diagnosis --- */
+
+    /** What the plugin thinks it is connecting to, without the password. */
+    public String describe() {
+        StringBuilder text = new StringBuilder(engine.label()).append(' ');
+        if (!user.isBlank()) {
+            text.append(user).append('@');
+        }
+        text.append(host).append(':').append(port);
+        if (!databaseName.isBlank()) {
+            text.append('/').append(databaseName);
+        }
+        return text.append(" (from ").append(source).append(')').toString();
+    }
+
+    /**
+     * Walks through the connection step by step. Blocking, so call it from an
+     * async task - used by {@code /betteradmincommands database}.
+     */
+    public List<Check> diagnose() {
+        List<Check> checks = new ArrayList<>();
+        checks.add(new Check("Engine", engine.supported(), engine.label()
+                + (engine.supported() ? "" : " - only MySQL and MariaDB are supported")));
+        if (!engine.supported()) {
+            return checks;
+        }
+        checks.add(new Check("Settings", true, describe()));
+        checks.add(checkAddress());
+        checks.add(checkPort());
+        checks.add(checkLogin());
+        checks.add(checkTables());
+        return checks;
+    }
+
+    private Check checkAddress() {
+        try {
+            return new Check("Address", true,
+                    host + " resolves to " + InetAddress.getByName(host).getHostAddress());
+        } catch (UnknownHostException e) {
+            return new Check("Address", false, "cannot resolve '" + host + "' - check database.host");
+        }
+    }
+
+    private Check checkPort() {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(host, port), 5000);
+            return new Check("Port", true, "port " + port + " is open");
+        } catch (IOException e) {
+            return new Check("Port", false, "cannot reach port " + port
+                    + " - check database.port, the firewall and whether the database allows remote connections");
+        }
+    }
+
+    private Check checkLogin() {
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+            return new Check("Login", true, "the credentials work");
+        } catch (SQLException e) {
+            String hint = DatabaseSettings.hintFor(e.getMessage());
+            return new Check("Login", false, e.getMessage() + (hint == null ? "" : " - " + hint));
+        }
+    }
+
+    private Check checkTables() {
+        try {
+            Long count = withConnection(connection -> {
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "SELECT COUNT(*) FROM information_schema.tables "
+                                + "WHERE table_schema = ? AND table_name LIKE ?")) {
+                    statement.setString(1, databaseName);
+                    statement.setString(2, tablePrefix + "%");
+                    try (ResultSet result = statement.executeQuery()) {
+                        return result.next() ? result.getLong(1) : 0L;
+                    }
+                }
+            });
+            return new Check("Tables", true, (count == null ? 0L : count)
+                    + " of the plugin's tables exist (prefix '" + tablePrefix + "')");
+        } catch (SQLException e) {
+            return new Check("Tables", false, e.getMessage());
+        }
+    }
+
+    /**
+     * Whether the database is currently usable. When this is {@code false} the
+     * plugin keeps running from its local safe files and retries periodically.
+     */
+    public boolean isAvailable() {
+        return available && !closed;
+    }
+
+    /**
+     * Verifies the pooled connection, reconnecting when the database is down.
+     * Called periodically so a database that comes back is picked up without a
+     * server restart. Returns {@code true} when the database is reachable
+     * afterwards.
+     */
+    public boolean checkConnection() {
+        if (closed || !engine.supported()) {
+            return false;
+        }
+        if (!available) {
+            try {
+                connect();
+                plugin.getLogger().info("Reconnected to the MySQL database.");
+                return true;
+            } catch (SQLException e) {
+                plugin.getLogger().warning("MySQL is still unavailable: " + e.getMessage());
+                return false;
+            }
+        }
+        Connection connection = null;
+        try {
+            connection = getConnection();
+            if (connection.isValid(2)) {
+                return true;
+            }
+        } catch (SQLException e) {
+            // fall through and mark the database as gone
+        } finally {
+            if (connection != null) {
+                release(connection);
+            }
+        }
+        available = false;
+        plugin.getLogger().warning("Lost the MySQL connection - switching to the local safe files.");
+        return false;
+    }
+
+    /** Marks the database as unavailable so the reconnect task starts trying again. */
+    public void markUnavailable() {
+        available = false;
     }
 
     /** Creates every table the plugin needs, if it does not exist yet. */
@@ -232,6 +462,7 @@ public class Database {
             }
             idle.clear();
             openConnections = 0;
+            available = false;
             lock.notifyAll();
         }
     }

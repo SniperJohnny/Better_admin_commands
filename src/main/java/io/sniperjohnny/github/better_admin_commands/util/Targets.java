@@ -26,6 +26,11 @@ public final class Targets {
         return player;
     }
 
+    /** Resolves an online player, or {@code null}, without messaging the sender. */
+    public static Player onlineOrNull(String name) {
+        return name == null ? null : Bukkit.getPlayerExact(name);
+    }
+
     /** Resolves an offline player by name, returning {@code null} and messaging the sender when unknown. */
     public static OfflinePlayer offline(CommandSender sender, String name) {
         OfflinePlayer player = Bukkit.getOfflinePlayerIfCached(name);

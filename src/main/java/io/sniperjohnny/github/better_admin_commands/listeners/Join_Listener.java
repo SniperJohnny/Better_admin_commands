@@ -11,7 +11,8 @@ import org.bukkit.event.player.PlayerJoinEvent;
 
 /**
  * Registers the player account in the economy, loads their settings, applies the
- * nickname and handles spawn and vanish rules when someone joins.
+ * nickname and borrowed skin, and handles spawn and vanish rules when someone
+ * joins.
  */
 public class Join_Listener implements Listener {
 
@@ -28,6 +29,7 @@ public class Join_Listener implements Listener {
         plugin.economy().touch(player);
         plugin.preferences().load(player);
         plugin.preferences().applyNickname(player);
+        plugin.skins().applyStored(player);
         plugin.afk().forget(player.getUniqueId());
         plugin.vanish().applyToJoining(player);
         plugin.playtime().onJoin(player);
