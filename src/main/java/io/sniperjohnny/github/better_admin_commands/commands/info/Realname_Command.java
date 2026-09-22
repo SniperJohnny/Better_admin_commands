@@ -26,7 +26,13 @@ public class Realname_Command implements TabExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String @NotNull[] args) {
+        // Without a nickname this opens the overview, which is what people usually
+        // want: everyone online with a nickname and the real name behind it.
         if (args.length < 1) {
+            if (sender instanceof Player player) {
+                plugin.realnameGui().open(player, 0);
+                return true;
+            }
             Msg.usage(sender, command);
             return true;
         }

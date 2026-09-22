@@ -44,6 +44,9 @@ public class Join_Listener implements Listener {
             Msg.send(player, "&7You have &f" + unread + " &7unread mail message(s). Use &f/mail read&7.");
         }
 
+        // Remind players and staff about report tickets with new messages.
+        plugin.reports().notifyOnJoin(player);
+
         if (plugin.jails().isJailed(player.getUniqueId())) {
             return;
         }

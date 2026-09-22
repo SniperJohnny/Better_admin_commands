@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,7 +14,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Lists every jail cell. */
+/**
+ * Opens the jail menu, where a cell can be teleported to with one click.
+ * {@code /jails list} keeps the plain text listing, and the console always gets
+ * that form.
+ */
 public class Jails_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -29,6 +34,16 @@ public class Jails_Command implements TabExecutor {
             Msg.error(sender, "There are no jails yet. Create one with /setjail <name>.");
             return true;
         }
+        boolean wantsList = args.length >= 1 && args[0].equalsIgnoreCase("list");
+        if (sender instanceof Player player && !wantsList) {
+            plugin.jailsGui().open(player, 0);
+            return true;
+        }
+        list(sender);
+        return true;
+    }
+
+    private void list(CommandSender sender) {
         Msg.raw(sender, "&6Jails &7(" + plugin.jails().size() + ")&6:");
         for (String name : plugin.jails().names()) {
             Location location = plugin.jails().get(name);
@@ -36,12 +51,14 @@ public class Jails_Command implements TabExecutor {
                     name, location.getWorld().getName(),
                     location.getX(), location.getY(), location.getZ()));
         }
-        return true;
     }
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String @NotNull[] args) {
+        if (args.length == 1) {
+            return "list".startsWith(args[0].toLowerCase()) ? List.of("list") : Collections.emptyList();
+        }
         return Collections.emptyList();
     }
 }

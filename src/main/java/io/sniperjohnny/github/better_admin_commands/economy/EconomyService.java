@@ -212,6 +212,45 @@ public class EconomyService {
         return getBalance(uuid) >= amount;
     }
 
+    /** How a transfer between two players ended. */
+    public enum TransferResult { SUCCESS, PAYMENTS_DISABLED, SELF, TOO_SMALL, TOO_POOR }
+
+    /**
+     * Moves money from one player to another, checking the same rules however the
+     * transfer was started. Shared by {@code /pay} and the balance menu so both
+     * cannot drift apart.
+     *
+     * @param amount the amount to send; the message for {@code TOO_SMALL} is the
+     *               caller's job, since the minimum comes from the config
+     */
+    public TransferResult transfer(Player from, UUID target, double amount) {
+        if (!plugin.getConfig().getBoolean("economy.allow-payments", true)) {
+            return TransferResult.PAYMENTS_DISABLED;
+        }
+        if (target == null || target.equals(from.getUniqueId())) {
+            return TransferResult.SELF;
+        }
+        if (amount < plugin.getConfig().getDouble("economy.minimum-payment", 0.01)) {
+            return TransferResult.TOO_SMALL;
+        }
+        if (!withdraw(from.getUniqueId(), amount)) {
+            return TransferResult.TOO_POOR;
+        }
+        deposit(target, amount);
+        saveAsync();
+        return TransferResult.SUCCESS;
+    }
+
+    /** The smallest amount {@code /pay} and the balance menu accept. */
+    public double minimumPayment() {
+        return plugin.getConfig().getDouble("economy.minimum-payment", 0.01);
+    }
+
+    /** Whether payments between players are allowed at all. */
+    public boolean paymentsAllowed() {
+        return plugin.getConfig().getBoolean("economy.allow-payments", true);
+    }
+
     /** The richest players, highest balance first. */
     public List<BalanceEntry> top(int limit) {
         List<BalanceEntry> entries = new ArrayList<>();

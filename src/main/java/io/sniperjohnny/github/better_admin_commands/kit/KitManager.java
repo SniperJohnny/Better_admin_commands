@@ -99,6 +99,56 @@ public class KitManager {
         }
     }
 
+    /** How a claim attempt ended, so the command and the GUI can react the same way. */
+    public enum ClaimResult { SUCCESS, UNKNOWN, NO_ITEMS, NO_PERMISSION, COOLDOWN }
+
+    /** The outcome of a claim, with the remaining cooldown when there is one. */
+    public record Claim(ClaimResult result, long remainingMillis) {
+    }
+
+    /**
+     * Gives a kit to a player, checking the permission and the cooldown first.
+     * Everything that does not fit is dropped at the player's feet, and the
+     * cooldown only starts when the kit really was handed out.
+     */
+    public Claim claim(Player player, String name) {
+        if (!exists(name)) {
+            return new Claim(ClaimResult.UNKNOWN, 0L);
+        }
+        String permission = permission(name);
+        if (permission != null && !permission.isBlank() && !player.hasPermission(permission)) {
+            return new Claim(ClaimResult.NO_PERMISSION, 0L);
+        }
+        long remaining = remainingMillis(player, name);
+        if (remaining > 0) {
+            return new Claim(ClaimResult.COOLDOWN, remaining);
+        }
+        List<ItemStack> items = items(name);
+        if (items.isEmpty()) {
+            return new Claim(ClaimResult.NO_ITEMS, 0L);
+        }
+        for (ItemStack stack : items) {
+            player.getInventory().addItem(stack).forEach((index, leftover) ->
+                    player.getWorld().dropItemNaturally(player.getLocation(), leftover));
+        }
+        markUsed(player, name);
+        return new Claim(ClaimResult.SUCCESS, 0L);
+    }
+
+    /** The icon configured for a kit, or {@code null} when none is set. */
+    public Material icon(String name) {
+        ConfigurationSection kit = section(name);
+        if (kit == null) {
+            return null;
+        }
+        String configured = kit.getString("icon");
+        if (configured == null || configured.isBlank()) {
+            return null;
+        }
+        Material material = Material.matchMaterial(configured.trim().toUpperCase(Locale.ROOT));
+        return material == null || material.isAir() ? null : material;
+    }
+
     /**
      * Builds the item list of a kit. Entry format:
      * {@code MATERIAL}, {@code MATERIAL:AMOUNT} or

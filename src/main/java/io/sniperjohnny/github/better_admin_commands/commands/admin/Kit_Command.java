@@ -7,7 +7,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,9 +29,14 @@ public class Kit_Command implements TabExecutor {
             Msg.playerOnly(sender);
             return true;
         }
+        // Without a kit name this opens the kit menu, where the kits can be
+        // seen with their cooldowns before one is claimed.
         if (args.length < 1) {
-            Msg.send(player, "&7Available kits: &f" + String.join(", ", plugin.kits().names()));
-            Msg.usage(sender, command);
+            if (!player.hasPermission("betteradmincommands.kit")) {
+                Msg.noPermission(player);
+                return true;
+            }
+            plugin.kitGui().open(player, 0);
             return true;
         }
         String name = args[0].toLowerCase();
@@ -40,30 +44,8 @@ public class Kit_Command implements TabExecutor {
             Msg.error(player, "There is no kit called " + name + ".");
             return true;
         }
-        String permission = plugin.kits().permission(name);
-        if (permission != null && !permission.isBlank() && !player.hasPermission(permission)) {
-            Msg.noPermission(player);
-            return true;
-        }
-
-        long remaining = plugin.kits().remainingMillis(player, name);
-        if (remaining > 0) {
-            Msg.error(player, "You have to wait " + Targets.formatDuration(remaining / 1000L)
-                    + " before using this kit again.");
-            return true;
-        }
-
-        List<ItemStack> items = plugin.kits().items(name);
-        if (items.isEmpty()) {
-            Msg.error(player, "This kit does not contain any items.");
-            return true;
-        }
-        for (ItemStack stack : items) {
-            player.getInventory().addItem(stack).forEach((index, leftover) ->
-                    player.getWorld().dropItemNaturally(player.getLocation(), leftover));
-        }
-        plugin.kits().markUsed(player, name);
-        Msg.success(player, "You received the kit " + name + ".");
+        // -1 leaves the menu closed; the messages are enough for a command.
+        plugin.kitGui().claim(player, name, -1);
         return true;
     }
 

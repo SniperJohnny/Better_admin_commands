@@ -44,7 +44,10 @@ public class Balance_Command implements TabExecutor {
             Msg.playerOnly(sender);
             return true;
         }
+        // The amount still goes to chat - a single number is what /balance is for -
+        // and the menu behind it adds sending money and the leaderboard.
         Msg.send(player, "&7Your balance: &a" + plugin.economy().format(plugin.economy().getBalance(player.getUniqueId())));
+        plugin.balanceGui().open(player);
         return true;
     }
 

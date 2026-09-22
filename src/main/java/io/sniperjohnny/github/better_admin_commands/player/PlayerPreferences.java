@@ -158,6 +158,22 @@ public class PlayerPreferences {
         return settings(uuid).get(NICK_GROUP);
     }
 
+    /** The borrowed LuckPerms group prefix as a legacy string, or empty. */
+    public String nicknamePrefix(UUID uuid) {
+        String prefix = plugin.nicks().prefix(nicknameGroup(uuid));
+        return prefix == null ? "" : prefix;
+    }
+
+    /**
+     * The nickname with its group prefix as a legacy string, or {@code null}
+     * when no nickname is set. Used to hand the nickname to placeholders such as
+     * the ones a tab list plugin reads.
+     */
+    public String nicknameDisplay(UUID uuid) {
+        String nickname = nickname(uuid);
+        return nickname == null ? null : nicknamePrefix(uuid) + nickname;
+    }
+
     /**
      * Applies the stored nickname and its group prefix. The result is used for
      * the tab list, the name tag above the player and - through the display

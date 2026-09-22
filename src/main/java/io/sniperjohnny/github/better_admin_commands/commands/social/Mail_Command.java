@@ -40,9 +40,9 @@ public class Mail_Command implements TabExecutor {
             return true;
         }
         if (args.length < 1) {
-            int unread = plugin.mail().unreadCount(player.getUniqueId());
-            Msg.send(player, "&7You have &f" + unread + " &7unread message(s).");
-            Msg.send(player, "&7Use &f/mail read&7, &f/mail send <player> <message> &7or &f/mail clear&7.");
+            // The mailbox menu is the way in now; the subcommands stay for chat
+            // users, and /mail read still prints everything as before.
+            plugin.mailGui().open(player, 0);
             return true;
         }
 

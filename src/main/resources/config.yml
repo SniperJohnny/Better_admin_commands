@@ -6,7 +6,7 @@
 
 # Version of this file. Do not change it by hand - the plugin uses it to add
 # new options to an existing config.yml. Values you changed are never replaced.
-config-version: 5
+config-version: 11
 
 # --------------------------------------------------------------- commands ---
 # Name and aliases of the plugin management command. The permission stays
@@ -81,6 +81,107 @@ nick:
     - "dev"
     - "owner"
 
+# --------------------------------------------------------------- auction -----
+# /ah opens the whole auction house as a GUI: players list items, browse and buy
+# listings, manage their own listings and collect items back from cancelled or
+# expired ones. Listings are stored in MySQL and mirrored into data/auction.yml.
+auction:
+  enabled: true
+  # Rows of the GUI windows (3-6). The bottom row is kept for navigation.
+  gui-rows: 6
+  # How long an active listing stays up, in hours. 0 means it never expires.
+  listing-hours: 48
+  # How many active listings one player may have at the same time.
+  max-listings-per-player: 10
+  # Percentage of the sale price the server keeps (0-100).
+  tax-percent: 5.0
+  # Fee charged up front when listing, as a percentage of the price (0-100).
+  listing-fee-percent: 0.0
+  # Allowed price range for a single listing.
+  min-price: 1.0
+  max-price: 1000000000.0
+
+# ------------------------------------------------------------------ shop -----
+# /shop opens the server shop. The contents are imported from EconomyShopGUI:
+# every shop file found there becomes one shop here, and EconomyShopGUI is then
+# turned off so the two cannot both answer to the same command. The imported
+# shop lives in MySQL and is mirrored into data/shops.yml + data/shop_items.yml.
+shop:
+  enabled: true
+  # Rows of the item windows (3-6). The bottom row is kept for navigation.
+  gui-rows: 6
+  # Let players sell items back where the imported data has a sell price.
+  selling-enabled: true
+  # Show the search button that filters every shop by item name.
+  search-enabled: true
+  # Who may use which shop. With the shipped defaults every shop is open to
+  # everyone; set a prefix below to lock them down.
+  access:
+    # Permission every shop needs, with the shop id appended: the shop "blocks"
+    # needs "betteradmincommands.shop.blocks". The id is the file path without
+    # the extension, so "blocks/mob_drops.yml" becomes "blocks.mob_drops".
+    # Leave this empty to leave every shop open.
+    permission-prefix: ""
+    # Shops that stay open even when a prefix is set. "*" leaves all of them open.
+    free: []
+    # Per-shop permission, which wins over the prefix above. Example:
+    #   permissions:
+    #     vip: "betteradmincommands.shop.vip"
+    permissions: {}
+    # Hide the shops a player cannot use instead of showing them greyed out.
+    hide-locked: false
+  import:
+    # Read the EconomyShopGUI files on start-up when no shop is stored yet.
+    enabled: true
+    # Re-import on every start-up, overwriting what is stored. Use this while
+    # setting the shop up; /shop import does the same thing on demand.
+    force: false
+    # Turn EconomyShopGUI off once its shops have been imported.
+    disable-plugin: true
+    # Stop after this many items, so a stray YAML file cannot flood the shop.
+    max-items: 5000
+    # Folder names inside plugins/ to read. Any folder whose name starts with
+    # "EconomyShopGUI" is read as well, so the free and the premium edition are
+    # both found without editing this.
+    folders:
+      - "EconomyShopGUI"
+      - "EconomyShopGUI-Premium"
+
+# ---------------------------------------------------------------- report -----
+# /report opens the report system as a GUI. Players open tickets and talk to the
+# staff inside them; anybody with betteradmincommands.report.staff sees every
+# ticket, open and closed, and several staff can answer the same ticket.
+# Reports are stored in MySQL (they have no local safe file).
+report:
+  # The categories offered in "Create a report". Add or remove entries freely -
+  # the menu pages itself automatically when there are more than fit on a page.
+  presets:
+    hacking:
+      display: "&cHacking"
+      icon: DIAMOND_SWORD
+      description: "Cheating or unfair advantages"
+      target-required: true
+    rulebreaking:
+      display: "&6Rule breaking"
+      icon: WRITABLE_BOOK
+      description: "Breaking a server rule"
+      target-required: true
+    harassment:
+      display: "&dHarassment"
+      icon: PLAYER_HEAD
+      description: "Insults, threats or bullying"
+      target-required: true
+    scamming:
+      display: "&eScamming"
+      icon: GOLD_INGOT
+      description: "Scams or stolen items"
+      target-required: true
+    bugreport:
+      display: "&bBug report"
+      icon: TNT
+      description: "Something on the server is broken"
+      target-required: false
+
 # --------------------------------------------------------------- economy -----
 # The built-in economy is stored in MySQL and is exposed to other plugins
 # through Vault, so any Vault-aware plugin can read and change balances.
@@ -100,6 +201,31 @@ economy:
   # Smallest payment, to avoid pointless 0.0 transactions.
   minimum-payment: 0.01
 
+# --------------------------------------------------------------- menus -------
+# Layout of the menus that do not belong to one feature. Everything is a button;
+# the commands keep their text form (see the README).
+baltop:
+  gui-rows: 6
+mail:
+  # Rows of the mailbox menu (3-6); the bottom row is navigation.
+  gui-rows: 6
+ignorelist:
+  gui-rows: 6
+jails:
+  # The jail list menu. Cells are teleported to on click; /deljail is still the
+  # only way to remove one, so a misclick cannot empty a cell in use.
+  gui-rows: 6
+  gui-icon: IRON_BARS
+ptime:
+  # The personal time menu and /pweather's, both opened without an argument.
+  gui-rows: 3
+pweather:
+  gui-rows: 3
+unlimited:
+  gui-rows: 4
+realname:
+  gui-rows: 6
+
 # ---------------------------------------------------------------- spawn ------
 # Spawn coordinates are stored in spawn.yml next to config.yml, written by
 # /setspawn.
@@ -113,6 +239,17 @@ homes:
   # Default amount of homes per player. Override per player with the
   # permission "betteradmincommands.homes.limit.<amount>".
   max: 3
+  # /homes opens the home menu. Left-click teleports, right-click deletes.
+  gui-rows: 6
+  gui-icon: RED_BED
+
+# --------------------------------------------------------------- warps ------
+# /warps opens the warp menu, where every warp is a button.
+warps:
+  gui-rows: 6
+  gui-icon: COMPASS
+  # Optional per-warp icon, e.g. "spawn: NETHER_STAR".
+  gui-icons: {}
 
 # ------------------------------------------------------------ teleporting ----
 teleport:
@@ -203,6 +340,13 @@ kits:
       - "IRON_PICKAXE:1:EFFICIENCY:2"
       - "IRON_AXE"
       - "IRON_SHOVEL"
+
+# --------------------------------------------------------------- kit menu ---
+# /kit without an argument opens the kit menu. A single kit can give itself an
+# icon with "icon: <MATERIAL>" in its own section above.
+kit-gui:
+  rows: 3
+  icon: CHEST
 
 # ---------------------------------------------------------------- message ----
 messages:

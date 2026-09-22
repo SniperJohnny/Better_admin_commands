@@ -4,7 +4,7 @@ main: io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands
 api-version: '1.21'
 authors: [ SniperJohnny ]
 description: Admin, teleport, economy, social and moderation commands with MySQL storage and Vault economy.
-softdepend: [ Vault, LuckPerms ]
+softdepend: [ Vault, LuckPerms, PlaceholderAPI ]
 
 commands:
   # ---------------------------------------------------------------- admin ---
@@ -82,7 +82,7 @@ commands:
   nick:
     permission: "betteradmincommands.nick"
     description: "changes your nickname"
-    usage: /nick [player] <nickname|off> [luckperms-group]
+    usage: /nick <nickname|off> [luckperms-group]
   hat:
     permission: "betteradmincommands.hat"
     description: "puts the held item on your head"
@@ -90,7 +90,24 @@ commands:
   skinchange:
     permission: "betteradmincommands.skinchange"
     description: "puts the skin of another account on you"
-    usage: /skinchange [player] <username|off>
+    usage: /skinchange <username|uuid|off>
+  ah:
+    permission: "betteradmincommands.auction"
+    description: "opens the auction house"
+    usage: /ah
+  shop:
+    permission: "betteradmincommands.shop"
+    description: "opens the server shop"
+    aliases: [ shops ]
+    usage: /shop [search <text>|import]
+  report:
+    permission: "betteradmincommands.report"
+    description: "opens the report system"
+    usage: /report
+  reports:
+    permission: "betteradmincommands.report.staff"
+    description: "opens every report ticket"
+    usage: /reports
   craft:
     permission: "betteradmincommands.craft"
     description: "opens a portable crafting table"
@@ -123,12 +140,12 @@ commands:
     usage: /weather <sun|rain|thunder> [world]
   ptime:
     permission: "betteradmincommands.ptime"
-    description: "sets your personal time"
-    usage: /ptime <reset|day|noon|night|midnight|ticks>
+    description: "opens the time menu, or sets your personal time directly"
+    usage: /ptime [reset|day|noon|sunset|night|midnight|sunrise|<ticks>]
   pweather:
     permission: "betteradmincommands.pweather"
-    description: "sets your personal weather"
-    usage: /pweather <reset|sun|rain>
+    description: "opens the weather menu, or sets your personal weather directly"
+    usage: /pweather [reset|sun|rain]
   world:
     permission: "betteradmincommands.world"
     description: "lists or teleports you to a world"
@@ -178,14 +195,14 @@ commands:
   # -------------------------------------------------------------- economy ---
   balance:
     permission: "betteradmincommands.balance"
-    description: "shows a balance"
+    description: "shows a balance and opens the balance menu"
     aliases: [ bal, money ]
     usage: /balance [player]
   baltop:
     permission: "betteradmincommands.baltop"
     description: "shows the richest players"
     aliases: [ balancetop, moneytop ]
-    usage: /baltop [page]
+    usage: /baltop [page|list]
   pay:
     permission: "betteradmincommands.pay"
     description: "sends money to another player"
@@ -312,7 +329,7 @@ commands:
   ignorelist:
     permission: "betteradmincommands.ignorelist"
     description: "lists the players you ignore"
-    usage: /ignorelist
+    usage: /ignorelist [list]
   me:
     permission: "betteradmincommands.me"
     description: "broadcasts an action message"
@@ -320,9 +337,9 @@ commands:
     usage: /me <action>
   mail:
     permission: "betteradmincommands.mail"
-    description: "sends and reads offline messages"
+    description: "opens the mailbox menu; sends and reads offline messages"
     aliases: [ email ]
-    usage: /mail <send|read|clear> [player] [message]
+    usage: /mail [send|read|clear] [player] [message]
 
   # ----------------------------------------------------------------- info ---
   whois:
@@ -391,7 +408,7 @@ commands:
   unlimited:
     permission: "betteradmincommands.unlimited"
     description: "places and uses items without using them up"
-    usage: /unlimited [toggle|list|clear]
+    usage: /unlimited [toggle|on|off|list|clear]
   disposal:
     permission: "betteradmincommands.disposal"
     description: "opens a trash can"
@@ -512,8 +529,8 @@ commands:
     usage: /deljail <name>
   jails:
     permission: "betteradmincommands.jails"
-    description: "lists every jail"
-    usage: /jails
+    description: "lists every jail and opens the jail menu"
+    usage: /jails [list]
   unjail:
     permission: "betteradmincommands.unjail"
     description: "releases a player"
@@ -549,7 +566,7 @@ commands:
   realname:
     permission: "betteradmincommands.realname"
     description: "finds the player behind a nickname"
-    usage: /realname <nickname>
+    usage: /realname [nickname]
   motd:
     permission: "betteradmincommands.motd"
     description: "shows the message of the day"
@@ -615,6 +632,11 @@ permissions:
       betteradmincommands.enderchest: true
       betteradmincommands.nick: true
       betteradmincommands.skinchange: true
+      betteradmincommands.auction: true
+      betteradmincommands.auction.sell: true
+      betteradmincommands.shop: true
+      betteradmincommands.shop.sell: true
+      betteradmincommands.report: true
       betteradmincommands.ptime: true
       betteradmincommands.pweather: true
       betteradmincommands.kit: true
@@ -656,6 +678,7 @@ permissions:
       betteradmincommands.mute: true
       betteradmincommands.unmute: true
       betteradmincommands.socialspy: true
+      betteradmincommands.report.staff: true
       betteradmincommands.vanish: true
       betteradmincommands.vanish.see: true
       betteradmincommands.invsee: true
@@ -710,10 +733,9 @@ permissions:
       betteradmincommands.weather: true
       betteradmincommands.world: true
       betteradmincommands.eco: true
+      betteradmincommands.shop.admin: true
       betteradmincommands.balance.others: true
-      betteradmincommands.nick.others: true
       betteradmincommands.nick.color: true
-      betteradmincommands.skinchange.others: true
       betteradmincommands.enderchest.others: true
       betteradmincommands.command: true
       betteradmincommands.kick.notify: true
@@ -732,16 +754,17 @@ permissions:
       betteradmincommands.potion: true
       betteradmincommands.world.manage: true
 
+  # Importing the EconomyShopGUI shop files and re-reading them with /shop import.
+  betteradmincommands.shop.admin:
+    description: "Import the shop and re-read the EconomyShopGUI files."
+    default: op
+
   # Vanished players stay visible to whoever holds this, with a cue in the tab
   # list so they can be told apart from normal players.
   betteradmincommands.vanish.see:
     description: "See vanished players, marked in the tab list."
     default: op
 
-  # /skinchange <player> <username> renames someone else's skin.
-  betteradmincommands.skinchange.others:
-    description: "Changes the skin of another player."
-    default: op
 
   # Staff teleport instantly instead of waiting for the configured warm-up.
   betteradmincommands.teleport.bypass:

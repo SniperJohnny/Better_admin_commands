@@ -19,6 +19,8 @@ by **MySQL/MariaDB** with local safe-file fallback.
 - [How storage works](#how-storage-works)
 - [Configuration reference](#configuration-reference)
 - [Commands](#commands)
+- [Taking over EconomyShopGUI](#taking-over-economyshopgui)
+  - [Shop access](#shop-access)
 - [Permissions](#permissions)
 - [Economy and Vault](#economy-and-vault)
 - [Backups](#backups)
@@ -32,6 +34,8 @@ by **MySQL/MariaDB** with local safe-file fallback.
 | Area | What you get |
 | --- | --- |
 | **Admin** | gamemode, fly, god, vanish, heal, feed, speed, repair, give, clear, kits, broadcast, nick (tab list, name tag and chat, optionally with a LuckPerms group prefix), skin change, hat, craft, enderchest, invsee, sudo, exp, time/weather (personal too), world tools |
+| **Auction & shop** | a full `/ah` auction house as a GUI with sorting and search, and a `/shop` that takes over EconomyShopGUI's shops |
+| **Menus** | `/warps`, `/homes`, `/kit`, `/balance`, `/baltop`, `/mail`, `/ignorelist`, `/jails`, `/ptime`, `/pweather`, `/unlimited` and `/realname` open clickable menus instead of text lists (each keeps a text form) |
 | **Moderation** | kick, kickall, ban, tempban, IP ban, unban, unbanip, banlist, mute/unmute with timers |
 | **Economy** | balances, `/pay`, `/baltop`, `/eco`, `/worth`, `/sell`, exposed to other plugins through **Vault** |
 | **Teleporting** | spawn, warps, homes, tpa/tpahere with clickable accept/deny buttons, `/back`, `/tp`, `/tphere`, `/tpall`, `/tppos`, `/rtp` |
@@ -250,7 +254,7 @@ All settings live in `config.yml` (generated on first start).
 The file starts with a version marker:
 
 ```yaml
-config-version: 1
+config-version: 11
 ```
 
 On every start (and on `/betteradmincommands reload`) the plugin compares your file with the template
@@ -298,6 +302,53 @@ See [Renaming the management command](#renaming-the-management-command).
 | --- | --- | --- |
 | `nick.restricted` | `dev`, `owner` | Nicks and LuckPerms groups that only server operators may use (see [Nicknames](#nicknames)) |
 
+### `auction`
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `enabled` | `true` | Enable the auction house and its expiry task |
+| `gui-rows` | `6` | Chest rows per window (3-6); the bottom row is navigation |
+| `listing-hours` | `48` | How long a listing stays up, `0` never expires |
+| `max-listings-per-player` | `10` | Active listings a player may have at once |
+| `tax-percent` | `5.0` | Share of the sale price the server keeps |
+| `listing-fee-percent` | `0.0` | Up-front fee when listing, as a % of the price |
+| `min-price` / `max-price` | `1.0` / `1000000000.0` | Allowed price window |
+
+Browsing has a **sort** button that cycles through *newest*, *oldest*, *cheapest*, *most expensive*
+and *item name A-Z*, and a **search** button that filters the listings by item name (custom name or
+material) and by seller name. Both are remembered per player while they browse.
+
+### `shop`
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `enabled` | `true` | Enable `/shop` |
+| `gui-rows` | `6` | Chest rows per window (3-6); the bottom row is navigation |
+| `selling-enabled` | `true` | Let players sell items back where the import has a sell price |
+| `search-enabled` | `true` | Show the search button that filters every shop |
+| `access.permission-prefix` | `""` (open) | Permission every shop needs, with the shop id appended |
+| `access.free` | `[]` | Shop ids that stay open, or `*` for all of them |
+| `access.permissions.<shop-id>` | - | Per-shop permission; wins over the prefix |
+| `access.hide-locked` | `false` | Hide shops a player cannot use instead of greying them out |
+| `import.enabled` | `true` | Import the EconomyShopGUI files on start-up when no shop is stored yet |
+| `import.force` | `false` | Re-import and overwrite on every start-up |
+| `import.disable-plugin` | `true` | Switch EconomyShopGUI off once its shops are imported |
+| `import.max-items` | `5000` | Stop after this many imported items |
+| `import.folders` | `EconomyShopGUI`, `EconomyShopGUI-Premium` | Folders inside `plugins/` to read |
+
+Any folder in `plugins/` whose name starts with `EconomyShopGUI` is read as well, so the free and the
+premium edition are both found without editing the list. See
+[Taking over EconomyShopGUI](#taking-over-economyshopgui).
+
+### `report`
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `report.presets.<id>.display` | - | Name shown on the category button |
+| `report.presets.<id>.icon` | - | Material used as the button |
+| `report.presets.<id>.description` | - | Short line under the name |
+| `report.presets.<id>.target-required` | `true` | Whether a player is picked before the description |
+
 ### `economy`
 
 | Key | Default | Description |
@@ -319,6 +370,10 @@ See [Renaming the management command](#renaming-the-management-command).
 | `spawn.teleport-on-first-join` | `false` | Teleport only on a player's first join |
 | `spawn.respawn-at-spawn` | `false` | Respawn players at spawn |
 | `homes.max` | `3` | Default homes per player (override per player with `betteradmincommands.homes.limit.<amount>`) |
+| `homes.gui-rows` / `homes.gui-icon` | `6` / `RED_BED` | Layout of the `/homes` menu (left-click teleports, right-click deletes) |
+| `warps.gui-rows` / `warps.gui-icon` | `6` / `COMPASS` | Layout of the `/warps` menu |
+| `warps.gui-icons.<name>` | - | Optional icon for one warp, e.g. `spawn: NETHER_STAR` |
+| `kit-gui.rows` / `kit-gui.icon` | `3` / `CHEST` | Layout of the `/kit` menu; a single kit can set its own `icon:` |
 | `teleport.warmup-seconds` | `3` | Time a player must stand still before a delayed teleport (skipped by `betteradmincommands.teleport.bypass`) |
 | `teleport.request-expire-seconds` | `60` | Lifetime of a `/tpa` request |
 | `teleport.back-cooldown-seconds` | `0` | Cooldown before `/back` can be used again |
@@ -337,6 +392,19 @@ See [Renaming the management command](#renaming-the-management-command).
 | `rtp.max-radius` / `min-radius` | `2000` / `200` | Ring used by `/rtp` |
 | `rtp.max-attempts` | `30` | Attempts to find a safe spot |
 | `rtp.disabled-worlds` | nether/end | Worlds where `/rtp` is not allowed |
+
+### `baltop`, `mail`, `ignorelist`
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `baltop.gui-rows` | `6` | Rows of the leaderboard menu (3-6); the bottom row is navigation |
+| `mail.gui-rows` | `6` | Rows of the mailbox menu (3-6) |
+| `ignorelist.gui-rows` | `6` | Rows of the ignore menu (3-6) |
+| `jails.gui-rows` / `jails.gui-icon` | `6` / `IRON_BARS` | Layout of the jail list (clicking a cell teleports to it) |
+| `ptime.gui-rows` | `3` | Rows of the personal time menu |
+| `pweather.gui-rows` | `3` | Rows of the personal weather menu |
+| `unlimited.gui-rows` | `4` | Rows of the unlimited-items menu |
+| `realname.gui-rows` | `6` | Rows of the nickname overview |
 
 ### `worth`, `kits`, `messages`
 
@@ -412,11 +480,14 @@ maintenance windows, for example while another plugin is updated or a database m
 | `/near` | `/near [radius]` | `betteradmincommands.near` |
 | `/give` | `/give <player> <item> [amount]` | `betteradmincommands.give` |
 | `/clear` | `/clear [player]` | `betteradmincommands.clear` |
-| `/kit` | `/kit <name>` | `betteradmincommands.kit` (or `…kit.<name>`) |
+| `/kit` | `/kit [name]` | `betteradmincommands.kit` (or `…kit.<name>`) |
 | `/broadcast` | `/broadcast <message>` | `betteradmincommands.broadcast` |
-| `/nick` | `/nick [player] <nickname\|off> [luckperms-group]` | `betteradmincommands.nick` |
+| `/nick` | `/nick <nickname\|off> [luckperms-group]` | `betteradmincommands.nick` |
 | `/hat` | `/hat` | `betteradmincommands.hat` |
-| `/skinchange` | `/skinchange [player] <username\|off>` | `betteradmincommands.skinchange` |
+| `/skinchange` | `/skinchange <username\|uuid\|off>` | `betteradmincommands.skinchange` |
+| `/ah` | `/ah` | `betteradmincommands.auction` |
+| `/report` | `/report` | `betteradmincommands.report` |
+| `/reports` | `/reports` | `betteradmincommands.report.staff` |
 | `/craft` | `/craft` | `betteradmincommands.craft` |
 | `/enderchest` | `/enderchest [player]` | `betteradmincommands.enderchest` |
 | `/invsee` | `/invsee <player>` | `betteradmincommands.invsee` |
@@ -424,22 +495,21 @@ maintenance windows, for example while another plugin is updated or a database m
 | `/exp` | `/exp <show\|give\|set> [player] [amount]` | `betteradmincommands.exp` |
 | `/time` | `/time <set\|add> <value> [world]` | `betteradmincommands.time` |
 | `/weather` | `/weather <sun\|rain\|thunder> [world]` | `betteradmincommands.weather` |
-| `/ptime` | `/ptime <reset\|day\|noon\|night\|midnight\|ticks>` | `betteradmincommands.ptime` |
-| `/pweather` | `/pweather <reset\|sun\|rain>` | `betteradmincommands.pweather` |
+| `/ptime` | `/ptime [value]` | `betteradmincommands.ptime` |
+| `/pweather` | `/pweather [value]` | `betteradmincommands.pweather` |
 | `/world` | `/world [name]` | `betteradmincommands.world` |
 
 #### Nicknames
 
-`/nick <nickname>` replaces the player's name in the **tab list**, in the **name tag** above their
-head and in **chat**. The nickname is stored in the database, so it survives restarts, and
-`/realname <nick>` finds the player behind it again.
+`/nick <nickname>` changes **your own** name in the **tab list**, above your head and in **chat**.
+The nickname is stored in the database, so it survives restarts, and `/realname <nick>` finds the
+player behind it again. Only your own name can be changed - there is no way to rename someone else.
 
 ```
-/nick <nickname>                   your own nickname
-/nick <nickname> <group>           borrow the prefix of a LuckPerms group
-/nick <player> <nickname> [group]  someone else, needs betteradmincommands.nick.others
-/nick <nickname> off               drop the group prefix, keep the nickname
-/nick off                          remove the nickname entirely
+/nick <nickname>          your nickname
+/nick <nickname> <group>  borrow the prefix of a LuckPerms group
+/nick <nickname> off      drop the group prefix, keep the nickname
+/nick off                 remove the nickname entirely
 ```
 
 The group argument does **not** change the player's permissions or their real LuckPerms group - it
@@ -454,21 +524,38 @@ Chat works out of the box because Paper's default chat renderer uses the display
 plugin formats chat, make it use the display name (`%player_displayname%` with PlaceholderAPI)
 rather than the real name.
 
+**Showing the nickname in TAB (or another tab list plugin).** A plugin such as TAB renders the tab
+list and the name tags from its own packets, so it overwrites whatever the server sets. Instead of
+fighting over them, this plugin publishes the nickname to PlaceholderAPI and lets that plugin do the
+drawing:
+
+| Placeholder | Value |
+| --- | --- |
+| `%betteradmincommands_nickname%` | group prefix + nickname, or the real name when none is set |
+| `%betteradmincommands_nickname_raw%` | only the nickname, or the real name when none is set |
+| `%betteradmincommands_nick_prefix%` | the borrowed LuckPerms group prefix, or empty |
+
+For TAB, set `customtabname` in `groups.yml`/`users.yml` to `%betteradmincommands_nickname%`, and
+replace `%essentials_nickname%` with the same placeholder in the `nick` condition in `config.yml`.
+Note that a name tag plugin can only put text *around* a player's real name, so above the head the
+nickname appears together with the real name unless you let the plugin use packets for it.
+
 #### Skins
 
-`/skinchange <username>` puts the skin of a premium account on a player.
+`/skinchange <username|uuid>` puts the skin of a premium account on **you**. Only your own skin can
+be changed - there is no way to change someone else's skin.
 
 ```
-/skinchange <username>            your own skin
-/skinchange <player> <username>   someone else, needs betteradmincommands.skinchange.others
-/skinchange off                   back to your own skin
+/skinchange <username>   use the skin of that premium account
+/skinchange <uuid>       the same, naming the account by its UUID
+/skinchange off          back to your own skin
 ```
 
 **Where the skin comes from.** There is no NameMC API - NameMC is a viewer for Mojang's own player
 data. The plugin therefore asks Mojang directly:
 
 1. `api.minecraftservices.com` resolves the name to a UUID (`api.mojang.com` is tried as a fallback,
-   because that host has had outages and blocks),
+   because that host has had outages and blocks) - skipped when you give the UUID straight away,
 2. `sessionserver.mojang.com` returns the skin as a texture **with its Mojang signature**.
 
 The signature matters: clients refuse to render unsigned textures. That is also why this works on an
@@ -477,7 +564,7 @@ offline-mode server, while only the command's user - not the target account - ha
 **Behaviour**
 
 - The lookup runs asynchronously, never on the server thread, and answers with one of: skin applied,
-  "no premium account with that name", or "Mojang could not be reached".
+  "no premium account with that name or UUID", or "Mojang could not be reached".
 - Results are cached for `skin.cache-minutes` (default 60), and asking for the same name twice at the
   same time only sends one request, so the server does not get rate limited.
 - The borrowed skin is stored in the database and applied again on every join, so it survives a
@@ -488,6 +575,91 @@ offline-mode server, while only the command's user - not the target account - ha
 
 The server needs outbound HTTPS access to `api.mojang.com` and `sessionserver.mojang.com`; no API key
 is required.
+
+#### Auction House
+
+`/ah` opens the whole auction house as a GUI - there is no second command for it:
+
+- **Browse** - a paged grid of every active listing. Click one to see the item, the
+  price and how long it still runs, then confirm the purchase. A **sort** button cycles
+  through newest, oldest, cheapest, most expensive and item name A-Z, and a **search**
+  button filters by item name (custom name or material) and by seller name; both stick
+  until you clear them.
+- **Sell held item** - hold an item, press the button and type the price in chat. The
+  stack is taken out of your hand once the listing exists.
+- **My listings** - everything you listed; click a listing to cancel it.
+- **Claims** - items from cancelled or expired listings wait here until collected.
+
+The buyer pays the listed price and the seller receives it minus `auction.tax-percent`.
+An optional up-front `auction.listing-fee-percent` and the price window
+(`auction.min-price` / `auction.max-price`) are enforced. `auction.listing-hours` sets
+how long a listing stays up (`0` = never) and `auction.max-listings-per-player` caps
+how many a player may have at once.
+
+Listings live in MySQL (`<prefix>ah_listings`) and are mirrored into
+`data/auction.yml`, so they survive a restart and keep working while MySQL is down.
+
+#### Shop
+
+`/shop` opens the server shop, which is filled by importing EconomyShopGUI (see
+[Taking over EconomyShopGUI](#taking-over-economyshopgui)):
+
+- **Shop list** - one button per imported shop. When there is only one shop it opens
+  straight away.
+- **Shop page** - the items of the shop in the slots they were imported into, with the
+  imported display names, lore and enchantments kept. Extra items spill onto further
+  pages instead of overwriting each other.
+- **Item view** - the item plus one-click **Buy 1/8/16/32/64**, a **custom amount** you
+  type in chat, and - where the import has a sell price - **Sell 1**, **Sell 8** and
+  **Sell everything** straight out of your inventory.
+- **Search** - `/shop search <text>`, or the search button, filters every shop at once by
+  item name and pages through the results.
+
+Prices are per unit, where a unit is the amount stored on the entry, so an `amount: 16`
+entry sells bundles of sixteen and only complete bundles are bought back. The shop needs
+MySQL (there is a local mirror, but the import itself is a database write).
+
+#### Editing the shop in game
+
+`/shop edit` (or the **Edit shop** button, both for `betteradmincommands.shop.admin`) changes
+the shop without touching a single file:
+
+- **Shop editor** - every shop with its item count and its current access, and a count of entries
+  that came out of the import *without a price*.
+- **Shop view** - the entries in their slots; click one to edit it.
+- **Entry** - set the buy price, the sell price (`off` removes it), the amount one purchase hands
+  out, or **take it off sale**; or **delete** the entry behind a confirmation.
+- **Shop settings** - set the permission that unlocks the shop, or clear it. Written to
+  `shop.access.permissions` in `config.yml` for you.
+
+Edits go into memory, the local safe file **and** MySQL, so they survive a restart. One thing to
+know: a re-import with `/shop import` (or `shop.import.force`) rebuilds the shop from the
+EconomyShopGUI files and therefore discards in-game edits - the import button says so.
+
+#### Reports
+
+`/report` is the whole report system as a GUI:
+
+- **Create a report** - pick a category, then the player it is about (categories that
+  need no player skip that step), then describe it in chat.
+- **My tickets** - every ticket you opened, open and closed, with an unread marker.
+- **Staff** with `betteradmincommands.report.staff` also get **All open** and **All
+  closed** lists, and `/reports` jumps straight to the open ones.
+
+A ticket is a two-way thread: the player and **any number of staff** reply into it.
+Everybody who took part is a participant - simply opening a ticket adds you to it -
+and when a message arrives the other participants who are online are told in chat
+with a clickable button, and again when they join the server if they still have
+unread messages. A ticket can be closed and reopened; the ticket menu shows who is
+currently on it.
+
+Categories live in `report.presets`; add or remove entries and the menu pages itself
+automatically. The shipped list is `hacking`, `rulebreaking`, `harassment`,
+`scamming` and `bugreport`.
+
+Reports are stored in MySQL (`<prefix>reports`, `<prefix>report_messages`,
+`<prefix>report_participants`). Unlike the economy, homes and mail they have **no
+local safe file**, so the report system needs the database to be reachable.
 
 ### Moderation
 
@@ -530,11 +702,13 @@ Vanish state is kept in memory: a restart brings everyone back visible.
 | Command | Usage | Permission |
 | --- | --- | --- |
 | `/balance` | `/balance [player]` | `betteradmincommands.balance` |
-| `/baltop` | `/baltop [page]` | `betteradmincommands.baltop` |
+| `/baltop` | `/baltop [page\|list]` | `betteradmincommands.baltop` |
 | `/pay` | `/pay <player> <amount>` | `betteradmincommands.pay` |
 | `/eco` | `/eco <give\|take\|set\|reset\|balance> <player> [amount]` | `betteradmincommands.eco` |
 | `/worth` | `/worth [item]` | `betteradmincommands.worth` |
 | `/sell` | `/sell <hand\|all\|amount>` | `betteradmincommands.sell` |
+| `/ah` | `/ah` | `betteradmincommands.auction` |
+| `/shop` | `/shop [search <text>\|edit\|import]` (alias `/shops`) | `betteradmincommands.shop` |
 
 ### Teleporting
 
@@ -563,6 +737,59 @@ Vanish state is kept in memory: a restart brings everyone back visible.
 | `/delhome` | `/delhome <name>` | `betteradmincommands.delhome` |
 | `/homes` | `/homes` | `betteradmincommands.homes` |
 
+#### Economy and social menus
+
+- **`/balance`** - prints the amount in chat as always **and** opens the balance menu: your balance, a
+  **Send money** flow that picks the receiver from the online players (so no name to type) and then
+  asks for the amount in chat, and a shortcut to the leaderboard. The chat line is kept because a
+  balance is a single number people want to read without opening a window.
+- **`/baltop`** - the leaderboard as a paged grid of heads, one per player, with the rank in front of
+  the name and the top three marked. A **You are #n** button shows where the viewer stands without
+  paging through, and highlights their own entry. `/baltop <page>` and `/baltop list` still print the
+  text version.
+- **`/mail`** - the mailbox: the inbox newest first, one head per sender, with the date, a preview and a
+  **New message** marker. Opening a message marks it read and offers **Reply** (to the sender, online or
+  not) and **Delete**. The menu can also **Write a message** - pick an online player, or type a name for
+  someone offline - **Mark all as read** and **Clear mailbox** behind a confirmation. The `/mail send`,
+  `/mail read` and `/mail clear` subcommands are unchanged.
+- **`/ignorelist`** - every ignored name as a head; **clicking one stops ignoring that player** (safe,
+  since ignoring them again is one click). **Ignore a player** picks someone online or lets you type a
+  name, for players who are offline. `/ignorelist list` prints the text version.
+
+#### Staff and personal-setting menus
+
+- **`/jails`** - every cell with its world and coordinates; **clicking one teleports you to it**, which
+  is what the list is for (inspecting a cell, or fetching whoever is in it). Deleting a cell is
+  deliberately *not* in the menu: `/deljail` stays the only way, so a misclick cannot empty a cell that
+  someone is sitting in. `/jails list` prints the text version.
+- **`/ptime`** - one button per preset (day, noon, sunset, night, midnight, sunrise), a **reset**, a
+  custom tick count typed in chat, and a header showing your current offset. `/ptime <value>` still
+  works, and both forms accept exactly the same values.
+- **`/pweather`** - **Sun**, **Rain** and **Reset**, with a header showing which of them is active
+  instead of making you remember.
+- **`/unlimited`** - a switch that shows the current state, an explicit **Turn it off**, and - for
+  `betteradmincommands.unlimited.list` - a list of everyone who has the mode on. `/unlimited` with an
+  argument behaves as before (`toggle`, `on`, `off`, `list`, `clear`).
+- **`/realname`** - every online player using a nickname, sorted by nickname, with the real account name
+  underneath. Left-click confirms who they are, right-click shows their balance if you may see it, and
+  **Look up a nickname** asks about one directly. `/realname <nickname>` gives the same answer as before.
+
+Every transfer made through the balance menu goes through the same economy code as `/pay`, so the
+payment rules cannot differ between the two.
+
+#### Warp, home and kit menus
+
+`/warps`, `/homes` and `/kit` each open a menu instead of a text list:
+
+- **`/warps`** - every warp as a button that teleports on click. Warps a player may not use are shown
+  greyed out, so they can see that a warp exists without being able to jump there. `/warps list`
+  still prints the plain list, which is also what the console gets.
+- **`/homes`** - your homes; **left-click teleports**, **right-click opens a confirmation** before the
+  home is deleted. `/homes list` prints the text version.
+- **`/kit`** - every kit with its contents, cooldown and permission state. Kits that are on cooldown
+  or not for you are greyed out with the reason, so "not yet" and "not for me" look different.
+  `/kit <name>` still gives a kit directly.
+
 #### Teleport requests
 
 When someone sends a `/tpa` or `/tpahere` request, the player who has to answer it gets a notice with
@@ -588,9 +815,9 @@ every teleport, including `/spawn`, `/home`, `/warp` and `/back`.
 | `/reply` | `/reply <message>` | `betteradmincommands.reply` |
 | `/socialspy` | `/socialspy` | `betteradmincommands.socialspy` |
 | `/ignore` | `/ignore <player>` | `betteradmincommands.ignore` |
-| `/ignorelist` | `/ignorelist` | `betteradmincommands.ignorelist` |
+| `/ignorelist` | `/ignorelist [list]` | `betteradmincommands.ignorelist` |
 | `/me` | `/me <action>` | `betteradmincommands.me` |
-| `/mail` | `/mail <send\|read\|clear> [player] [message]` | `betteradmincommands.mail` |
+| `/mail` | `/mail [send\|read\|clear] [player] [message]` | `betteradmincommands.mail` |
 
 ### Info
 
@@ -603,7 +830,7 @@ every teleport, including `/spawn`, `/home`, `/warp` and `/back`.
 | `/gc` | `/gc` | `betteradmincommands.gc` |
 | `/afk` | `/afk [reason]` | `betteradmincommands.afk` |
 | `/playtime` | `/playtime [player]` | `betteradmincommands.playtime` |
-| `/realname` | `/realname <nickname>` | `betteradmincommands.realname` |
+| `/realname` | `/realname [nickname]` | `betteradmincommands.realname` |
 | `/depth` | `/depth` | `betteradmincommands.depth` |
 | `/getpos` | `/getpos [player]` | `betteradmincommands.getpos` |
 | `/motd` | `/motd` | `betteradmincommands.motd` |
@@ -621,7 +848,7 @@ every teleport, including `/spawn`, `/home`, `/warp` and `/back`.
 | `/condense` | `/condense` | `betteradmincommands.condense` |
 | `/stack` | `/stack` | `betteradmincommands.stack` |
 | `/sort` | `/sort` | `betteradmincommands.sort` |
-| `/unlimited` | `/unlimited [toggle\|list\|clear]` | `betteradmincommands.unlimited` |
+| `/unlimited` | `/unlimited [toggle\|on\|off\|list\|clear]` | `betteradmincommands.unlimited` |
 | `/disposal` | `/disposal` | `betteradmincommands.disposal` |
 | `/powertool` | `/powertool <command\|clear\|list>` | `betteradmincommands.powertool` |
 | `/top` | `/top` | `betteradmincommands.top` |
@@ -652,9 +879,99 @@ every teleport, including `/spawn`, `/home`, `/warp` and `/back`.
 | `/jail` | `/jail <player> [cell] [duration]` | `betteradmincommands.jail` |
 | `/setjail` | `/setjail <name>` | `betteradmincommands.setjail` |
 | `/deljail` | `/deljail <name>` | `betteradmincommands.deljail` |
-| `/jails` | `/jails` | `betteradmincommands.jails` |
+| `/jails` | `/jails [list]` | `betteradmincommands.jails` |
 | `/unjail` | `/unjail <player>` | `betteradmincommands.unjail` |
 | `/togglejail` | `/togglejail <player> [cell]` | `betteradmincommands.togglejail` |
+
+---
+
+## Taking over EconomyShopGUI
+
+The shop is not written by hand — it is imported from **EconomyShopGUI**. On the first start after
+updating, the plugin reads every YAML file it finds in `plugins/EconomyShopGUI*/`, turns the entries
+into its own shops, and then **switches EconomyShopGUI off** (`shop.import.disable-plugin`, on by
+default) so the two cannot both answer to `/shop`.
+
+The importer is deliberately version-proof: instead of relying on one edition's layout it walks the
+whole file and treats *anything that names a material* as a shop entry. That covers the free and the
+premium edition, `pages:` layouts, `sections:` layouts and shop files written by hand.
+
+**One file becomes one shop.** The shop is named after the file, unless the file names itself with
+`shop-name` / `title` / `display-name`. An `icon:` (or `display-item:`) sets the button in the shop
+list, and `rows:` / `size:` sets the window height.
+
+These spellings are understood on an entry:
+
+| What | Accepted keys |
+| --- | --- |
+| Item | `material`, `item`, `type` |
+| Buy price | `buy`, `buy-price`, `price`, `cost`, `money`, or a nested `price: { … }` section |
+| Sell price | `sell`, `sell-price`, `sell-amount` |
+| Amount | `amount`, `quantity`, `give-amount` |
+| Looks | `display-name`/`name`, `lore`, `enchantments`, `custom-model-data`, `skull-owner` |
+| Place | `slot`, `page` |
+
+Slots and pages are used where they fit; an entry whose slot collides or falls outside the window is
+moved to the next free slot instead of disappearing, so nothing is ever lost in the import. Entries
+can also be written as a plain list of material names, or as a list of maps.
+
+### Migrating
+
+1. Make sure EconomyShopGUI is installed and working as usual. (Prices can be corrected in game
+   afterwards with `/shop edit` - see above.)
+2. Update this plugin and restart once. Watch the console for
+   `Imported <n> shop(s) with <m> item(s) from EconomyShopGUI`.
+3. Run `/shop`. The shops, pages, prices and displays should match what you had.
+4. Keep the `plugins/EconomyShopGUI*/` folder for a while as a backup; it is no longer read from once
+   the shop is stored in the database.
+
+Editing prices afterwards is done in `/shop import`'s source (the EconomyShopGUI files) followed by
+`/shop import`, or directly in the `shop_items` table. `/shop import` re-reads the files on demand and
+is limited to `betteradmincommands.shop.admin`.
+
+### Shop access
+
+Every shop can be locked behind its own permission. There are three ways, checked in this order:
+
+1. `shop.access.permissions.<shop-id>` — an explicit permission for one shop, e.g.
+   ```yaml
+   shop:
+     access:
+       permissions:
+         vip: "betteradmincommands.shop.vip"
+   ```
+2. `shop.access.free` — a list of shop ids that stay open whatever the prefix says (`*` = all of them).
+3. `shop.access.permission-prefix` — the permission every other shop needs, with the shop id appended.
+   With the prefix `betteradmincommands.shop.` the shop `blocks` needs
+   `betteradmincommands.shop.blocks`. The id is the file path inside the plugin folder without the
+   extension, with anything that is not `a-z`, `0-9`, `_`, `-` or `.` turned into a `.` — so
+   `blocks/mob_drops.yml` becomes `blocks.mob_drops`.
+
+Shop ids are what `/shop` lists and what `shop_items.shop` holds, so they are easy to look up.
+
+**The default prefix is empty, which leaves every shop open** — nothing changes until you set it.
+
+A locked shop is handled in three places, so it cannot be worked around:
+
+- it shows greyed out in the shop list with the permission it needs (`shop.access.hide-locked: true`
+  removes it from the list instead);
+- `/shop <id>` and any direct attempt to open it — including from the **search results**, which are
+  filtered — is refused;
+- buying, selling and selling everything re-check the permission server side, so a stale menu cannot
+  be used after a permission is revoked.
+
+Staff holding `betteradmincommands.shop.admin` may use every shop, which doubles as the way to
+preview a shop before granting it out.
+
+### What is not carried over
+
+- **EconomyShopGUI's own commands** (`/sellall`, `/shop reload`, its `/balance` integration, …) go away
+  with the plugin. `/sell`, `/worth` and `/balance` from this plugin cover the common cases.
+- **EconomyShopGUI's permission nodes** (`economyshopgui.shop.<name>`, …) are not used — they are
+  replaced by `shop.access` below, so a per-shop permission has to be written once.
+- **Player heads by name** are imported without their skin when the owning account is not already
+  cached on the server, because looking a name up over the network during the import would freeze the
+  start-up. Set the head's owner in-game afterwards, or use a `custom-model-data` entry instead.
 
 ---
 
@@ -674,13 +991,19 @@ Extra permissions used for finer control:
 - `betteradmincommands.vanish.see` — see vanished players in the world and in the tab list, where
   they are marked with `moderation.vanish-tab-cue` (already part of `betteradmincommands.mod`)
 - `betteradmincommands.getpos.others`, `.playtime.others`, `.balance.others` — target other players
-- `betteradmincommands.nick.others`, `.nick.color` — nickname others / use colour codes
+- `betteradmincommands.nick.color` — use colour codes in a nickname
+- `betteradmincommands.auction` / `.auction.sell` — open the auction house / list items (both default `true`)
+- `betteradmincommands.shop` / `.shop.sell` — open the shop / sell to it (both default `true`);
+  `.shop.admin` (default `op`) — import the EconomyShopGUI files with `/shop import` and use every
+  shop regardless of `shop.access`
+- `betteradmincommands.shop.<shop-id>` — access to a single shop when `shop.access.permission-prefix`
+  is set (see [Shop access](#shop-access)); the node is written once via `shop.access` instead
+- `betteradmincommands.report` (default `true`) — open report tickets; `.report.staff`
+  (default `op`) — see every ticket and answer them
 - `betteradmincommands.enderchest.others`, `.broadcast.receive`, `.unlimited.list`
 - `betteradmincommands.kick.notify`, `.ban.notify`, `.unban.notify` — receive staff notifications
 - `betteradmincommands.world.manage` — create/remove worlds
 - `betteradmincommands.teleport.bypass` — skips the teleport warm-up and the `/back` cooldown (granted to admins)
-- `betteradmincommands.skinchange.others` — change another player's skin (the self-only
-  `betteradmincommands.skinchange` is part of `betteradmincommands.player`)
 - `betteradmincommands.homes.limit.<amount>` — per-player home limit override
 - `betteradmincommands.kit.<name>` — access to a specific kit
 - `betteradmincommands.warp.public` (default `true`) and `betteradmincommands.warp.<name>` — warp access
@@ -758,6 +1081,9 @@ data/players.yml                local mirror of the players table
 data/homes.yml                  local mirror of the homes table
 data/player_settings.yml        local mirror of the player_settings table
 data/mail.yml                   local mirror of the mail table
+data/auction.yml                local mirror of the ah_listings table
+data/shops.yml                  local mirror of the shops table
+data/shop_items.yml             local mirror of the shop_items table
 backups/<timestamp>/            table dumps created by /betteradmincommands backup
 ```
 

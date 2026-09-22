@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.commands.economy;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.economy.EconomyService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import org.bukkit.OfflinePlayer;
@@ -30,10 +31,6 @@ public class Pay_Command implements TabExecutor {
             Msg.playerOnly(sender);
             return true;
         }
-        if (!plugin.getConfig().getBoolean("economy.allow-payments", true)) {
-            Msg.error(self, "Payments are disabled on this server.");
-            return true;
-        }
         if (args.length < 2) {
             Msg.usage(sender, command);
             return true;
@@ -42,29 +39,30 @@ public class Pay_Command implements TabExecutor {
         if (target == null) {
             return true;
         }
-        if (target.getUniqueId().equals(self.getUniqueId())) {
-            Msg.error(self, "You cannot pay yourself.");
-            return true;
-        }
         Double amount = Targets.parseDouble(args[1]);
-        double minimum = plugin.getConfig().getDouble("economy.minimum-payment", 0.01);
-        if (amount == null || amount < minimum) {
-            Msg.error(self, "The amount has to be at least " + plugin.economy().format(minimum) + ".");
+        if (amount == null) {
+            Msg.error(self, "The amount has to be at least "
+                    + plugin.economy().format(plugin.economy().minimumPayment()) + ".");
             return true;
         }
 
-        if (!plugin.economy().withdraw(self.getUniqueId(), amount)) {
-            Msg.error(self, "You do not have enough money. Your balance is "
+        // The rules live in the economy service, so /pay and the balance menu
+        // behave identically.
+        EconomyService.TransferResult result = plugin.economy().transfer(self, target.getUniqueId(), amount);
+        switch (result) {
+            case SUCCESS -> {
+                Msg.success(self, "You paid " + plugin.economy().format(amount) + " to " + target.getName() + ".");
+                if (target.isOnline() && target.getPlayer() != null) {
+                    Msg.send(target.getPlayer(), "&7You received &a" + plugin.economy().format(amount)
+                            + " &7from &f" + self.getName() + "&7.");
+                }
+            }
+            case PAYMENTS_DISABLED -> Msg.error(self, "Payments are disabled on this server.");
+            case SELF -> Msg.error(self, "You cannot pay yourself.");
+            case TOO_SMALL -> Msg.error(self, "The amount has to be at least "
+                    + plugin.economy().format(plugin.economy().minimumPayment()) + ".");
+            case TOO_POOR -> Msg.error(self, "You do not have enough money. Your balance is "
                     + plugin.economy().format(plugin.economy().getBalance(self.getUniqueId())) + ".");
-            return true;
-        }
-        plugin.economy().deposit(target.getUniqueId(), amount);
-        plugin.economy().saveAsync();
-
-        Msg.success(self, "You paid " + plugin.economy().format(amount) + " to " + target.getName() + ".");
-        if (target.isOnline() && target.getPlayer() != null) {
-            Msg.send(target.getPlayer(), "&7You received &a" + plugin.economy().format(amount)
-                    + " &7from &f" + self.getName() + "&7.");
         }
         return true;
     }

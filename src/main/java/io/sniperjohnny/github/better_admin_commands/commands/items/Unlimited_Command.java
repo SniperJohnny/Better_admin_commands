@@ -26,7 +26,17 @@ public class Unlimited_Command implements TabExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String @NotNull[] args) {
-        String action = args.length >= 1 ? args[0].toLowerCase(Locale.ROOT) : "toggle";
+        // Without an argument this opens the menu, which shows the current state
+        // instead of making the player remember whether the mode is on.
+        if (args.length < 1) {
+            if (!(sender instanceof Player player)) {
+                Msg.playerOnly(sender);
+                return true;
+            }
+            plugin.unlimitedGui().open(player);
+            return true;
+        }
+        String action = args[0].toLowerCase(Locale.ROOT);
 
         if (action.equals("list")) {
             List<String> names = plugin.unlimited().activePlayers();
@@ -44,15 +54,27 @@ public class Unlimited_Command implements TabExecutor {
             Msg.playerOnly(sender);
             return true;
         }
-        if (action.equals("clear") || action.equals("off")) {
-            plugin.unlimited().clear(player);
-            Msg.success(player, "Unlimited items disabled.");
-            return true;
+        switch (action) {
+            case "clear", "off" -> {
+                plugin.unlimited().clear(player);
+                Msg.success(player, "Unlimited items disabled.");
+            }
+            case "on" -> {
+                if (plugin.unlimited().isUnlimited(player)) {
+                    Msg.send(player, "&7Unlimited items are already on.");
+                    return true;
+                }
+                plugin.unlimited().toggle(player);
+                Msg.success(player, "Unlimited items enabled - placed blocks and eaten items are kept.");
+            }
+            case "toggle" -> {
+                boolean enabled = plugin.unlimited().toggle(player);
+                Msg.success(player, enabled
+                        ? "Unlimited items enabled - placed blocks and eaten items are kept."
+                        : "Unlimited items disabled.");
+            }
+            default -> Msg.error(player, "Use /unlimited [toggle|on|off|list|clear].");
         }
-        boolean enabled = plugin.unlimited().toggle(player);
-        Msg.success(player, enabled
-                ? "Unlimited items enabled - placed blocks and eaten items are kept."
-                : "Unlimited items disabled.");
         return true;
     }
 

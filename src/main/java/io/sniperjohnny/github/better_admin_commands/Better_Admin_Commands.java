@@ -5,7 +5,11 @@ import io.sniperjohnny.github.better_admin_commands.commands.Fly_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Gamemode_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Smite_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Unban_Command;
+import io.sniperjohnny.github.better_admin_commands.auction.AuctionService;
+import io.sniperjohnny.github.better_admin_commands.auction.Auction_Command;
 import io.sniperjohnny.github.better_admin_commands.backup.BackupService;
+import io.sniperjohnny.github.better_admin_commands.report.ReportService;
+import io.sniperjohnny.github.better_admin_commands.report.Report_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Disabled_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Plugin_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Root_Command;
@@ -55,6 +59,8 @@ import io.sniperjohnny.github.better_admin_commands.commands.teleport.Vertical_C
 import io.sniperjohnny.github.better_admin_commands.economy.WorthManager;
 import io.sniperjohnny.github.better_admin_commands.jail.JailManager;
 import io.sniperjohnny.github.better_admin_commands.listeners.Jail_Listener;
+import io.sniperjohnny.github.better_admin_commands.gui.ChatPromptService;
+import io.sniperjohnny.github.better_admin_commands.gui.Gui_Listener;
 import io.sniperjohnny.github.better_admin_commands.listeners.Powertool_Listener;
 import io.sniperjohnny.github.better_admin_commands.listeners.Unlimited_Listener;
 import io.sniperjohnny.github.better_admin_commands.player.PlaytimeService;
@@ -130,9 +136,25 @@ import io.sniperjohnny.github.better_admin_commands.commands.teleport.Tptoggle_C
 import io.sniperjohnny.github.better_admin_commands.commands.teleport.Tpahere_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.teleport.Warp_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.teleport.Warps_Command;
+import io.sniperjohnny.github.better_admin_commands.economy.Balance_Gui;
+import io.sniperjohnny.github.better_admin_commands.economy.Baltop_Gui;
 import io.sniperjohnny.github.better_admin_commands.economy.EconomyService;
 import io.sniperjohnny.github.better_admin_commands.economy.VaultEconomy;
+import io.sniperjohnny.github.better_admin_commands.jail.Jails_Gui;
+import io.sniperjohnny.github.better_admin_commands.mail.Mail_Gui;
+import io.sniperjohnny.github.better_admin_commands.player.IgnoreList_Gui;
+import io.sniperjohnny.github.better_admin_commands.player.Ptime_Gui;
+import io.sniperjohnny.github.better_admin_commands.player.Pweather_Gui;
+import io.sniperjohnny.github.better_admin_commands.player.Realname_Gui;
+import io.sniperjohnny.github.better_admin_commands.player.Unlimited_Gui;
 import io.sniperjohnny.github.better_admin_commands.home.HomeManager;
+import io.sniperjohnny.github.better_admin_commands.home.Home_Gui;
+import io.sniperjohnny.github.better_admin_commands.kit.Kit_Gui;
+import io.sniperjohnny.github.better_admin_commands.shop.EconomyShopGuiImporter;
+import io.sniperjohnny.github.better_admin_commands.shop.ShopService;
+import io.sniperjohnny.github.better_admin_commands.shop.Shop_Command;
+import io.sniperjohnny.github.better_admin_commands.shop.Shop_Editor;
+import io.sniperjohnny.github.better_admin_commands.warp.Warp_Gui;
 import io.sniperjohnny.github.better_admin_commands.kit.KitManager;
 import io.sniperjohnny.github.better_admin_commands.listeners.Activity_Listener;
 import io.sniperjohnny.github.better_admin_commands.listeners.Chat_Listener;
@@ -141,6 +163,7 @@ import io.sniperjohnny.github.better_admin_commands.listeners.Quit_Listener;
 import io.sniperjohnny.github.better_admin_commands.listeners.Respawn_Listener;
 import io.sniperjohnny.github.better_admin_commands.mail.MailService;
 import io.sniperjohnny.github.better_admin_commands.moderation.MuteService;
+import io.sniperjohnny.github.better_admin_commands.placeholder.NicknamePlaceholders;
 import io.sniperjohnny.github.better_admin_commands.player.AfkService;
 import io.sniperjohnny.github.better_admin_commands.player.NickService;
 import io.sniperjohnny.github.better_admin_commands.player.PlayerPreferences;
@@ -167,6 +190,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -186,6 +210,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private LocalStore localHomes;
     private LocalStore localSettings;
     private LocalStore localMail;
+    private LocalStore localAuction;
+    private LocalStore localShops;
+    private LocalStore localShopItems;
     private EconomyService economy;
     private VaultEconomy currency;
 
@@ -200,6 +227,25 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private PlayerPreferences preferences;
     private NickService nicks;
     private SkinService skins;
+    private AuctionService auctions;
+    private ShopService shops;
+    private Shop_Editor shopEditor;
+    private Shop_Command shopCommand;
+    private EconomyShopGuiImporter shopImporter;
+    private Warp_Gui warpGui;
+    private Home_Gui homeGui;
+    private Kit_Gui kitGui;
+    private Balance_Gui balanceGui;
+    private Baltop_Gui baltopGui;
+    private Mail_Gui mailGui;
+    private IgnoreList_Gui ignoreListGui;
+    private Jails_Gui jailsGui;
+    private Ptime_Gui ptimeGui;
+    private Pweather_Gui pweatherGui;
+    private Unlimited_Gui unlimitedGui;
+    private Realname_Gui realnameGui;
+    private ChatPromptService chatPrompts;
+    private ReportService reports;
     private MailService mail;
     private AfkService afk;
     private BackupService backups;
@@ -214,6 +260,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private BukkitTask afkTask;
     private BukkitTask jailTask;
     private BukkitTask reconnectTask;
+    private BukkitTask auctionTask;
 
     private ConfigUpdater configUpdater;
     private Plugin_Command rootCommand;
@@ -260,10 +307,16 @@ public final class Better_Admin_Commands extends JavaPlugin {
         localHomes = new LocalStore(this, new File(dataFolder, "homes.yml"));
         localSettings = new LocalStore(this, new File(dataFolder, "player_settings.yml"));
         localMail = new LocalStore(this, new File(dataFolder, "mail.yml"));
+        localAuction = new LocalStore(this, new File(dataFolder, "auction.yml"));
+        localShops = new LocalStore(this, new File(dataFolder, "shops.yml"));
+        localShopItems = new LocalStore(this, new File(dataFolder, "shop_items.yml"));
         localPlayers.load();
         localHomes.load();
         localSettings.load();
         localMail.load();
+        localAuction.load();
+        localShops.load();
+        localShopItems.load();
 
         // --- storage -------------------------------------------------------
         // A missing database is not fatal: the plugin starts anyway and runs
@@ -325,6 +378,28 @@ public final class Better_Admin_Commands extends JavaPlugin {
         unlimited = new UnlimitedService(this);
         worth = new WorthManager(this);
         playtime = new PlaytimeService(this);
+        auctions = new AuctionService(this, database, localAuction);
+        auctions.loadAll();
+        shops = new ShopService(this, database, localShops, localShopItems);
+        shops.loadAll();
+        shopImporter = new EconomyShopGuiImporter(this);
+        shopEditor = new Shop_Editor(this);
+        importShopsIfNeeded();
+        warpGui = new Warp_Gui(this);
+        homeGui = new Home_Gui(this);
+        kitGui = new Kit_Gui(this);
+        balanceGui = new Balance_Gui(this);
+        baltopGui = new Baltop_Gui(this);
+        mailGui = new Mail_Gui(this);
+        ignoreListGui = new IgnoreList_Gui(this);
+        jailsGui = new Jails_Gui(this);
+        ptimeGui = new Ptime_Gui(this);
+        pweatherGui = new Pweather_Gui(this);
+        unlimitedGui = new Unlimited_Gui(this);
+        realnameGui = new Realname_Gui(this);
+        chatPrompts = new ChatPromptService(this);
+        reports = new ReportService(this, database);
+        reports.loadAll();
 
         jails = new JailManager(this);
         jails.load();
@@ -335,6 +410,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         applyRootCommand();
         registerListeners();
         startTasks();
+        registerPlaceholders();
 
         getLogger().info("Better_Admin_Commands enabled with " + warps.size() + " warp(s).");
     }
@@ -366,6 +442,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
         warps.load();
         jails.load();
         applyRootCommand();
+        if (shops != null && shops.enabled() && shops.importForced()) {
+            importShops();
+        }
         // Re-apply stored names, so a nickname that something else overwrote is
         // restored without a relog.
         for (org.bukkit.entity.Player online : getServer().getOnlinePlayers()) {
@@ -572,11 +651,12 @@ public final class Better_Admin_Commands extends JavaPlugin {
         startAfkTask();
         startJailTask();
         startReconnectTask();
+        startAuctionTask();
     }
 
     /** Stops every repeating task - on disable and when the plugin is switched off. */
     private void cancelTasks() {
-        for (BukkitTask task : new BukkitTask[]{saveTask, afkTask, jailTask, reconnectTask}) {
+        for (BukkitTask task : new BukkitTask[]{saveTask, afkTask, jailTask, reconnectTask, auctionTask}) {
             if (task != null) {
                 task.cancel();
             }
@@ -585,6 +665,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         afkTask = null;
         jailTask = null;
         reconnectTask = null;
+        auctionTask = null;
     }
 
     private void startSaveTask() {
@@ -636,6 +717,15 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return nowAvailable;
     }
 
+    /** Marks overdue auction listings as expired once a minute. */
+    private void startAuctionTask() {
+        if (!getConfig().getBoolean("auction.enabled", true)) {
+            return;
+        }
+        auctionTask = getServer().getScheduler().runTaskTimer(
+                this, () -> auctions.expire(), 20L * 60L, 20L * 60L);
+    }
+
     /** Writes the local safe files back into the database after a reconnect. */
     private void resyncLocalToDatabase() {
         getLogger().info("Database is back - syncing the local safe files...");
@@ -644,7 +734,77 @@ public final class Better_Admin_Commands extends JavaPlugin {
         homes.resyncToDatabase();
         preferences.resyncToDatabase();
         mail.resyncToDatabase();
+        shops.resyncToDatabase();
         getLogger().info("Local safe files synced back into the database.");
+    }
+
+    /* --------------------------------------------------------------- shop --- */
+
+    /** Runs the shop import at start-up when the shop is empty or a re-import was asked for. */
+    private void importShopsIfNeeded() {
+        if (!shops.enabled() || !shops.importOnStartup()) {
+            return;
+        }
+        if (!shops.isEmpty() && !shops.importForced()) {
+            getLogger().info("Using the stored shop with " + shops.shopCount() + " shop(s) and "
+                    + shops.itemCount() + " item(s). Run /shop import to read the EconomyShopGUI files again.");
+            return;
+        }
+        // Wait one tick: EconomyShopGUI has to be running before it can be turned
+        // off, and plugins are enabled one after another during start-up.
+        getServer().getScheduler().runTask(this, this::importShops);
+    }
+
+    /**
+     * Scans the EconomyShopGUI files and replaces the stored shop with what was
+     * found. Reading the files happens off the server thread; swapping the shop
+     * over happens back on it.
+     *
+     * @return a message describing what happened, for whoever asked (chat or log)
+     */
+    public CompletableFuture<String> importShops() {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            EconomyShopGuiImporter.Imported imported;
+            try {
+                imported = shopImporter.scan();
+            } catch (RuntimeException e) {
+                getLogger().warning("The shop import failed: " + e.getMessage());
+                getServer().getScheduler().runTask(this,
+                        () -> future.complete("&cThe import failed: " + e.getMessage()));
+                return;
+            }
+            if (imported.shops().isEmpty()) {
+                getLogger().warning("No EconomyShopGUI shop files were found - the shop stays empty.");
+                getServer().getScheduler().runTask(this, () -> future.complete(
+                        "&cNo EconomyShopGUI shop files were found. Put them in plugins/EconomyShopGUI*/shops/."));
+                return;
+            }
+            // Disabling a plugin and swapping the shop over both have to happen
+            // on the server thread, so only the reading is done off it.
+            boolean disableWanted = getConfig().getBoolean("shop.import.disable-plugin", true);
+            getServer().getScheduler().runTask(this, () -> {
+                String disabled = disableWanted ? shopImporter.disablePluginIfPresent() : null;
+                if (disabled != null) {
+                    // The plugin that just went off may still hold our command
+                    // names, so bind ours again before players can click them.
+                    rebindCommands();
+                }
+                shops.replaceAll(imported.shops(), imported.items());
+                StringBuilder summary = new StringBuilder("&aImported ")
+                        .append(imported.shops().size()).append(" shop(s) with ")
+                        .append(imported.itemCount()).append(" item(s)");
+                if (disabled != null) {
+                    summary.append(", and turned off ").append(disabled);
+                }
+                summary.append(".");
+                getLogger().info("Imported " + imported.shops().size() + " shop(s) with "
+                        + imported.itemCount() + " item(s) from EconomyShopGUI ("
+                        + String.join(", ", imported.sources()) + ").");
+                future.complete(summary.toString());
+            });
+        });
+        return future;
     }
 
     private void registerListeners() {
@@ -657,8 +817,22 @@ public final class Better_Admin_Commands extends JavaPlugin {
         listen(new Powertool_Listener(this));
         listen(new Unlimited_Listener(this));
         listen(new Disposal_Command.Disposal_Listener());
+        listen(new Gui_Listener());
         jailListener = new Jail_Listener(this);
         listen(jailListener);
+    }
+
+    /**
+     * Hands the nickname to PlaceholderAPI when it is installed, so a tab list
+     * or name tag plugin can render it. The expansion class is only touched when
+     * PlaceholderAPI is present, which keeps the dependency optional.
+     */
+    private void registerPlaceholders() {
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
+            return;
+        }
+        new NicknamePlaceholders(this).register();
+        getLogger().info("Registered the PlaceholderAPI expansion %betteradmincommands_nickname%.");
     }
 
     /** Registers a listener and remembers it, so it can be taken off again. */
@@ -718,6 +892,11 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("nick", new Nick_Command(this));
         register("hat", new Hat_Command());
         register("skinchange", new Skinchange_Command(this));
+        register("ah", new Auction_Command(this));
+        shopCommand = new Shop_Command(this);
+        register("shop", shopCommand);
+        register("report", new Report_Command(this));
+        register("reports", new Report_Command(this));
         register("craft", new Craft_Command());
         register("enderchest", new Enderchest_Command());
         register("invsee", new Invsee_Command());
@@ -725,8 +904,8 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("exp", new Exp_Command());
         register("time", new Time_Command());
         register("weather", new Weather_Command());
-        register("ptime", new Ptime_Command());
-        register("pweather", new Pweather_Command());
+        register("ptime", new Ptime_Command(this));
+        register("pweather", new Pweather_Command(this));
         register("world", new World_Command(this));
 
         // ---- moderation ----------------------------------------------------
@@ -846,6 +1025,25 @@ public final class Better_Admin_Commands extends JavaPlugin {
     }
 
     /**
+     * Binds every command executor again. Used after another plugin that held one
+     * of our command names was switched off, so for example {@code /shop} answers
+     * with our shop instead of the disabled plugin's command.
+     */
+    public void rebindCommands() {
+        for (Map.Entry<String, CommandExecutor> entry : executors.entrySet()) {
+            PluginCommand command = getCommand(entry.getKey());
+            if (command == null) {
+                continue;
+            }
+            command.setExecutor(entry.getValue());
+            TabExecutor completer = completers.get(entry.getKey());
+            if (completer != null) {
+                command.setTabCompleter(completer);
+            }
+        }
+    }
+
+    /**
      * Explains a command this plugin cannot use. The usual reason is another
      * plugin that declares the same name and got to it first, which would
      * otherwise look like this plugin's command silently doing nothing.
@@ -960,6 +1158,10 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return localMail;
     }
 
+    public LocalStore localAuction() {
+        return localAuction;
+    }
+
     public JailManager jails() {
         return jails;
     }
@@ -978,5 +1180,82 @@ public final class Better_Admin_Commands extends JavaPlugin {
 
     public PlaytimeService playtime() {
         return playtime;
+    }
+
+    public AuctionService auctions() {
+        return auctions;
+    }
+
+    public ShopService shops() {
+        return shops;
+    }
+
+    public EconomyShopGuiImporter shopImporter() {
+        return shopImporter;
+    }
+
+    public Shop_Editor shopEditor() {
+        return shopEditor;
+    }
+
+    /** The /shop command, so the editor can hand control back to the normal view. */
+    public Shop_Command shopCommand() {
+        return shopCommand;
+    }
+
+    public Warp_Gui warpGui() {
+        return warpGui;
+    }
+
+    public Home_Gui homeGui() {
+        return homeGui;
+    }
+
+    public Kit_Gui kitGui() {
+        return kitGui;
+    }
+
+    public Balance_Gui balanceGui() {
+        return balanceGui;
+    }
+
+    public Baltop_Gui baltopGui() {
+        return baltopGui;
+    }
+
+    public Mail_Gui mailGui() {
+        return mailGui;
+    }
+
+    public IgnoreList_Gui ignoreListGui() {
+        return ignoreListGui;
+    }
+
+    public Jails_Gui jailsGui() {
+        return jailsGui;
+    }
+
+    public Ptime_Gui ptimeGui() {
+        return ptimeGui;
+    }
+
+    public Pweather_Gui pweatherGui() {
+        return pweatherGui;
+    }
+
+    public Unlimited_Gui unlimitedGui() {
+        return unlimitedGui;
+    }
+
+    public Realname_Gui realnameGui() {
+        return realnameGui;
+    }
+
+    public ChatPromptService chatPrompts() {
+        return chatPrompts;
+    }
+
+    public ReportService reports() {
+        return reports;
     }
 }

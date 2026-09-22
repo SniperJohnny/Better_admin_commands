@@ -15,7 +15,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Lists all homes of the sender. */
+/**
+ * Opens the home menu, where a home can be teleported to or deleted. {@code
+ * /homes list} keeps the plain text listing.
+ */
 public class Homes_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -36,20 +39,27 @@ public class Homes_Command implements TabExecutor {
             Msg.error(player, "You have no homes yet. Use /sethome to create one.");
             return true;
         }
-        Msg.raw(player, "&6Your homes &7(" + homes.size() + "/" + plugin.homes().limitFor(player) + ")&6:");
-        for (Map.Entry<String, Location> entry : homes.entrySet()) {
-            Location location = entry.getValue();
-            Msg.raw(player, String.format(Locale.ROOT, " &8- &f%s &7(%s %.0f, %.0f, %.0f)",
-                    entry.getKey(), location.getWorld().getName(),
-                    location.getX(), location.getY(), location.getZ()));
+        if (args.length >= 1 && args[0].equalsIgnoreCase("list")) {
+            Msg.raw(player, "&6Your homes &7(" + homes.size() + "/" + plugin.homes().limitFor(player) + ")&6:");
+            for (Map.Entry<String, Location> entry : homes.entrySet()) {
+                Location location = entry.getValue();
+                Msg.raw(player, String.format(Locale.ROOT, " &8- &f%s &7(%s %.0f, %.0f, %.0f)",
+                        entry.getKey(), location.getWorld().getName(),
+                        location.getX(), location.getY(), location.getZ()));
+            }
+            Msg.raw(player, "&7Use &f/home <name> &7to teleport.");
+            return true;
         }
-        Msg.raw(player, "&7Use &f/home <name> &7to teleport.");
+        plugin.homeGui().open(player, 0);
         return true;
     }
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String @NotNull[] args) {
+        if (args.length == 1) {
+            return "list".startsWith(args[0].toLowerCase()) ? List.of("list") : Collections.emptyList();
+        }
         return Collections.emptyList();
     }
 }

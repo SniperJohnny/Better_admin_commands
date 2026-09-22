@@ -18,6 +18,11 @@ repositories {
         name = "jitpack"
         url = "https://jitpack.io"
     }
+    // PlaceholderAPI, used to hand the nickname to tab list plugins such as TAB
+    maven {
+        name = "placeholderapi"
+        url = "https://repo.helpch.at/releases"
+    }
 }
 
 dependencies {
@@ -31,6 +36,10 @@ dependencies {
     // LuckPerms API - provided by the LuckPerms plugin at runtime. Used to read
     // group prefixes for /nick only; the plugin never writes to LuckPerms.
     compileOnly("net.luckperms:api:5.5")
+
+    // PlaceholderAPI - provided at runtime when installed. Only used to publish
+    // the nickname to tab list / name tag plugins such as TAB.
+    compileOnly("me.clip:placeholderapi:2.11.6")
 
     // MySQL / MariaDB driver - bundled into the plugin jar by shadowJar
     implementation("com.mysql:mysql-connector-j:9.1.0")

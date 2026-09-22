@@ -7,6 +7,7 @@ import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,25 +28,40 @@ public class Baltop_Command implements TabExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String @NotNull[] args) {
-        int page = 1;
-        if (args.length >= 1) {
-            Integer parsed = Targets.parseInt(args[0]);
-            if (parsed == null || parsed < 1) {
-                Msg.error(sender, "The page has to be a positive number.");
+        // Without an argument the leaderboard opens as a menu; a page number or
+        // "list" keeps the plain text output for chat users and the console.
+        if (args.length == 0) {
+            if (sender instanceof Player player) {
+                plugin.baltopGui().open(player, 0);
                 return true;
             }
-            page = parsed;
+            show(sender, 1);
+            return true;
         }
+        if (args[0].equalsIgnoreCase("list")) {
+            show(sender, 1);
+            return true;
+        }
+        Integer parsed = Targets.parseInt(args[0]);
+        if (parsed == null || parsed < 1) {
+            Msg.error(sender, "The page has to be a positive number.");
+            return true;
+        }
+        show(sender, parsed);
+        return true;
+    }
 
+    /** The text form of the leaderboard, one page at a time. */
+    private void show(CommandSender sender, int page) {
         List<EconomyService.BalanceEntry> entries = plugin.economy().top(1000);
         if (entries.isEmpty()) {
             Msg.error(sender, "There is no economy data yet.");
-            return true;
+            return;
         }
         int pages = Math.max(1, (int) Math.ceil(entries.size() / (double) PAGE_SIZE));
         if (page > pages) {
             Msg.error(sender, "There are only " + pages + " page(s).");
-            return true;
+            return;
         }
 
         int start = (page - 1) * PAGE_SIZE;
@@ -56,14 +72,13 @@ public class Baltop_Command implements TabExecutor {
             Msg.raw(sender, " &8" + (index + 1) + ". &f" + entry.name() + " &7- &a"
                     + plugin.economy().format(entry.balance()));
         }
-        return true;
     }
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String @NotNull[] args) {
         if (args.length == 1) {
-            return Targets.completeFrom(args[0], "1", "2", "3");
+            return Targets.completeFrom(args[0], "1", "2", "3", "list");
         }
         return Collections.emptyList();
     }

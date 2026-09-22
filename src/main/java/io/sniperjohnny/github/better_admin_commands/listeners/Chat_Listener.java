@@ -5,6 +5,8 @@ import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 import io.sniperjohnny.github.better_admin_commands.moderation.MuteService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -20,6 +22,17 @@ public class Chat_Listener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onChat(AsyncChatEvent event) {
+        Player player = event.getPlayer();
+
+        // A GUI (for example the auction house asking for a price) is waiting for
+        // the next line: swallow it so it never reaches public chat.
+        if (plugin.chatPrompts().isWaiting(player.getUniqueId())) {
+            event.setCancelled(true);
+            plugin.chatPrompts().handle(player.getUniqueId(),
+                    PlainTextComponentSerializer.plainText().serialize(event.message()));
+            return;
+        }
+
         MuteService.Mute mute = plugin.mutes().muteOf(event.getPlayer().getUniqueId());
         if (mute == null) {
             return;

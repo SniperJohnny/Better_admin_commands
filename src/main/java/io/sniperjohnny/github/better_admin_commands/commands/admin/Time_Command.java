@@ -71,7 +71,7 @@ public class Time_Command implements TabExecutor {
         return true;
     }
 
-    static Long parseTicks(String raw) {
+    public static Long parseTicks(String raw) {
         try {
             return Long.parseLong(raw);
         } catch (NumberFormatException e) {

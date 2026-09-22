@@ -1,6 +1,8 @@
 package io.sniperjohnny.github.better_admin_commands.commands.admin;
 
+import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
+import io.sniperjohnny.github.better_admin_commands.util.PersonalDisplay;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -9,21 +11,25 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
-/** Sets a personal client side time for the sender. */
+/**
+ * Sets a personal client side time for the sender. Without an argument this
+ * opens the time menu instead.
+ *
+ * <p>The accepted values and the way they are applied live in
+ * {@link PersonalDisplay}, which the menu uses as well, so the two cannot
+ * disagree about what a value means.</p>
+ */
 public class Ptime_Command implements TabExecutor {
 
-    private static final Map<String, Long> PRESETS = Map.of(
-            "day", 1000L,
-            "noon", 6000L,
-            "sunset", 12000L,
-            "night", 13000L,
-            "midnight", 18000L,
-            "sunrise", 23000L);
+    private final Better_Admin_Commands plugin;
+
+    public Ptime_Command(Better_Admin_Commands plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
@@ -33,25 +39,19 @@ public class Ptime_Command implements TabExecutor {
             return true;
         }
         if (args.length < 1) {
-            Msg.usage(sender, command);
+            plugin.ptimeGui().open(player);
             return true;
         }
-        String value = args[0].toLowerCase(Locale.ROOT);
-        if (value.equals("reset") || value.equals("off")) {
-            player.resetPlayerTime();
-            Msg.success(player, "Your personal time was reset to the server time.");
-            return true;
-        }
-        Long ticks = PRESETS.get(value);
-        if (ticks == null) {
-            ticks = Time_Command.parseTicks(value);
-        }
-        if (ticks == null) {
+        String value = args[0];
+        if (!PersonalDisplay.applyTime(player, value)) {
             Msg.error(player, "Use /ptime <reset|day|noon|sunset|night|midnight|sunrise> or a tick value.");
             return true;
         }
-        player.setPlayerTime(ticks, false);
-        Msg.success(player, "Your personal time is now " + value + ".");
+        if (PersonalDisplay.isReset(value)) {
+            Msg.success(player, "Your personal time was reset to the server time.");
+        } else {
+            Msg.success(player, "Your personal time is now " + value + ".");
+        }
         return true;
     }
 
@@ -59,7 +59,12 @@ public class Ptime_Command implements TabExecutor {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String @NotNull[] args) {
         if (args.length == 1) {
-            return Targets.completeFrom(args[0], "reset", "day", "noon", "sunset", "night", "midnight", "sunrise");
+            List<String> values = new ArrayList<>();
+            values.add("reset");
+            for (PersonalDisplay.TimePreset preset : PersonalDisplay.TIME_PRESETS) {
+                values.add(preset.id());
+            }
+            return Targets.completeFrom(args[0], values);
         }
         return Collections.emptyList();
     }

@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Offline messages (mail) stored in the {@code mail} table.
@@ -35,11 +36,32 @@ public class MailService {
         this.local = local;
     }
 
-    /** Stores a new message. Runs asynchronously. Always mirrored locally. */
-    public void send(Player sender, UUID target, String message) {
+    /**
+     * Runs one piece of mail work off the main thread and reports when it is
+     * done, so a menu can redraw only after a write has actually landed instead
+     * of racing it.
+     */
+    private CompletableFuture<Void> runAsync(Runnable work) {
+        CompletableFuture<Void> done = new CompletableFuture<>();
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                work.run();
+            } finally {
+                done.complete(null);
+            }
+        });
+        return done;
+    }
+
+    /**
+     * Stores a new message. Runs asynchronously. Always mirrored locally.
+     *
+     * @return completed once the message is stored (or locally mirrored)
+     */
+    public CompletableFuture<Void> send(Player sender, UUID target, String message) {
         long sentAt = System.currentTimeMillis();
         String key = UUID.randomUUID().toString();
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        return runAsync(() -> {
             local.merge(key, mailRow(sender.getUniqueId().toString(), sender.getName(),
                     target.toString(), message, sentAt, false));
             if (!database.isAvailable()) {
@@ -163,8 +185,8 @@ public class MailService {
     }
 
     /** Marks every message of a player as read. */
-    public void markAllRead(UUID uuid) {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+    public CompletableFuture<Void> markAllRead(UUID uuid) {
+        return runAsync(() -> {
             local.updateWhere(row -> uuid.toString().equals(LocalStore.string(row, "target_uuid")),
                     java.util.Map.of("is_read", true));
             if (!database.isAvailable()) {
@@ -186,9 +208,75 @@ public class MailService {
         });
     }
 
+    /**
+     * Marks one message as read. Matched by target and send time, so it works
+     * both against the database and against the local safe file - the local rows
+     * carry no auto-increment id.
+     */
+    public CompletableFuture<Void> markRead(UUID target, Mail mail) {
+        if (target == null || mail == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return runAsync(() -> {
+            local.updateWhere(row -> matches(target, mail, row), Map.of("is_read", true));
+            if (!database.isAvailable()) {
+                return;
+            }
+            String sql = "UPDATE `" + database.table("mail")
+                    + "` SET `is_read` = 1 WHERE `target_uuid` = ? AND `sent_at` = ?";
+            try {
+                database.withConnection(connection -> {
+                    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                        statement.setString(1, target.toString());
+                        statement.setLong(2, mail.sentAt());
+                        statement.executeUpdate();
+                    }
+                    return null;
+                });
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Could not mark mail as read: " + e.getMessage());
+                database.markUnavailable();
+            }
+        });
+    }
+
+    /** Deletes a single message of a player. */
+    public CompletableFuture<Void> delete(UUID target, Mail mail) {
+        if (target == null || mail == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return runAsync(() -> {
+            local.deleteWhere(row -> matches(target, mail, row));
+            if (!database.isAvailable()) {
+                return;
+            }
+            String sql = "DELETE FROM `" + database.table("mail")
+                    + "` WHERE `target_uuid` = ? AND `sent_at` = ?";
+            try {
+                database.withConnection(connection -> {
+                    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                        statement.setString(1, target.toString());
+                        statement.setLong(2, mail.sentAt());
+                        statement.executeUpdate();
+                    }
+                    return null;
+                });
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Could not delete mail: " + e.getMessage());
+                database.markUnavailable();
+            }
+        });
+    }
+
+    /** Whether a safe-file row is the given message of the given player. */
+    private static boolean matches(UUID target, Mail mail, Map<String, Object> row) {
+        return target.toString().equals(LocalStore.string(row, "target_uuid"))
+                && LocalStore.longValue(row, "sent_at", -1L) == mail.sentAt();
+    }
+
     /** Deletes every message of a player. */
-    public void clear(UUID uuid) {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+    public CompletableFuture<Void> clear(UUID uuid) {
+        return runAsync(() -> {
             local.deleteWhere(row -> uuid.toString().equals(LocalStore.string(row, "target_uuid")));
             if (!database.isAvailable()) {
                 return;

@@ -16,8 +16,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Changes the name of a player, stored in the database. The nickname is used in
- * the tab list, above the player's head and in chat.
+ * Changes the nickname of the player running the command, stored in the
+ * database. The nickname is used in the tab list, above the player's head and in
+ * chat.
  *
  * <p>The optional group argument borrows the prefix of a LuckPerms group, so a
  * nickname can be shown with a rank tag. No permission or group of the player is
@@ -25,9 +26,8 @@ import java.util.Locale;
  *
  * <ul>
  *   <li>{@code /nick <nickname> [group]} - your own nickname</li>
- *   <li>{@code /nick <player> <nickname> [group]} - someone else, needs
- *       {@code betteradmincommands.nick.others}</li>
  *   <li>{@code /nick <nickname> off} keeps the nickname but drops the prefix</li>
+ *   <li>{@code /nick off} - removes the nickname entirely</li>
  * </ul>
  */
 public class Nick_Command implements TabExecutor {
@@ -41,38 +41,21 @@ public class Nick_Command implements TabExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String @NotNull[] args) {
+        if (!(sender instanceof Player player)) {
+            Msg.playerOnly(sender);
+            return true;
+        }
         if (args.length < 1) {
             Msg.usage(sender, command);
             return true;
         }
 
-        // Decide who is renamed and which group prefix is borrowed. Someone who
-        // may nickname others gets the two argument form when the first argument
-        // names an online player, and the own-nickname form otherwise.
-        Player target;
-        String nickname;
-        String group;
-        Player named = sender.hasPermission("betteradmincommands.nick.others")
-                ? Targets.onlineOrNull(args[0]) : null;
-        if (named != null && args.length >= 2) {
-            target = named;
-            nickname = args[1];
-            group = args.length >= 3 ? args[2] : null;
-        } else {
-            if (!(sender instanceof Player self)) {
-                Msg.playerOnly(sender);
-                return true;
-            }
-            target = self;
-            nickname = args[0];
-            group = args.length >= 2 ? args[1] : null;
-        }
+        String nickname = args[0];
+        String group = args.length >= 2 ? args[1] : null;
 
         if (isReset(nickname)) {
-            plugin.preferences().setNickname(target, null, null);
-            Msg.success(sender, target.equals(sender)
-                    ? "Your nickname was removed."
-                    : "Removed the nickname of " + target.getName() + ".");
+            plugin.preferences().setNickname(player, null, null);
+            Msg.success(sender, "Your nickname was removed.");
             return true;
         }
         if (nickname.length() > 32) {
@@ -99,14 +82,12 @@ public class Nick_Command implements TabExecutor {
             group = null;
         }
 
-        plugin.preferences().setNickname(target, nickname, group);
-        plugin.getLogger().info("Nickname of " + target.getName() + " is now '" + nickname + "'"
+        plugin.preferences().setNickname(player, nickname, group);
+        plugin.getLogger().info("Nickname of " + player.getName() + " is now '" + nickname + "'"
                 + (group == null ? "" : " with the " + group + " prefix")
                 + " - applied to the display name and the tab list.");
         String shown = group == null ? nickname : plugin.nicks().prefix(group) + nickname;
-        Msg.success(sender, target.equals(sender)
-                ? "Your nickname is now " + shown + "&r."
-                : target.getName() + " is now called " + shown + "&r.");
+        Msg.success(sender, "Your nickname is now " + shown + "&r.");
         return true;
     }
 
@@ -141,24 +122,11 @@ public class Nick_Command implements TabExecutor {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String @NotNull[] args) {
-        boolean others = sender.hasPermission("betteradmincommands.nick.others");
         if (args.length == 1) {
-            if (!others) {
-                return Targets.completeFrom(args[0].toLowerCase(Locale.ROOT), "off");
-            }
-            List<String> names = new ArrayList<>(Targets.complete(args[0]));
-            names.addAll(Targets.completeFrom(args[0].toLowerCase(Locale.ROOT), "off"));
-            return names;
+            return Targets.completeFrom(args[0].toLowerCase(Locale.ROOT), "off");
         }
         if (args.length == 2) {
-            // Someone else's nickname, or the group for your own.
-            if (others && Targets.onlineOrNull(args[0]) != null) {
-                return Targets.completeFrom(args[1].toLowerCase(Locale.ROOT), "off");
-            }
             return Targets.completeFrom(args[1].toLowerCase(Locale.ROOT), groupChoices());
-        }
-        if (args.length == 3) {
-            return Targets.completeFrom(args[2].toLowerCase(Locale.ROOT), groupChoices());
         }
         return Collections.emptyList();
     }

@@ -347,6 +347,87 @@ public class Database {
                         + "PRIMARY KEY (`id`),"
                         + "KEY `idx_mail_target` (`target_uuid`)"
                         + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+                // Auction house listings. `item` holds the Base64 encoded form
+                // of ItemStack#serializeAsBytes(), so items survive a restart.
+                statement.executeUpdate("CREATE TABLE IF NOT EXISTS `" + table("ah_listings") + "` ("
+                        + "`id` CHAR(36) NOT NULL,"
+                        + "`seller_uuid` CHAR(36) NOT NULL,"
+                        + "`seller_name` VARCHAR(16) NOT NULL,"
+                        + "`item` MEDIUMTEXT NOT NULL,"
+                        + "`price` DOUBLE NOT NULL,"
+                        + "`created_at` BIGINT NOT NULL,"
+                        + "`expires_at` BIGINT NOT NULL,"
+                        + "`state` VARCHAR(12) NOT NULL,"
+                        + "`claimed` TINYINT NOT NULL DEFAULT 0,"
+                        + "`buyer_name` VARCHAR(16) NULL,"
+                        + "PRIMARY KEY (`id`),"
+                        + "KEY `idx_ah_state` (`state`),"
+                        + "KEY `idx_ah_seller` (`seller_uuid`)"
+                        + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+                // The shop: one row per imported shop and one per entry. `item`
+                // again holds the Base64 form of ItemStack#serializeAsBytes(), so
+                // display names, lore and enchantments all survive.
+                statement.executeUpdate("CREATE TABLE IF NOT EXISTS `" + table("shops") + "` ("
+                        + "`id` VARCHAR(96) NOT NULL,"
+                        + "`display` VARCHAR(96) NULL,"
+                        + "`icon` MEDIUMTEXT NULL,"
+                        + "`rows` INT NOT NULL DEFAULT 0,"
+                        + "PRIMARY KEY (`id`)"
+                        + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+                statement.executeUpdate("CREATE TABLE IF NOT EXISTS `" + table("shop_items") + "` ("
+                        + "`shop` VARCHAR(96) NOT NULL,"
+                        + "`item_key` VARCHAR(160) NOT NULL,"
+                        + "`material` VARCHAR(64) NOT NULL,"
+                        + "`search` VARCHAR(160) NULL,"
+                        + "`item` MEDIUMTEXT NOT NULL,"
+                        + "`buy_price` DOUBLE NOT NULL DEFAULT -1,"
+                        + "`sell_price` DOUBLE NOT NULL DEFAULT -1,"
+                        + "`slot` INT NOT NULL DEFAULT 0,"
+                        + "`page` INT NOT NULL DEFAULT 1,"
+                        + "PRIMARY KEY (`shop`, `item_key`),"
+                        + "KEY `idx_shop_material` (`material`)"
+                        + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+                // Report tickets and their two-way message threads.
+                statement.executeUpdate("CREATE TABLE IF NOT EXISTS `" + table("reports") + "` ("
+                        + "`id` CHAR(36) NOT NULL,"
+                        + "`reporter_uuid` CHAR(36) NOT NULL,"
+                        + "`reporter_name` VARCHAR(16) NOT NULL,"
+                        + "`target_name` VARCHAR(32) NULL,"
+                        + "`category` VARCHAR(32) NOT NULL,"
+                        + "`status` VARCHAR(12) NOT NULL,"
+                        + "`created_at` BIGINT NOT NULL,"
+                        + "`updated_at` BIGINT NOT NULL,"
+                        + "PRIMARY KEY (`id`),"
+                        + "KEY `idx_report_status` (`status`),"
+                        + "KEY `idx_report_reporter` (`reporter_uuid`)"
+                        + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+                statement.executeUpdate("CREATE TABLE IF NOT EXISTS `" + table("report_messages") + "` ("
+                        + "`id` CHAR(36) NOT NULL,"
+                        + "`report_id` CHAR(36) NOT NULL,"
+                        + "`author_uuid` CHAR(36) NOT NULL,"
+                        + "`author_name` VARCHAR(16) NOT NULL,"
+                        + "`staff` TINYINT NOT NULL DEFAULT 0,"
+                        + "`message` TEXT NOT NULL,"
+                        + "`created_at` BIGINT NOT NULL,"
+                        + "PRIMARY KEY (`id`),"
+                        + "KEY `idx_rm_report` (`report_id`)"
+                        + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+                // Everybody who took part in a ticket, with the read marker that
+                // drives the unread counts and the notifications.
+                statement.executeUpdate("CREATE TABLE IF NOT EXISTS `" + table("report_participants") + "` ("
+                        + "`report_id` CHAR(36) NOT NULL,"
+                        + "`uuid` CHAR(36) NOT NULL,"
+                        + "`name` VARCHAR(16) NOT NULL,"
+                        + "`staff` TINYINT NOT NULL DEFAULT 0,"
+                        + "`last_read` BIGINT NOT NULL DEFAULT 0,"
+                        + "PRIMARY KEY (`report_id`, `uuid`)"
+                        + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             }
             return null;
         });
