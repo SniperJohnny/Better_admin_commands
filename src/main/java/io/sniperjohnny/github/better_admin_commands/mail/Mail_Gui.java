@@ -178,8 +178,8 @@ public class Mail_Gui {
                         "&7Write back to &f" + mail.senderName() + "&7.",
                         "",
                         "&eClick to reply"),
-                event -> plugin.chatPrompts().request(player,
-                        "&7Your reply to &f" + mail.senderName() + "&7:", answer -> {
+                event -> plugin.dialogs().message(player, "Reply to mail",
+                        "&7Your reply to &f" + mail.senderName() + "&7:", "Message", "", 256, 3, answer -> {
                             if (answer.equalsIgnoreCase("cancel")) {
                                 Msg.send(player, "&7Reply cancelled.");
                                 open(player, returnPage);
@@ -260,8 +260,9 @@ public class Mail_Gui {
                         "&7For someone who is not online.",
                         "",
                         "&eClick to type a name"),
-                event -> plugin.chatPrompts().request(player,
-                        "&7Who do you want to write to? &8(type a player name)", answer -> {
+                event -> plugin.dialogs().text(player, "Write mail",
+                        "&7Who do you want to write to? &8(type a player name)",
+                        "Player name", "", 16, answer -> {
                             if (answer.equalsIgnoreCase("cancel")) {
                                 Msg.send(player, "&7Cancelled.");
                                 open(player, 0);
@@ -284,7 +285,8 @@ public class Mail_Gui {
     }
 
     private void promptMessage(Player player, UUID target, String targetName) {
-        plugin.chatPrompts().request(player, "&7Your message to &f" + targetName + "&7:", answer -> {
+        plugin.dialogs().message(player, "Write mail",
+                "&7Your message to &f" + targetName + "&7:", "Message", "", 256, 3, answer -> {
             if (answer.equalsIgnoreCase("cancel")) {
                 Msg.send(player, "&7Cancelled.");
                 open(player, 0);

@@ -4,7 +4,7 @@ main: io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands
 api-version: '1.21'
 authors: [ SniperJohnny ]
 description: Admin, teleport, economy, social and moderation commands with MySQL storage and Vault economy.
-softdepend: [ Vault, LuckPerms, PlaceholderAPI ]
+softdepend: [ Vault, LuckPerms, PlaceholderAPI, TAB ]
 
 commands:
   # ---------------------------------------------------------------- admin ---
@@ -571,6 +571,11 @@ commands:
     permission: "betteradmincommands.realname"
     description: "finds the player behind a nickname"
     usage: /realname [nickname]
+  reveal:
+    permission: "betteradmincommands.reveal"
+    description: "shows the real name and rank behind a nickname"
+    aliases: [ unmask ]
+    usage: /reveal <name|nickname>
   notify:
     permission: "betteradmincommands.notify"
     description: "chooses which notifications you receive"
@@ -723,6 +728,7 @@ permissions:
       betteradmincommands.getpos.others: true
       betteradmincommands.playtime.others: true
       betteradmincommands.realname: true
+      betteradmincommands.reveal: true
       betteradmincommands.trade.log.others: true
       betteradmincommands.trade.notify: true
 
@@ -760,7 +766,8 @@ permissions:
       betteradmincommands.shop.admin: true
       betteradmincommands.balance.others: true
       betteradmincommands.nick.color: true
-      betteradmincommands.nick.see: true
+      betteradmincommands.reveal: true
+      betteradmincommands.chat.color: true
       betteradmincommands.enderchest.others: true
       betteradmincommands.command: true
       betteradmincommands.kick.notify: true
@@ -805,9 +812,15 @@ permissions:
     description: "Find the real player behind a nickname."
     default: op
 
-  # Shows the real name behind a nickname in chat, next to the nickname.
-  betteradmincommands.nick.see:
-    description: "See the real name behind a nickname in chat."
+  # /reveal reports the real name and rank of an online player (granted through
+  # the mod and admin bundles).
+  betteradmincommands.reveal:
+    description: "Report the real name and rank behind a nickname."
+    default: op
+
+  # Lets a player use colour codes (&) in their own chat messages.
+  betteradmincommands.chat.color:
+    description: "Use colour codes in chat."
     default: op
 
   # Vanished players stay visible to whoever holds this, with a cue in the tab

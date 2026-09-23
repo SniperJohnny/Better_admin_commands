@@ -339,17 +339,17 @@ public class Auction_Command implements TabExecutor {
 
     /** Asks for a search term and reopens the browse menu with it. */
     private void promptSearch(Player player) {
-        plugin.chatPrompts().request(player,
+        BrowseState state = stateOf(player);
+        plugin.dialogs().text(player, "Auction House » Search",
                 "&7Search the auction house for an item or a seller &8(type &fclear &8for everything)",
-                answer -> {
-                    BrowseState state = stateOf(player);
+                "Item or seller", state.query(), 32, answer -> {
                     if (answer.equalsIgnoreCase("cancel")) {
                         Msg.send(player, "&7Search cancelled.");
                         openBrowse(player, 0);
                         return;
                     }
                     String query = answer.equalsIgnoreCase("clear") ? "" : answer;
-                    setState(player, query, state.sort());
+                    setState(player, query, stateOf(player).sort());
                     openBrowse(player, 0);
                 });
     }
@@ -495,25 +495,111 @@ public class Auction_Command implements TabExecutor {
             openMain(player);
             return;
         }
-        ItemStack selling = held.clone();
-        double min = plugin.auctions().minPrice();
-        plugin.chatPrompts().request(player,
-                "&7Enter the price for &f" + selling.getAmount() + "x " + pretty(selling)
-                        + " &7in chat &8(min " + plugin.economy().format(min) + "&8).",
-                answer -> {
-                    if (answer.equalsIgnoreCase("cancel")) {
-                        Msg.send(player, "&7Listing cancelled.");
-                        openMain(player);
-                        return;
-                    }
-                    Double price = Targets.parseDouble(answer);
-                    if (price == null || price <= 0.0) {
-                        Msg.error(player, "That is not a valid price.");
-                        openMain(player);
-                        return;
-                    }
-                    listHeld(player, price);
-                });
+        // The price is picked with buttons; typing it in chat stays available
+        // through the "type an exact price" button.
+        openSellPrice(player, clampPrice(100.0));
+    }
+
+    /**
+     * The price picker: the held item plus buttons that raise or lower the price
+     * and a confirm button. A "type it" button opens a dialog for an exact amount.
+     */
+    private void openSellPrice(Player player, double price) {
+        ItemStack held = player.getInventory().getItemInMainHand();
+        if (held.getType().isAir()) {
+            Msg.error(player, "Hold the item you want to sell first.");
+            openMain(player);
+            return;
+        }
+        double current = clampPrice(price);
+
+        Menu menu = new Menu(Theme.heading("Auction House") + " &8\u00bb &fSet a price", 4);
+        menu.frame();
+        menu.button(13, sellPreview(held, current));
+
+        menu.button(10, step(-1000.0), event -> openSellPrice(player, current - 1000.0));
+        menu.button(11, step(-100.0), event -> openSellPrice(player, current - 100.0));
+        menu.button(12, step(-10.0), event -> openSellPrice(player, current - 10.0));
+        menu.button(14, step(10.0), event -> openSellPrice(player, current + 10.0));
+        menu.button(15, step(100.0), event -> openSellPrice(player, current + 100.0));
+        menu.button(16, step(1000.0), event -> openSellPrice(player, current + 1000.0));
+
+        menu.button(19, step(-100000.0), event -> openSellPrice(player, current - 100000.0));
+        menu.button(21, step(-1.0), event -> openSellPrice(player, current - 1.0));
+        menu.button(23, step(1.0), event -> openSellPrice(player, current + 1.0));
+        menu.button(25, step(100000.0), event -> openSellPrice(player, current + 100000.0));
+
+        menu.button(28, Theme.back(), event -> openMain(player));
+        menu.button(30, Items.of(Material.NAME_TAG, "&bType an exact price",
+                        "&7Enter it in a dialog instead.",
+                        "",
+                        "&eClick to type it"),
+                event -> plugin.dialogs().number(player, "Auction House » Price",
+                        "&7Enter the price for &f" + held.getAmount() + "x " + pretty(held)
+                                + " &8(min " + plugin.economy().format(plugin.auctions().minPrice())
+                                + "&8).", "Price", String.valueOf((long) current), 16, answer -> {
+                            if (answer.equalsIgnoreCase("cancel")) {
+                                openSellPrice(player, current);
+                                return;
+                            }
+                            Double typed = Targets.parseDouble(answer);
+                            if (typed == null || typed <= 0.0) {
+                                Msg.error(player, "That is not a valid price.");
+                                openSellPrice(player, current);
+                                return;
+                            }
+                            openSellPrice(player, typed);
+                        }));
+        menu.button(32, Items.of(Material.LIME_CONCRETE, "&aConfirm",
+                        "&7List the held item for &6" + plugin.economy().format(current),
+                        "&7You receive about &a" + plugin.economy().format(afterTax(current)) + "&7.",
+                        "",
+                        "&eClick to list it"),
+                event -> listHeld(player, current));
+        menu.button(34, Theme.close(), event -> player.closeInventory());
+        menu.open(player);
+    }
+
+    /** Clamps a price into the configured window, so a button can never break the limits. */
+    private double clampPrice(double price) {
+        return Math.max(plugin.auctions().minPrice(),
+                Math.min(plugin.auctions().maxPrice(), price));
+    }
+
+    /** What the seller keeps after the auction tax. */
+    private double afterTax(double price) {
+        return price - price * (plugin.auctions().taxPercent() / 100.0);
+    }
+
+    /** A plus/minus button that adjusts the price in the sell menu. */
+    private ItemStack step(double amount) {
+        boolean up = amount > 0.0;
+        String label = (up ? "&a+" : "&c-") + (long) Math.abs(amount);
+        return Items.of(up ? Material.LIME_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE,
+                label,
+                "&7Adjust the price by " + plugin.economy().format(Math.abs(amount)) + ".",
+                "",
+                "&eClick to apply");
+    }
+
+    /** The held item with the price it is being listed for. */
+    private ItemStack sellPreview(ItemStack item, double price) {
+        ItemStack display = item.clone();
+        ItemMeta meta = display.getItemMeta();
+        if (meta != null) {
+            List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
+            lore.add(Component.empty());
+            lore.add(Msg.component("&8\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"));
+            lore.add(Msg.component("&7Amount: &f" + item.getAmount()));
+            lore.add(Msg.component("&7Price: &6" + plugin.economy().format(price)));
+            lore.add(Msg.component("&7You receive: &a" + plugin.economy().format(afterTax(price))));
+            lore.add(Component.empty());
+            lore.add(Msg.component("&eUse the buttons to change the price,"));
+            lore.add(Msg.component("&ethen press &aConfirm&e."));
+            meta.lore(lore);
+            display.setItemMeta(meta);
+        }
+        return display;
     }
 
     /** Lists whatever the player holds at the given price, after re-checking it. */

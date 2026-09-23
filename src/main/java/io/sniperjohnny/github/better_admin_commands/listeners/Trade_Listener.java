@@ -114,7 +114,7 @@ public class Trade_Listener implements Listener {
             return;
         }
         TradeSession session = menu.session();
-        if (!session.isFinished()) {
+        if (!session.isFinished() && !session.isAwaitingInput()) {
             trades().cancel(session, "the window was closed");
         }
     }
@@ -136,38 +136,41 @@ public class Trade_Listener implements Listener {
             Msg.error(player, "The economy is not available.");
             return;
         }
-        // The window stays open: closing it would cancel the trade.
-        plugin.chatPrompts().request(player, "&7How much money do you want to offer? &8(0 to offer none)",
-                answer -> {
-                    if (answer.equalsIgnoreCase("cancel")) {
+        TradeSession session = trades().sessionOf(player);
+        if (session == null || session.isFinished()) {
+            return;
+        }
+        double balance = plugin.economy().getBalance(player.getUniqueId());
+        // A dialog replaces the screen, so the trade window closes while it is
+        // open. The session survives and the window is reopened afterwards, and
+        // a client that cannot show a dialog answers the same question in chat
+        // while the window stays open - the window-close event skips cancelling
+        // while a dialog is awaited.
+        session.setAwaitingInput(true);
+        plugin.dialogs().number(player, "Trade money",
+                "&7How much money do you want to offer? &8(you have &f"
+                        + plugin.economy().format(balance) + "&8)", "Amount", "", 16, answer -> {
+                    if ("cancel".equalsIgnoreCase(answer)) {
                         // Only the money entry is dropped; the trade stays open.
                         Msg.send(player, "&7Money offer left unchanged.");
+                        trades().reopen(session, player);
                         return;
                     }
                     Double amount = Targets.parseDouble(answer);
-                    if (amount == null || amount < 0) {
+                    if (amount == null || amount < 0.0) {
                         Msg.error(player, "That is not a valid amount.");
+                        trades().reopen(session, player);
                         return;
                     }
-                    double balance = plugin.economy().getBalance(player.getUniqueId());
-                    if (amount > balance) {
-                        Msg.error(player, "You only have " + plugin.economy().format(balance) + ".");
+                    double have = plugin.economy().getBalance(player.getUniqueId());
+                    if (amount > have) {
+                        Msg.error(player, "You only have " + plugin.economy().format(have) + ".");
+                        trades().reopen(session, player);
                         return;
                     }
                     plugin.trades().setMoney(player, amount);
-                }, false);
-    }
-
-    /** Moves one own-slot stack back into the player's inventory. */
-    private void moveBackToInventory(Player player, Inventory inventory, int slot) {
-        ItemStack item = inventory.getItem(slot);
-        if (item == null || item.getType().isAir()) {
-            return;
-        }
-        inventory.setItem(slot, null);
-        for (ItemStack leftover : player.getInventory().addItem(item).values()) {
-            player.getWorld().dropItemNaturally(player.getLocation(), leftover);
-        }
+                    trades().reopen(session, player);
+                });
     }
 
     /** Moves a stack the player shift-clicked into their own half of the trade. */

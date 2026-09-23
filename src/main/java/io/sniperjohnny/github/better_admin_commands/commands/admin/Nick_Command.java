@@ -18,8 +18,13 @@ import java.util.Locale;
 
 /**
  * Changes the nickname of the player running the command, stored in the
- * database. The nickname is used in the tab list, above the player's head and in
- * chat.
+ * database. The nickname is used in the tab list and in chat.
+ *
+ * <p>The tab list entry shows the rank the nickname is worn with - the player's
+ * own LuckPerms rank, or the group named on the command line - so the rank
+ * updates together with the nickname. The name tag above a player's head is
+ * hidden for everyone ({@code nick.hide-nametag}), so the tab list is the only
+ * place a name shows up.</p>
  *
  * <p>The optional group argument borrows the prefix of a LuckPerms group, so a
  * nickname can be shown with a rank tag. No permission or group of the player is
@@ -92,7 +97,7 @@ public class Nick_Command implements TabExecutor {
 
         plugin.preferences().setNickname(player, nickname, group);
         plugin.getLogger().info("Nickname of " + player.getName() + " is now '" + nickname + "'"
-                + describePrefix(group) + " - applied to the tab list, the name tag and chat.");
+                + describePrefix(group) + " - applied to the tab list and chat.");
         String prefix = plugin.preferences().nicknamePrefix(player.getUniqueId());
         Msg.success(sender, "Your nickname is now " + prefix + nickname + "&r.");
         if (plugin.nicks().available() && prefix.isEmpty() && !isNoPrefix(group)) {

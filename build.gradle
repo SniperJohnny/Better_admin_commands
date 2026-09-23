@@ -41,11 +41,16 @@ dependencies {
     // the nickname to tab list / name tag plugins such as TAB.
     compileOnly("me.clip:placeholderapi:2.11.6")
 
+    // TAB API - provided by the TAB plugin at runtime. Used to put the nickname
+    // into the tab list, to make a borrowed rank really apply (sorting included)
+    // and to hide the real name above a nicked player's head. Never shaded.
+    compileOnly("com.github.NEZNAMY:TAB-API:6.1.2")
+
     // MySQL / MariaDB driver - bundled into the plugin jar by shadowJar
     implementation("com.mysql:mysql-connector-j:9.1.0")
 }
 
-def serverdir = "C:\\Users\\johnj\\Desktop\\Projects_minecraft\\Plugins"
+def serverdir = "D:\\devlopment\\Minecraft\\Plugins\\TestServer\\1.21.11\\plugins"
 
 tasks.shadowJar {
     archiveClassifier.set("")

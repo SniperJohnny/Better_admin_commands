@@ -51,6 +51,19 @@ class LuckPermsBridge {
     }
 
     /**
+     * The name of the player's primary group, used by {@code /reveal} to report
+     * the real rank behind a nickname.
+     */
+    String userGroup(UUID uuid) {
+        User user = api.getUserManager().getUser(uuid);
+        if (user == null) {
+            return null;
+        }
+        String primary = user.getPrimaryGroup();
+        return primary == null || primary.isBlank() ? null : primary;
+    }
+
+    /**
      * The prefix of a player's own rank - their personal meta prefix when they
      * have one, otherwise the prefix of their primary group. This is what makes
      * {@code /nick <nickname>} show the player's real rank tag without having to

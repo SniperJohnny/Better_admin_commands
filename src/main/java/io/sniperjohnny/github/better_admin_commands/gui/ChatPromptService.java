@@ -68,4 +68,15 @@ public class ChatPromptService {
     public void clear(UUID uuid) {
         pending.remove(uuid);
     }
+
+    /**
+     * Arms a chat answer without printing a question of its own. Used by
+     * {@link DialogPromptService} as the fallback for clients that cannot show
+     * a dialog: the question is already in chat, this only picks up the line.
+     * The message is still swallowed by {@code Chat_Listener}, and the callback
+     * still runs on the server thread.
+     */
+    public void arm(UUID uuid, Consumer<String> onAnswer) {
+        pending.put(uuid, onAnswer);
+    }
 }

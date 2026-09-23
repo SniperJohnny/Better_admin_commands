@@ -48,11 +48,12 @@ public class Pay_Command implements TabExecutor {
         }
 
         if (args.length < 2) {
-            // No amount yet: ask for it, so the command works with just a name.
-            plugin.chatPrompts().request(self, "&7How much do you want to send to &f"
-                    + target.getName() + "&7? &8(you have &f"
-                    + plugin.economy().format(plugin.economy().getBalance(self.getUniqueId())) + "&8)",
-                    answer -> {
+            // No amount yet: ask for it in a dialog, so the command works with just a name.
+            plugin.dialogs().number(self, "Send money",
+                    "&7How much do you want to send to &f"
+                            + target.getName() + "&7? &8(you have &f"
+                            + plugin.economy().format(plugin.economy().getBalance(self.getUniqueId())) + "&8)",
+                    "Amount", "", 16, answer -> {
                         if (answer.equalsIgnoreCase("cancel")) {
                             Msg.send(self, "&7Payment cancelled.");
                             return;

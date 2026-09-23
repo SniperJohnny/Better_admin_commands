@@ -50,8 +50,10 @@ public class Reply_Command implements TabExecutor {
         }
 
         String message = String.join(" ", args);
-        Msg.raw(self, "&7[&fme &7-> &f" + target.getName() + "&7] &f" + message);
-        Msg.raw(target, "&7[&f" + self.getName() + " &7-> &fme&7] &f" + message);
+        String selfName = plugin.preferences().displayName(self.getUniqueId(), self.getName());
+        String targetName = plugin.preferences().displayName(target.getUniqueId(), target.getName());
+        Msg.raw(self, "&7[&fme &7-> &f" + targetName + "&7] &f" + message);
+        Msg.raw(target, "&7[&f" + selfName + " &7-> &fme&7] &f" + message);
 
         plugin.preferences().setLastReplyTarget(target.getUniqueId(), self.getUniqueId());
         Msg_Command.notifySocialSpies(self, target, message);

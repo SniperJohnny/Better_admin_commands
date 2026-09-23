@@ -180,6 +180,31 @@ public class TradeService {
         }
     }
 
+    /**
+     * Reopens the window of one side after a dialog answered. Opening the dialog
+     * closed the window without cancelling the trade, so this puts the player
+     * back where they were. Does nothing when the trade ended meanwhile or when
+     * the window is already open again.
+     */
+    public void reopen(TradeSession session, Player player) {
+        if (session == null || session.isFinished()) {
+            return;
+        }
+        session.setAwaitingInput(false);
+        TradeMenu menu = session.menu(player.getUniqueId());
+        if (menu == null) {
+            return;
+        }
+        if (player.getUniqueId().equals(menu.owner())
+                && player.getOpenInventory().getTopInventory().getHolder() instanceof TradeMenu) {
+            return; // answered in chat while the window stayed open
+        }
+        render(session);
+        if (player.isOnline()) {
+            player.openInventory(menu.getInventory());
+        }
+    }
+
     private void renderSide(TradeSession session, UUID owner) {
         TradeMenu menu = session.menu(owner);
         if (menu == null) {

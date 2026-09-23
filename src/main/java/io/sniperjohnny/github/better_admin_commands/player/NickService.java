@@ -66,4 +66,13 @@ public class NickService {
     public String userPrefix(UUID uuid) {
         return bridge == null || uuid == null ? null : bridge.userPrefix(uuid);
     }
+
+    /**
+     * The name of a player's primary group, used by {@code /reveal} to report the
+     * real rank behind a nickname. Returns {@code null} when LuckPerms is absent
+     * or the player has no group.
+     */
+    public String userGroup(UUID uuid) {
+        return bridge == null || uuid == null ? null : bridge.userGroup(uuid);
+    }
 }

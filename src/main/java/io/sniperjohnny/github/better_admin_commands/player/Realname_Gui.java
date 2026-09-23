@@ -80,8 +80,8 @@ public class Realname_Gui {
                         "&7Type a nickname to find the account.",
                         "",
                         "&eClick to look one up"),
-                event -> plugin.chatPrompts().request(player,
-                        "&7Which nickname do you want to look up?", answer -> {
+                event -> plugin.dialogs().text(player, "Realname » Look up",
+                        "&7Which nickname do you want to look up?", "Nickname", "", 32, answer -> {
                             if (answer.equalsIgnoreCase("cancel")) {
                                 Msg.send(player, "&7Cancelled.");
                                 open(player, current);

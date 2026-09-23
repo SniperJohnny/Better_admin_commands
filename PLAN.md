@@ -227,6 +227,10 @@ _Add a line here every time the user reports something broken._
 | 12 | 2026-09-23 | Trade history (RAM) | Keeping every trade meant holding every traded `ItemStack` in memory for 48 hours | Records stored the item arrays directly | Fixed: records hold the encoded form plus a ready-made summary, and only the newest `trade.log.max-cached` are kept in memory |
 | 13 | 2026-09-23 | Notifications | Staff notifications (trade, report, kick, ban, unban, mail) could not be switched off without taking the permission away | Notifications were sent directly with `hasPermission`/`Bukkit.broadcast` | Fixed: a `NotificationService` with per-category permissions and per-player toggles, managed with `/notify`; every sender now goes through it |
 | 14 | 2026-09-23 | Auction UI | `/ah` had no consistent look and no way to reach its actions without clicking | One flat menu, no subcommands | Fixed: a shared `Theme` (frame/border/heading) for every menu, a rebuilt `/ah` with counts, balance and price range, and `/ah browse|search|sort|sell|mine|claims|help` |
+| 16 | 2026-09-23 | Auction / vanish / staff | The auction price could only be typed in chat, the vanish cue was lost once TAB overwrote the tab list name, and staff had no single command that returns the real name and rank behind a nickname | The sell flow was a chat prompt, the cue was set on the Bukkit tab list name (which TAB overrides) and only `/realname` existed | Fixed: a price-picker menu with +/- buttons (and an optional chat field) before listing; TAB now draws the cue in front of the player's rank prefix; a new `/reveal <name|nickname>` command reports the real name, LuckPerms rank and nickname |
+| 15 | 2026-09-23 | Nick / TAB / chat | The real name stayed visible in the tab list and above the head even to players who should not see it, ranks were not shown before names in commands and a borrowed rank did not sort as that rank | TAB owns the tab list and the name tags, so it overwrote what the plugin set; only LuckPerms prefixes were used in chat | Fixed: TAB API hook (`TabService`/`TabBridge`) sets the tab list name, hides the name tag of nicked players and applies the borrowed group with `setTemporaryGroup` so sorting follows it; the `nick.see` reveal was removed; rank prefixes now appear in `/msg`, `/reply`, `/me` and `/list`; a scoreboard-team fallback hides the name tag without TAB; `betteradmincommands.chat.color` allows colour codes in chat |
+| 17 | 2026-09-23 | Nick / tab bar | The rank next to a nickname did not follow `/nick`: with TAB installed the prefix was left to TAB, which shows none unless the server configured one, so a nickname lost its rank in the tab bar | The tab list prefix was reset with `null` ("whatever TAB has") instead of being written by the plugin, and the rank was only ever resolved for the Bukkit tab list name | Fixed: for a nicked player the plugin writes the tab list prefix itself - `TabService#apply` resolves the rank (own rank or the group borrowed with `/nick`) on every call - so the rank updates with `/nick`, with a borrowed group and after a rank change; without a nickname TAB's own formatting stays untouched |
+| 18 | 2026-09-23 | Name tags | Name tags above players' heads were only hidden for nicked players, so every other player's real name stayed readable in the world | The scoreboard-team fallback ran only when a nickname was set, and TAB's name tag manager was only asked to hide nicked players | Fixed: the tag is hidden for **every** player (`nick.hide-nametag`), by TAB's name tag manager or by one scoreboard team per player created on the main board and on every player's own board; the teams are removed on quit, on disable and when the plugin is switched off |
 
 ## 9. Progress
 
@@ -243,7 +247,15 @@ _Add a line here every time the user reports something broken._
 - [x] Nick/skin fixes from §8 entry #1
 - [x] Bug log entries #2–#14 fixed
 - [x] Permissions: `better_admin_commands.permissionall`, config-driven default access per group, cached wildcard checks
-- [x] Nick: chat rendering, permission-gated real-name reveal, own-rank prefix by default
+- [x] Nick: chat rendering, own-rank prefix by default
+- [x] Nick/TAB: TAB API tab list name + name-tag hiding, borrowed rank sorting, reveal removed
+- [x] Nick/TAB: the tab bar always shows the rank the nickname was set with (own rank or borrowed group)
+- [x] Name tags: hidden for every player (TAB's API, or one scoreboard team per player without it)
+- [x] Rank prefixes in `/msg`, `/reply`, `/me`, `/list` and the social spy line
+- [x] Chat colour for `betteradmincommands.chat.color`
+- [x] Auction: set the price in a menu before listing (chat entry stays as a fallback)
+- [x] Vanish: the tab-list cue is drawn through TAB's API
+- [x] Staff: `/reveal <name|nickname>` returns the real name and rank
 - [x] Skin: signed texture request, pasted-texture input, clearer errors
 - [x] Economy: XConomy-style `/money set|give|take|reset|resetall|balance|top` behind `/eco`/`/balance`/`/money`, granular `betteradmincommands.eco.<action>` nodes
 - [x] Trade: two-sided GUI with items and money, dual confirm, request flow, full rollback on cancel/quit
@@ -267,10 +279,10 @@ expensive/name) and a search over item name and seller are both built.
    `/eco` and the moderation commands were deliberately left as commands.
 5. **`/balance` shape** — it now prints the amount **and** opens the menu. If the menu on
    every lookup turns out to be noise, moving it behind `/balance menu` is a one-line change.
-6. **Tab/nametag reveal** — the nickname is shown to everyone through the tab list entry (which
-   is also what 1.21 draws above the head). A *per-viewer* nametag, where only staff see the
-   real name above the head and not just in chat, needs per-player packets and therefore a
-   packet library; the chat reveal and `/realname` cover the common cases without one.
+6. **Tab/nametag reveal** — ✅ answered: TAB's API is used for the tab list name, the rank prefix next
+   to it and the name tags. The name tag above a head is hidden for **every** player, so the tab list
+   is the only place a name shows (without TAB a scoreboard team per player does it). The automatic
+   real-name reveal was removed entirely; `/realname` is the staff-only lookup now.
 7. **Trade escrow** — money is checked at the moment both sides confirm rather than being
    moved aside when offered. That keeps the code simple and cannot lose money; if a balance
    drops between offering and confirming, the trade is cancelled with a message.

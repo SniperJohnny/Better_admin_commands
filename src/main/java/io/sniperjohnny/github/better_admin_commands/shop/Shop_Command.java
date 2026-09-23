@@ -330,8 +330,9 @@ public class Shop_Command implements TabExecutor {
     /* ---------------------------------------------------------- search ---- */
 
     private void promptSearch(Player player, Runnable onCancel) {
-        plugin.chatPrompts().request(player,
-                "&7What are you looking for? &8(part of an item name)", answer -> {
+        plugin.dialogs().text(player, "Shop » Search",
+                "&7What are you looking for? &8(part of an item name)",
+                "Item name", "", 48, answer -> {
                     if (answer.equalsIgnoreCase("cancel")) {
                         Msg.send(player, "&7Search cancelled.");
                         onCancel.run();
@@ -390,8 +391,9 @@ public class Shop_Command implements TabExecutor {
 
     private void promptAmount(Player player, String mode, ShopService.ShopItem item,
                               String shopId, int shopPage) {
-        plugin.chatPrompts().request(player,
-                "&7How many times do you want to " + mode + " &f" + pretty(item.display()) + "&7?", answer -> {
+        plugin.dialogs().number(player, "Shop » " + mode,
+                "&7How many times do you want to " + mode + " &f" + pretty(item.display()) + "&7?",
+                "Times", "", 6, answer -> {
                     if (answer.equalsIgnoreCase("cancel")) {
                         Msg.send(player, "&7Cancelled.");
                         return;

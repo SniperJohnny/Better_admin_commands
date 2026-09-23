@@ -6,6 +6,9 @@ import io.sniperjohnny.github.better_admin_commands.storage.LocalStore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
+import org.bukkit.scoreboard.Team;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -35,8 +38,8 @@ public class PlayerPreferences {
     public static final String NICK_GROUP = "nick_group";
     /** Stored as the nick prefix when a player asked for no prefix at all. */
     public static final String PREFIX_NONE = "-";
-    /** Permission that lets a viewer see the real name behind a nickname. */
-    public static final String REVEAL_PERMISSION = "betteradmincommands.nick.see";
+    /** Start of every scoreboard team created to hide a player's name tag. */
+    private static final String NAME_TAG_TEAM_PREFIX = "bacn";
     /** Packed {@code value|signature|source} of a skin borrowed with /skinchange. */
     public static final String SKIN = "skin";
     public static final String SOCIAL_SPY = "socialspy";
@@ -121,6 +124,8 @@ public class PlayerPreferences {
     public void unload(UUID uuid) {
         cache.remove(uuid);
         lastReplyTarget.remove(uuid);
+        // The player's name tag team is only needed while they are on the server.
+        removeNameTagTeam(uuid);
     }
 
     private Map<String, String> settings(UUID uuid) {
@@ -166,11 +171,6 @@ public class PlayerPreferences {
         return settings(uuid).get(NICK_GROUP);
     }
 
-    /** Whether a viewer is allowed to see the real name behind a nickname. */
-    public boolean canRevealNickname(Player viewer) {
-        return viewer != null && plugin.permissions().has(viewer, REVEAL_PERMISSION);
-    }
-
     /**
      * The nickname prefix as a legacy string, never {@code null}.
      *
@@ -202,36 +202,163 @@ public class PlayerPreferences {
     }
 
     /**
-     * Applies the stored nickname and its rank prefix. The result is used for
-     * the tab list and - because 1.21 draws the name tag above the head from the
-     * tab list entry - for the name tag as well.
+     * The name a player is shown with everywhere in the plugin: the rank prefix
+     * (the player's own rank, or the group borrowed with {@code /nick}) followed
+     * by the nickname, or the real name when no nickname is set.
      *
-     * <p>A vanished player additionally gets the configured cue in the tab list,
-     * so the staff who are allowed to see them can tell them apart.</p>
+     * <p>Returns a legacy string, so it can be dropped into the existing
+     * {@code &}-code messages.</p>
+     */
+    public String displayName(UUID uuid, String realName) {
+        String nickname = nickname(uuid);
+        String base = nickname == null ? (realName == null ? "" : realName) : nickname;
+        return nicknamePrefix(uuid) + base;
+    }
+
+    /**
+     * Applies the stored nickname and its rank prefix.
+     *
+     * <p>With TAB installed the tab list name, the borrowed rank and the hidden
+     * name tag are handed to TAB. Without it the display name and the tab list
+     * entry are set directly, and the name tags are hidden with scoreboard
+     * teams. A vanished player additionally gets the configured cue in the tab
+     * list, so the staff who are allowed to see them can tell them apart.</p>
      */
     public void applyNickname(Player player) {
         Component shown = tabName(player.getUniqueId(), player.getName());
         player.displayName(shown);
-        player.playerListName(plugin.vanish().isVanished(player) ? vanishCue().append(shown) : shown);
+        boolean vanished = plugin.vanish().isVanished(player);
+        player.playerListName(vanished ? vanishCue().append(shown) : shown);
+        // TAB owns the tab list and the name tags when it is installed, so hand
+        // it the nickname, the rank prefix and the vanish cue as well instead of
+        // fighting over the same packets.
+        plugin.tabs().apply(player.getUniqueId(), nickname(player.getUniqueId()),
+                nicknameGroup(player.getUniqueId()), vanished ? vanishCueText() : "");
+        // The name tag above a head is hidden for every player - not only for a
+        // nicked one - so the tab list is the only place a name shows up.
+        updateNameTag(player);
     }
 
     /**
      * The name shown for a player in the tab list and above their head. It is the
-     * rank prefix plus the nickname, or the real name when no nickname is set.
+     * rank prefix plus the nickname, or the rank prefix plus the real name when
+     * no nickname is set - so a rank stays visible even without a nickname.
      */
     public Component tabName(UUID uuid, String realName) {
-        String nickname = nickname(uuid);
-        if (nickname == null) {
-            return Component.text(realName == null ? "" : realName);
+        return LegacyComponentSerializer.legacyAmpersand()
+                .deserialize(displayName(uuid, realName));
+    }
+
+    /** Whether the name tag above players' heads is hidden (config: {@code nick.hide-nametag}). */
+    public boolean hideNameTags() {
+        return plugin.getConfig().getBoolean("nick.hide-nametag", true);
+    }
+
+    /**
+     * Hides the name tag above a player's head, by putting them into a scoreboard
+     * team whose name tag visibility is off.
+     *
+     * <p>This is the fallback for a server without TAB, or with TAB's name tag
+     * feature switched off - then TAB hides the tag itself. The tag is hidden for
+     * <em>every</em> player, nick or not, so the tab list is the only place a
+     * name shows. {@code nick.hide-nametag} (on by default) turns this off for
+     * servers where another plugin relies on the scoreboard teams; the team this
+     * plugin created is then removed again.</p>
+     */
+    private void updateNameTag(Player player) {
+        boolean hide = hideNameTags() && !plugin.tabs().nameTagsAvailable();
+        String teamName = nameTagTeam(player.getUniqueId());
+        // The team has to exist on every scoreboard a player uses: a scoreboard
+        // plugin may hand out a board per player, and a name tag is only hidden
+        // for the viewers whose board knows the team.
+        for (Scoreboard board : scoreboards()) {
+            Team team = board.getTeam(teamName);
+            if (!hide) {
+                if (team != null) {
+                    team.unregister();
+                }
+                continue;
+            }
+            if (team == null) {
+                team = board.registerNewTeam(teamName);
+            }
+            if (!team.hasEntry(player.getName())) {
+                team.addEntry(player.getName());
+            }
+            team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
         }
-        String raw = nicknamePrefix(uuid) + nickname;
-        return LegacyComponentSerializer.legacyAmpersand().deserialize(raw);
+    }
+
+    /**
+     * Puts every player back into their hidden name tag team. Called when someone
+     * joins, because a scoreboard plugin may have handed them a scoreboard of
+     * their own that knows nothing about the teams yet.
+     */
+    public void refreshNameTags(Player joiner) {
+        ScoreboardManager manager = plugin.getServer().getScoreboardManager();
+        if (manager == null || joiner.getScoreboard() == manager.getMainScoreboard()) {
+            return; // everyone shares the main scoreboard, its teams are in place already
+        }
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            updateNameTag(online);
+        }
+    }
+
+    /** Every scoreboard a name tag team has to exist on. */
+    private Set<Scoreboard> scoreboards() {
+        Set<Scoreboard> boards = new LinkedHashSet<>();
+        ScoreboardManager manager = plugin.getServer().getScoreboardManager();
+        if (manager == null) {
+            return boards;
+        }
+        boards.add(manager.getMainScoreboard());
+        for (Player viewer : plugin.getServer().getOnlinePlayers()) {
+            boards.add(viewer.getScoreboard());
+        }
+        return boards;
+    }
+
+    /**
+     * Removes every name tag team this plugin created, so the name tags come back
+     * when the plugin is switched off or unloaded.
+     */
+    public void removeNameTagTeams() {
+        for (Scoreboard board : scoreboards()) {
+            for (Team team : new ArrayList<>(board.getTeams())) {
+                if (team.getName().startsWith(NAME_TAG_TEAM_PREFIX)) {
+                    team.unregister();
+                }
+            }
+        }
+    }
+
+    /** Removes the name tag team of one player, used when they leave. */
+    private void removeNameTagTeam(UUID uuid) {
+        if (plugin.getServer().getScoreboardManager() == null) {
+            return;
+        }
+        String teamName = nameTagTeam(uuid);
+        for (Scoreboard board : scoreboards()) {
+            Team team = board.getTeam(teamName);
+            if (team != null) {
+                team.unregister();
+            }
+        }
+    }
+
+    /** A scoreboard team name that fits the 16 character limit. */
+    private static String nameTagTeam(UUID uuid) {
+        return NAME_TAG_TEAM_PREFIX + uuid.toString().replace("-", "").substring(0, 12);
     }
 
     /** The tab list marker for vanished players, configured under moderation. */
     private Component vanishCue() {
-        return LegacyComponentSerializer.legacyAmpersand()
-                .deserialize(plugin.getConfig().getString("moderation.vanish-tab-cue", "&7[&8V&7] &r"));
+        return LegacyComponentSerializer.legacyAmpersand().deserialize(vanishCueText());
+    }
+
+    /** The same marker as a legacy string, for TAB's string-based API. */
+    private String vanishCueText() {
+        return plugin.getConfig().getString("moderation.vanish-tab-cue", "&7[&8V&7] &r");
     }
 
     /** Changes the nickname, keeping the group prefix that is already set. */

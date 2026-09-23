@@ -55,12 +55,16 @@ public class Ptime_Gui {
                     event -> apply(player, preset.id()));
         }
 
-        menu.button(22, Items.of(Material.NAME_TAG, "&bType a tick value",
-                        "&7Set an exact time, 0-24000.",
+        long offset = player.getPlayerTimeOffset();
+        boolean custom = offset != 0L;
+        menu.button(22, Items.of(Material.CLOCK, "&bPick a tick value",
+                        "&7Set an exact time, 0-24000, with a slider.",
                         "",
-                        "&eClick to type"),
-                event -> plugin.chatPrompts().request(player,
-                        "&7Which tick value do you want? &8(0-24000, or &freset&8)", answer -> {
+                        "&eClick to pick"),
+                event -> plugin.dialogs().slider(player, "Personal time",
+                        "&7Which tick value do you want? &8(0-24000)",
+                        "Ticks", 0f, 24000f, 500f,
+                        custom ? Math.floorMod(offset, 24000L) : 12000f, answer -> {
                             if (answer.equalsIgnoreCase("cancel")) {
                                 Msg.send(player, "&7Cancelled.");
                                 open(player);

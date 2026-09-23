@@ -14,6 +14,8 @@ import io.sniperjohnny.github.better_admin_commands.commands.Disabled_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Plugin_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Root_Command;
 import io.sniperjohnny.github.better_admin_commands.config.ConfigUpdater;
+import io.sniperjohnny.github.better_admin_commands.gui.ChatPromptService;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Break_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Burn_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Entity_Command;
@@ -33,6 +35,7 @@ import io.sniperjohnny.github.better_admin_commands.commands.info.Motd_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.info.Notify_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.info.Playtime_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.info.Realname_Command;
+import io.sniperjohnny.github.better_admin_commands.commands.info.Reveal_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.info.Rules_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.items.Book_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.items.Condense_Command;
@@ -171,6 +174,7 @@ import io.sniperjohnny.github.better_admin_commands.notify.NotificationService;
 import io.sniperjohnny.github.better_admin_commands.permission.PermissionService;
 import io.sniperjohnny.github.better_admin_commands.player.NickService;
 import io.sniperjohnny.github.better_admin_commands.player.PlayerPreferences;
+import io.sniperjohnny.github.better_admin_commands.player.TabService;
 import io.sniperjohnny.github.better_admin_commands.player.VanishService;
 import io.sniperjohnny.github.better_admin_commands.skin.SkinService;
 import io.sniperjohnny.github.better_admin_commands.spawn.SpawnManager;
@@ -234,6 +238,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private VanishService vanish;
     private PlayerPreferences preferences;
     private NickService nicks;
+    private TabService tabs;
     private SkinService skins;
     private AuctionService auctions;
     private ShopService shops;
@@ -253,6 +258,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private Unlimited_Gui unlimitedGui;
     private Realname_Gui realnameGui;
     private ChatPromptService chatPrompts;
+    private DialogPromptService dialogs;
     private ReportService reports;
     private MailService mail;
     private AfkService afk;
@@ -389,6 +395,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         kits = new KitManager(this);
         vanish = new VanishService(this);
         nicks = new NickService(this);
+        tabs = new TabService(this);
         skins = new SkinService(this);
         preferences = new PlayerPreferences(this, database, localSettings);
         notifications = new NotificationService(this);
@@ -422,6 +429,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         unlimitedGui = new Unlimited_Gui(this);
         realnameGui = new Realname_Gui(this);
         chatPrompts = new ChatPromptService(this);
+        dialogs = new DialogPromptService(this, chatPrompts);
         reports = new ReportService(this, database);
         reports.loadAll();
 
@@ -435,6 +443,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         registerListeners();
         startTasks();
         registerPlaceholders();
+        tabs.registerEvents();
 
         getLogger().info("Better_Admin_Commands enabled with " + warps.size() + " warp(s).");
     }
@@ -442,6 +451,11 @@ public final class Better_Admin_Commands extends JavaPlugin {
     @Override
     public void onDisable() {
         cancelTasks();
+        if (preferences != null) {
+            // Hand the name tags back, so no hidden tag is left behind in the
+            // scoreboard of a running server.
+            preferences.removeNameTagTeams();
+        }
         if (permissions != null) {
             permissions.clearAll();
         }
@@ -542,6 +556,10 @@ public final class Better_Admin_Commands extends JavaPlugin {
                 }
             }
             getLogger().info("The plugin was disabled - only /" + rootLabel + " is still answering.");
+            if (preferences != null) {
+                // Features are off, so the players get their name tags back.
+                preferences.removeNameTagTeams();
+            }
         } else {
             for (Map.Entry<String, CommandExecutor> entry : executors.entrySet()) {
                 PluginCommand command = getCommand(entry.getKey());
@@ -557,6 +575,13 @@ public final class Better_Admin_Commands extends JavaPlugin {
             }
             registerListeners();
             startTasks();
+            // The displays of everyone who is online are re-applied, so the rank
+            // prefixes and the hidden name tags come back with the features.
+            if (preferences != null) {
+                for (org.bukkit.entity.Player online : getServer().getOnlinePlayers()) {
+                    preferences.applyNickname(online);
+                }
+            }
             getLogger().info("The plugin was enabled again.");
         }
     }
@@ -982,7 +1007,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         // ---- info ----------------------------------------------------------
         register("whois", new Whois_Command(this));
         register("seen", new Seen_Command(this));
-        register("list", new List_Command());
+        register("list", new List_Command(this));
         register("ping", new Ping_Command());
         register("gc", new Gc_Command());
         register("afk", new Afk_Command(this));
@@ -1050,6 +1075,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("getpos", new Getpos_Command());
         register("playtime", new Playtime_Command(this));
         register("realname", new Realname_Command(this));
+        register("reveal", new Reveal_Command(this));
         register("motd", new Motd_Command(this));
         register("notify", new Notify_Command(this));
         register("rules", new Rules_Command(this));
@@ -1193,6 +1219,11 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return nicks;
     }
 
+    /** The optional hook into the TAB plugin (tab list, name tags, sorting). */
+    public TabService tabs() {
+        return tabs;
+    }
+
     public SkinService skins() {
         return skins;
     }
@@ -1332,6 +1363,11 @@ public final class Better_Admin_Commands extends JavaPlugin {
 
     public ChatPromptService chatPrompts() {
         return chatPrompts;
+    }
+
+    /** One-value input shown as a dialog (with a chat fallback for old clients). */
+    public DialogPromptService dialogs() {
+        return dialogs;
     }
 
     public ReportService reports() {

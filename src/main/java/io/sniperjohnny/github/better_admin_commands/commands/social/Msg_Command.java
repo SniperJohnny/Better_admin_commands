@@ -54,8 +54,10 @@ public class Msg_Command implements TabExecutor {
         }
 
         String message = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
-        Msg.raw(self, "&7[&fme &7-> &f" + target.getName() + "&7] &f" + message);
-        Msg.raw(target, "&7[&f" + self.getName() + " &7-> &fme&7] &f" + message);
+        String selfName = plugin.preferences().displayName(self.getUniqueId(), self.getName());
+        String targetName = plugin.preferences().displayName(target.getUniqueId(), target.getName());
+        Msg.raw(self, "&7[&fme &7-> &f" + targetName + "&7] &f" + message);
+        Msg.raw(target, "&7[&f" + selfName + " &7-> &fme&7] &f" + message);
 
         plugin.preferences().setLastReplyTarget(self.getUniqueId(), target.getUniqueId());
         plugin.preferences().setLastReplyTarget(target.getUniqueId(), self.getUniqueId());
@@ -69,7 +71,9 @@ public class Msg_Command implements TabExecutor {
                 continue;
             }
             if (plugin().preferences().getBoolean(online.getUniqueId(), PlayerPreferences.SOCIAL_SPY, false)) {
-                Msg.raw(online, "&8[&5Spy&8] &7" + sender.getName() + " &8-> &7" + target.getName() + "&8: &f" + message);
+                String senderName = plugin().preferences().displayName(sender.getUniqueId(), sender.getName());
+                String targetName = plugin().preferences().displayName(target.getUniqueId(), target.getName());
+                Msg.raw(online, "&8[&5Spy&8] &7" + senderName + " &8-> &7" + targetName + "&8: &f" + message);
             }
         }
     }

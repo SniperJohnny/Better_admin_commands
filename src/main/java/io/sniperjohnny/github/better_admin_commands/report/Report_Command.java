@@ -377,9 +377,9 @@ public class Report_Command implements TabExecutor {
     /* ------------------------------------------------------------- flows --- */
 
     private void startCreate(Player player, Preset preset, String target) {
-        plugin.chatPrompts().request(player,
-                "&7Describe the &f" + preset.display() + "&7 report in chat.",
-                answer -> {
+        plugin.dialogs().message(player, "Create a report",
+                "&7Describe the &f" + preset.display() + "&7 report.",
+                "Description", "", 256, 4, answer -> {
                     if (answer.equalsIgnoreCase("cancel")) {
                         Msg.send(player, "&7Report cancelled.");
                         openMain(player);
@@ -403,9 +403,9 @@ public class Report_Command implements TabExecutor {
     }
 
     private void startReply(Player player, String reportId) {
-        plugin.chatPrompts().request(player,
+        plugin.dialogs().message(player, "Report #" + ReportService.shortId(reportId),
                 "&7Type your reply for ticket &f#" + ReportService.shortId(reportId) + "&7.",
-                answer -> {
+                "Reply", "", 256, 4, answer -> {
                     if (answer.equalsIgnoreCase("cancel")) {
                         Msg.send(player, "&7Reply cancelled.");
                         openTicket(player, reportId, 0);

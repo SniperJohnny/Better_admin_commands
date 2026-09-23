@@ -33,7 +33,7 @@ by **MySQL/MariaDB** with local safe-file fallback.
 
 | Area | What you get |
 | --- | --- |
-| **Admin** | gamemode, fly, god, vanish, heal, feed, speed, repair, give, clear, kits, broadcast, nick (tab list, name tag and chat, optionally with a LuckPerms group prefix), skin change, hat, craft, enderchest, invsee, sudo, exp, time/weather (personal too), world tools |
+| **Admin** | gamemode, fly, god, vanish, heal, feed, speed, repair, give, clear, kits, broadcast, nick (tab list + chat with the rank prefix, optionally borrowing a LuckPerms group; no name tags above heads), skin change, hat, craft, enderchest, invsee, sudo, exp, time/weather (personal too), world tools |
 | **Auction & shop** | a full `/ah` auction house as a GUI with sorting and search, and a `/shop` that takes over EconomyShopGUI's shops |
 | **Menus** | `/warps`, `/homes`, `/kit`, `/balance`, `/baltop`, `/mail`, `/ignorelist`, `/jails`, `/ptime`, `/pweather`, `/unlimited` and `/realname` open clickable menus instead of text lists (each keeps a text form) |
 | **Moderation** | kick, kickall, ban, tempban, IP ban, unban, unbanip, banlist, mute/unmute with timers |
@@ -41,7 +41,7 @@ by **MySQL/MariaDB** with local safe-file fallback.
 | **Teleporting** | spawn, warps, homes, tpa/tpahere with clickable accept/deny buttons, `/back`, `/tp`, `/tphere`, `/tpall`, `/tppos`, `/rtp` |
 | **Jail** | named cells, `/jail`, `/unjail`, `/togglejail`, automatic release when the timer expires |
 | **Social** | `/msg`, `/reply`, `/socialspy`, `/ignore`, `/me`, `/mail` (offline messages) |
-| **Info** | `/whois`, `/seen`, `/list`, `/ping`, `/gc`, `/playtime`, `/realname`, `/motd`, `/rules` |
+| **Info** | `/whois`, `/seen`, `/list`, `/ping`, `/gc`, `/playtime`, `/realname`, `/reveal`, `/motd`, `/rules` |
 | **Items & world** | `/more`, `/rename`, `/lore`, `/skull`, `/book`, `/sort`, `/stack`, `/condense`, `/powertool`, `/unlimited`, `/tree`, `/spawnmob`, `/butcher`, and more |
 
 Everything player-related (balances, homes, mutes, settings, mail) is stored in MySQL, with an
@@ -85,11 +85,11 @@ at sign) that panels put in passwords:
 
 ```yaml
 database:
-  connection-string: "jdbc:mysql://u5_6lYOrDlWi2:S5fyBH5u8%2BzaX3X%40AUdZZw@172.18.0.1:3306/s5_MysqlPlugin"
+  connection-string: "jdbc:mysql://bac_user:Str0ng%2BPass%40word@db.example.com:3306/better_admin_commands"
 ```
 
-That single line carries the user `u5_6lYOrDlWi2`, the password `S5fyBH5u8+zaX3X@AUdZZw`, the host
-`172.18.0.1`, port `3306` and the database `s5_MysqlPlugin`. These forms all work:
+That single line carries the user `bac_user`, the password `Str0ng+Pass@word`, the host
+`db.example.com`, port `3306` and the database `better_admin_commands`. These forms all work:
 
 | You paste | The plugin reads |
 | --- | --- |
@@ -192,10 +192,10 @@ Start with the built-in check, which walks the connection in order and names the
 ```
 Database check
  OK   Engine: MySQL
- OK   Settings: MySQL bac_user@172.18.0.1:3306/better_admin_commands (from connection-string)
- OK   Address: 172.18.0.1 resolves to 172.18.0.1
+ OK   Settings: MySQL bac_user@db.example.com:3306/better_admin_commands (from connection-string)
+ OK   Address: db.example.com resolves to 203.0.113.10
  FAIL Port: cannot reach port 3306 - check database.port, the firewall and whether the database allows remote connections
- FAIL Login: Access denied for user 'bac_user'@'172.18.0.1' - the user name or password is wrong, or the user is not allowed to connect from this server
+ FAIL Login: Access denied for user 'bac_user'@'203.0.113.10' - the user name or password is wrong, or the user is not allowed to connect from this server
 ```
 
 The same hints are added to the console warning at start-up, and `/betteradmincommands info` shows
@@ -371,6 +371,7 @@ player can toggle with `/notify`. The shipped ids are `trade`, `report`, `kick`,
 | Key | Default | Description |
 | --- | --- | --- |
 | `show-rank-prefix` | `true` | Show the player's own LuckPerms rank prefix with `/nick <nick>` |
+| `hide-nametag` | `true` | Hide the name tag above **every** player's head, so the tab list is the only place a name shows |
 | `chat-format` | `&f<%nickname%>&r %message%` | The chat line, used while no other plugin formats chat |
 
 ### `report`
@@ -534,7 +535,7 @@ maintenance windows, for example while another plugin is updated or a database m
 
 #### Nicknames
 
-`/nick <nickname>` changes **your own** name in the **tab list**, above your head and in **chat**.
+`/nick <nickname>` changes **your own** name in the **tab list** and in **chat**.
 The nickname is stored in the database, so it survives restarts, and `/realname <nick>` finds the
 player behind it again. Only your own name can be changed - there is no way to rename someone else.
 
@@ -553,19 +554,42 @@ a prefix you change in LuckPerms applies after their next login.
 Using the nicks or groups listed under `nick.restricted` (by default `dev` and `owner`) requires
 being a server operator.
 
-**Ranks.** With LuckPerms installed, `/nick <nickname>` shows **your own rank prefix** in front of
-the nickname, so the rank you already wear appears with the nick - no group has to be named.
-`/nick <nickname> off` drops the prefix and keeps the nickname, `/nick <nickname> <group>` borrows a
-different group's prefix, and `nick.show-rank-prefix: false` turns the automatic prefix off.
+**Ranks.** With LuckPerms installed, `/nick <nickname>` shows **your own rank prefix** in the tab
+list in front of the nickname, so the rank you already wear appears with the nick - no group has to
+be named. `/nick <nickname> off` drops the prefix and keeps the nickname, `/nick <nickname> <group>`
+borrows a different group's prefix, and `nick.show-rank-prefix: false` turns the automatic prefix
+off. The tab list entry is written again on every `/nick`, so the rank in the tab bar always matches
+the nickname - the own rank, or the group the nickname was set with.
 
-**Seeing the real name.** The nickname is what everyone sees. Staff who hold
-`betteradmincommands.nick.see` additionally see the real name in brackets in chat (`Nick (RealName)`);
-chat is rendered per viewer, so nobody else ever sees it. `/realname <nick>` finds the account behind
-a nickname and needs `betteradmincommands.realname` (staff, `op` by default).
+A rank prefix is shown in front of **every** player's name - nick or not - in the tab list, in chat
+and in the commands that name players (`/msg`, `/reply`, `/me`, `/list`, the social spy line, ...).
+
+When a group is named (`/nick <nick> <group>`), TAB is told to treat the player as if they really
+held that rank, so an owner who nicks as `player` is **sorted as a player** and does not stay at the
+top of the tab list.
+
+**Seeing the real name.** The nickname is all anyone ever sees; there is no reveal. There is no name
+tag above a player's head at all (`nick.hide-nametag`, on by default), so the tab list is the only
+place a name shows up. `/realname <nick>` is the deliberate, staff-only lookup and needs
+`betteradmincommands.realname` (`op` by default).
 
 Chat works out of the box because Paper's default chat renderer uses the display name. If another
 plugin formats chat, make it use the display name (`%player_displayname%` with PlaceholderAPI)
 rather than the real name.
+
+**Colour in chat.** Players holding `betteradmincommands.chat.color` can use `&` colour codes in
+their chat messages; for everyone else the codes stay visible as plain text.
+
+**Name tags and TAB.** Name tags above the players' heads are hidden for **everyone** - nick or not -
+so a real name cannot be read off a player standing in front of you; the tab list is the only place a
+name shows up. TAB owns the tab list and the name tags on most servers, so instead of fighting it
+over the same packets the plugin drives it through **TAB's API**: the tab list name and the rank
+prefix next to it are written by the plugin, a borrowed rank is applied through `setTemporaryGroup`,
+and the name tag is hidden with TAB's name tag manager. Without TAB the same is done through Bukkit,
+and the tag is hidden with a scoreboard team (`nick.hide-nametag: false` turns that off for servers
+where another plugin relies on the scoreboard teams). The teams are created on the main scoreboard
+and on every player's own scoreboard, so they also work with a scoreboard plugin, and they are removed
+again when the plugin is disabled.
 
 **Showing the nickname in TAB (or another tab list plugin).** A plugin such as TAB renders the tab
 list and the name tags from its own packets, so it overwrites whatever the server sets. Instead of
@@ -629,8 +653,9 @@ is required.
   through newest, oldest, cheapest, most expensive and item name A-Z, and a **search**
   button filters by item name (custom name or material) and by seller name; both stick
   until you clear them.
-- **Sell held item** - hold an item, press the button and type the price in chat. The
-  stack is taken out of your hand once the listing exists.
+- **Sell held item** - hold an item, press the button and set the price in the window that
+  opens: buttons raise or lower it by 1 / 10 / 100 / 1000 / 100000, **Type an exact price**
+  falls back to typing it in chat. The stack is taken out of your hand once the listing exists.
 - **My listings** - everything you listed; click a listing to cancel it.
 - **Claims** - items from cancelled or expired listings wait here until collected.
 
@@ -728,7 +753,7 @@ local safe file**, so the report system needs the database to be reachable.
   the tab list.
 - **With `betteradmincommands.vanish.see`:** the player stays visible in the world *and* in the tab
   list, where they carry the cue from `moderation.vanish-tab-cue` (default `[V]`), so staff always know
-  who is vanished:
+  who is vanished. With TAB installed the cue is put in front of the rank prefix through TAB's API:
 
 ```
 [V] Steve
@@ -819,6 +844,9 @@ Vanish state is kept in memory: a restart brings everyone back visible.
 - **`/realname`** - every online player using a nickname, sorted by nickname, with the real account name
   underneath. Left-click confirms who they are, right-click shows their balance if you may see it, and
   **Look up a nickname** asks about one directly. `/realname <nickname>` gives the same answer as before.
+- **`/reveal <name|nickname>`** - the deliberate staff lookup: answers with the online player's real
+  account name, their LuckPerms rank and their nickname. Unlike the old automatic reveal it only
+  runs when a staff member asks for it.
 
 Every transfer made through the balance menu goes through the same economy code as `/pay`, so the
 payment rules cannot differ between the two.
@@ -877,6 +905,7 @@ every teleport, including `/spawn`, `/home`, `/warp` and `/back`.
 | `/afk` | `/afk [reason]` | `betteradmincommands.afk` |
 | `/playtime` | `/playtime [player]` | `betteradmincommands.playtime` |
 | `/realname` | `/realname [nickname]` | `betteradmincommands.realname` |
+| `/reveal` | `/reveal <name\|nickname>` | `betteradmincommands.reveal` |
 | `/depth` | `/depth` | `betteradmincommands.depth` |
 | `/getpos` | `/getpos [player]` | `betteradmincommands.getpos` |
 | `/motd` | `/motd` | `betteradmincommands.motd` |
@@ -1038,6 +1067,8 @@ Extra permissions used for finer control:
   they are marked with `moderation.vanish-tab-cue` (already part of `betteradmincommands.mod`)
 - `betteradmincommands.getpos.others`, `.playtime.others`, `.balance.others` — target other players
 - `betteradmincommands.nick.color` — use colour codes in a nickname
+- `betteradmincommands.chat.color` — use colour codes in chat
+- `betteradmincommands.reveal` — report the real name and rank behind a nickname
 - `betteradmincommands.auction` / `.auction.sell` — open the auction house / list items (both default `true`)
 - `betteradmincommands.shop` / `.shop.sell` — open the shop / sell to it (both default `true`);
   `.shop.admin` (default `op`) — import the EconomyShopGUI files with `/shop import` and use every

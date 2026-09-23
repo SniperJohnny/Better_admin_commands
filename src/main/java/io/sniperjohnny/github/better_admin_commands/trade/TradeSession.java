@@ -25,6 +25,12 @@ public class TradeSession {
     private boolean secondConfirmed;
     /** Set once the trade ended (completed or cancelled), so close events stop. */
     private boolean finished;
+    /**
+     * Set while a money dialog is open for one side. The window closes when the
+     * dialog opens, but the trade must not be cancelled - the window is reopened
+     * as soon as the dialog answers or times out.
+     */
+    private boolean awaitingInput;
 
     public TradeSession(Player first, Player second) {
         this.first = first.getUniqueId();
@@ -122,6 +128,15 @@ public class TradeSession {
 
     public void finish() {
         this.finished = true;
+    }
+
+    /** Whether a money dialog is open and the windows are expected to be closed. */
+    public boolean isAwaitingInput() {
+        return awaitingInput;
+    }
+
+    public void setAwaitingInput(boolean value) {
+        this.awaitingInput = value;
     }
 
     /** The items a player put into their own side of the trade. */

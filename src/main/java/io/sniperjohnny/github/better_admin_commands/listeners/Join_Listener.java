@@ -31,6 +31,9 @@ public class Join_Listener implements Listener {
         plugin.economy().touch(player);
         plugin.preferences().load(player);
         plugin.preferences().applyNickname(player);
+        // A scoreboard plugin may hand the player a scoreboard of their own, so
+        // the hidden name tags have to be put in place on it.
+        plugin.preferences().refreshNameTags(player);
         // LuckPerms may finish loading the user just after the join, so the rank
         // prefix behind a nickname is applied a moment later too.
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {

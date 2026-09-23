@@ -123,8 +123,8 @@ public class IgnoreList_Gui {
                         "&7For someone who is not online.",
                         "",
                         "&eClick to type a name"),
-                event -> plugin.chatPrompts().request(player,
-                        "&7Which player do you want to ignore?", answer -> {
+                event -> plugin.dialogs().text(player, "Ignore list",
+                        "&7Which player do you want to ignore?", "Player name", "", 16, answer -> {
                             if (answer.equalsIgnoreCase("cancel")) {
                                 Msg.send(player, "&7Cancelled.");
                                 open(player, 0);

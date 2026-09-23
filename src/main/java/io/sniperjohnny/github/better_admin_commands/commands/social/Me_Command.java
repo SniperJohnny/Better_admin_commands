@@ -33,8 +33,7 @@ public class Me_Command implements TabExecutor {
             Msg.usage(sender, command);
             return true;
         }
-        String nickname = plugin.preferences().nickname(player.getUniqueId());
-        String name = nickname == null ? player.getName() : nickname;
+        String name = plugin.preferences().displayName(player.getUniqueId(), player.getName());
         Bukkit.broadcast(Msg.component("&d* " + name + " " + String.join(" ", args)));
         return true;
     }

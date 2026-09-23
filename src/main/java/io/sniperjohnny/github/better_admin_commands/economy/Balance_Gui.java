@@ -104,9 +104,9 @@ public class Balance_Gui {
 
     private void promptAmount(Player player, Player receiver) {
         double minimum = plugin.economy().minimumPayment();
-        plugin.chatPrompts().request(player,
+        plugin.dialogs().number(player, "Send money",
                 "&7How much do you want to send to &f" + receiver.getName() + "&7? &8(min "
-                        + plugin.economy().format(minimum) + ")", answer -> {
+                        + plugin.economy().format(minimum) + ")", "Amount", "", 16, answer -> {
                     if (answer.equalsIgnoreCase("cancel")) {
                         Msg.send(player, "&7Payment cancelled.");
                         open(player);

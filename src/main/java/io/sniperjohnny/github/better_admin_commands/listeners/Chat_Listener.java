@@ -18,14 +18,15 @@ import org.bukkit.event.Listener;
  *
  * <p>The renderer runs at {@link EventPriority#LOWEST}, so a chat formatting
  * plugin that sets its own renderer at a later priority replaces this one. When
- * nobody else formats chat, this keeps {@code /nick} working in chat without any
- * extra setup, and it is the one place where a staff member with
- * {@code betteradmincommands.nick.see} is shown the real name behind a nickname:
- * chat is rendered per viewer, so the reveal is invisible to everybody else.</p>
+ * nobody else formats chat, this keeps {@code /nick} and the player's rank
+ * prefix working in chat without any extra setup. The real name behind a
+ * nickname is never revealed here.</p>
  */
 public class Chat_Listener implements Listener {
 
-    /** Longest nickname looked up in the renderer, so a stray '%' cannot hurt. */
+    /** Lets a player use '&' colour codes in their own chat messages. */
+    private static final String COLOR_PERMISSION = "betteradmincommands.chat.color";
+
     private static final String NICK_TOKEN = "%nickname%";
     private static final String MESSAGE_TOKEN = "%message%";
 
@@ -61,21 +62,24 @@ public class Chat_Listener implements Listener {
             return;
         }
 
+        // Colour codes in chat are a permission, so a normal player cannot
+        // colour their messages. The message is plain text, so '&c' still shows
+        // up literally for everyone else.
+        if (plugin.permissions().has(player, COLOR_PERMISSION)) {
+            String raw = PlainTextComponentSerializer.plainText().serialize(event.message());
+            event.message(Msg.component(raw));
+        }
+
         event.renderer((source, sourceDisplayName, message, viewer) ->
-                render(source, message, viewer));
+                render(source, message));
     }
 
     /**
-     * Builds one chat line for one viewer, using the player's nickname and, for
-     * viewers allowed to see it, the real name in brackets.
+     * Builds one chat line from the player's rank prefix and nickname (or real
+     * name when no nickname is set).
      */
-    private Component render(Player source, Component message, net.kyori.adventure.audience.Audience viewer) {
+    private Component render(Player source, Component message) {
         Component name = plugin.preferences().tabName(source.getUniqueId(), source.getName());
-        if (plugin.preferences().nickname(source.getUniqueId()) != null
-                && viewer instanceof Player viewerPlayer
-                && plugin.preferences().canRevealNickname(viewerPlayer)) {
-            name = name.append(Msg.component(" &7(" + source.getName() + ")"));
-        }
         return format(plugin.getConfig().getString("nick.chat-format", "&f<%nickname%>&r %message%"),
                 name, message);
     }

@@ -6,7 +6,7 @@
 
 # Version of this file. Do not change it by hand - the plugin uses it to add
 # new options to an existing config.yml. Values you changed are never replaced.
-config-version: 12
+config-version: 13
 
 # ------------------------------------------------------------ permissions ---
 # How the plugin hands out its own commands. With a permission plugin such as
@@ -93,11 +93,19 @@ skin:
   timeout-seconds: 10
 
 # ------------------------------------------------------------------ nick -----
-# /nick renames a player in the tab list, above their head and in chat. The
-# optional group argument borrows the prefix of a LuckPerms group, so a nick can
-# be shown with a rank tag without changing any of the player's permissions.
+# /nick renames a player in the tab list and in chat. The optional group argument
+# borrows the prefix of a LuckPerms group, so a nick can be shown with a rank tag
+# without changing any of the player's permissions.
+# With TAB installed the nickname is handed to TAB, so the tab list name, the
+# rank prefix next to it, the borrowed rank (sorting included) and the hidden
+# name tags are all done by it.
 # Requires LuckPerms to be installed; without it /nick still renames, just
 # without a group prefix.
+#
+# Rank prefixes are shown in front of every player's name - nicked or not - in
+# the tab list, in chat and in commands such as /msg, /reply, /me and /list. The
+# tab list entry of a nicked player always carries the rank the nickname was set
+# with, so it changes together with /nick.
 nick:
   # Nicks and groups that only server operators may use.
   restricted:
@@ -107,10 +115,15 @@ nick:
   # when /nick is used without a group. Turn this off to show the nickname bare -
   # a group can then still be named explicitly.
   show-rank-prefix: true
+  # Hide the name tag above players' heads - for everyone, nicked or not, so the
+  # tab list is the only place a name shows. With TAB installed this uses TAB's
+  # API; without it a scoreboard team is used, so turn this off when another
+  # plugin relies on the scoreboard teams.
+  hide-nametag: true
   # The chat line used for every message while no other plugin formats chat.
-  # %nickname% is the nickname (or the real name when none is set), %message%
-  # the message itself. Staff holding betteradmincommands.nick.see also see the
-  # real name in brackets.
+  # %nickname% is the rank prefix plus the nickname (or the real name when no
+  # nickname is set), %message% is the message itself. The real name is never
+  # shown while a player is nicked.
   chat-format: "&f<%nickname%>&r %message%"
 
 # --------------------------------------------------------------- auction -----
