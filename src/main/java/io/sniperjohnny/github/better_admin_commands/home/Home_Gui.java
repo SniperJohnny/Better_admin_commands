@@ -41,7 +41,7 @@ public class Home_Gui {
 
         Menu menu = new Menu("&8Your homes &7(" + entries.size() + "/" + plugin.homes().limitFor(player) + ")",
                 rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < entries.size(); index++) {
@@ -80,7 +80,7 @@ public class Home_Gui {
     private void openDelete(Player player, String name, int returnPage) {
         Location home = plugin.homes().get(player.getUniqueId(), name);
         Menu menu = new Menu("&8Delete home", 3);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
         if (home != null) {
             menu.button(13, Items.of(icon(), "&6" + prettify(name),
                     "&7World: &f" + home.getWorld().getName()));

@@ -357,6 +357,10 @@ public class ReportService {
     }
 
     private void sendNotification(Player player, Report report, String text) {
+        // Respect the /notify switch: staff may turn ticket updates off.
+        if (plugin.notifications() != null && !plugin.notifications().enabled(player, "report")) {
+            return;
+        }
         Component line = Msg.component("&8[&6Reports&8] " + text + " ")
                 .append(Msg.button("&a[open]", "/report view " + report.id(),
                         "&7Open ticket &f" + shortId(report.id())));

@@ -26,7 +26,7 @@ public class Unlimited_Gui {
         boolean enabled = plugin.unlimited().isUnlimited(player);
         int rows = Math.max(3, Math.min(6, plugin.getConfig().getInt("unlimited.gui-rows", 4)));
         Menu menu = new Menu("&8Unlimited items", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         menu.button(13, enabled
                         ? Items.of(Material.LIME_DYE, "&aEnabled",
@@ -72,7 +72,7 @@ public class Unlimited_Gui {
         int rows = Math.max(3, Math.min(6, plugin.getConfig().getInt("unlimited.gui-rows", 4)));
         int pageSize = (rows - 1) * 9;
         Menu menu = new Menu("&8Unlimited items &7(" + names.size() + ")", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         for (int index = 0; index < pageSize && index < names.size(); index++) {
             String name = names.get(index);

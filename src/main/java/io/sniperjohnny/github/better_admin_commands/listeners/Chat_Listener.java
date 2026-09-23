@@ -5,14 +5,29 @@ import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 import io.sniperjohnny.github.better_admin_commands.moderation.MuteService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
-/** Blocks chat messages from muted players. */
+/**
+ * Handles the chat side of the plugin: GUI prompts are swallowed, muted players
+ * are blocked, and messages are rendered with the player's nickname.
+ *
+ * <p>The renderer runs at {@link EventPriority#LOWEST}, so a chat formatting
+ * plugin that sets its own renderer at a later priority replaces this one. When
+ * nobody else formats chat, this keeps {@code /nick} working in chat without any
+ * extra setup, and it is the one place where a staff member with
+ * {@code betteradmincommands.nick.see} is shown the real name behind a nickname:
+ * chat is rendered per viewer, so the reveal is invisible to everybody else.</p>
+ */
 public class Chat_Listener implements Listener {
+
+    /** Longest nickname looked up in the renderer, so a stray '%' cannot hurt. */
+    private static final String NICK_TOKEN = "%nickname%";
+    private static final String MESSAGE_TOKEN = "%message%";
 
     private final Better_Admin_Commands plugin;
 
@@ -34,16 +49,62 @@ public class Chat_Listener implements Listener {
         }
 
         MuteService.Mute mute = plugin.mutes().muteOf(event.getPlayer().getUniqueId());
-        if (mute == null) {
+        if (mute != null) {
+            event.setCancelled(true);
+            String template = plugin.getConfig().getString("moderation.mute-message",
+                    "&cYou are muted. &7Reason: &f%reason%");
+            String message = template.replace("%reason%", mute.reason() == null ? "No reason given" : mute.reason());
+            if (!mute.permanent()) {
+                message = message + Msg.color(" &7(&f" + Targets.formatDuration(mute.remainingMillis() / 1000L) + " left&7)");
+            }
+            event.getPlayer().sendMessage(Msg.color(message));
             return;
         }
-        event.setCancelled(true);
-        String template = plugin.getConfig().getString("moderation.mute-message",
-                "&cYou are muted. &7Reason: &f%reason%");
-        String message = template.replace("%reason%", mute.reason() == null ? "No reason given" : mute.reason());
-        if (!mute.permanent()) {
-            message = message + Msg.color(" &7(&f" + Targets.formatDuration(mute.remainingMillis() / 1000L) + " left&7)");
+
+        event.renderer((source, sourceDisplayName, message, viewer) ->
+                render(source, message, viewer));
+    }
+
+    /**
+     * Builds one chat line for one viewer, using the player's nickname and, for
+     * viewers allowed to see it, the real name in brackets.
+     */
+    private Component render(Player source, Component message, net.kyori.adventure.audience.Audience viewer) {
+        Component name = plugin.preferences().tabName(source.getUniqueId(), source.getName());
+        if (plugin.preferences().nickname(source.getUniqueId()) != null
+                && viewer instanceof Player viewerPlayer
+                && plugin.preferences().canRevealNickname(viewerPlayer)) {
+            name = name.append(Msg.component(" &7(" + source.getName() + ")"));
         }
-        event.getPlayer().sendMessage(Msg.color(message));
+        return format(plugin.getConfig().getString("nick.chat-format", "&f<%nickname%>&r %message%"),
+                name, message);
+    }
+
+    /** Fills {@code %nickname%} and {@code %message%} into the configured format. */
+    private static Component format(String template, Component nickname, Component message) {
+        if (template == null || template.isEmpty()) {
+            return Component.text("<").append(nickname).append(Component.text("> ")).append(message);
+        }
+        Component result = Component.empty();
+        int index = 0;
+        while (index < template.length()) {
+            int nick = template.indexOf(NICK_TOKEN, index);
+            int text = template.indexOf(MESSAGE_TOKEN, index);
+            int next;
+            boolean useNickname;
+            if (nick >= 0 && (text < 0 || nick < text)) {
+                next = nick;
+                useNickname = true;
+            } else if (text >= 0) {
+                next = text;
+                useNickname = false;
+            } else {
+                break;
+            }
+            result = result.append(Msg.component(template.substring(index, next)));
+            result = result.append(useNickname ? nickname : message);
+            index = next + (useNickname ? NICK_TOKEN.length() : MESSAGE_TOKEN.length());
+        }
+        return result.append(Msg.component(template.substring(index)));
     }
 }

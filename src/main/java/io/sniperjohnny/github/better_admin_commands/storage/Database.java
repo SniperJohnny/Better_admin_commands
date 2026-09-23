@@ -418,6 +418,26 @@ public class Database {
                         + "KEY `idx_rm_report` (`report_id`)"
                         + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+                // Completed player to player trades. The item lists are Base64
+                // encoded stacks, one per line, so exactly what was exchanged is
+                // kept. Rows older than trade.log.retention-hours are purged.
+                statement.executeUpdate("CREATE TABLE IF NOT EXISTS `" + table("trades") + "` ("
+                        + "`id` CHAR(36) NOT NULL,"
+                        + "`first_uuid` CHAR(36) NOT NULL,"
+                        + "`first_name` VARCHAR(16) NOT NULL,"
+                        + "`second_uuid` CHAR(36) NOT NULL,"
+                        + "`second_name` VARCHAR(16) NOT NULL,"
+                        + "`first_money` DOUBLE NOT NULL DEFAULT 0,"
+                        + "`second_money` DOUBLE NOT NULL DEFAULT 0,"
+                        + "`first_items` MEDIUMTEXT NULL,"
+                        + "`second_items` MEDIUMTEXT NULL,"
+                        + "`created_at` BIGINT NOT NULL,"
+                        + "PRIMARY KEY (`id`),"
+                        + "KEY `idx_trade_created` (`created_at`),"
+                        + "KEY `idx_trade_first` (`first_uuid`),"
+                        + "KEY `idx_trade_second` (`second_uuid`)"
+                        + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
                 // Everybody who took part in a ticket, with the read marker that
                 // drives the unread counts and the notifications.
                 statement.executeUpdate("CREATE TABLE IF NOT EXISTS `" + table("report_participants") + "` ("

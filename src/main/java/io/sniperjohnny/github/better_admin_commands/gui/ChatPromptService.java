@@ -27,8 +27,19 @@ public class ChatPromptService {
 
     /** Asks for a value. The window is closed so the player can type. */
     public void request(Player player, String prompt, Consumer<String> onAnswer) {
+        request(player, prompt, onAnswer, true);
+    }
+
+    /**
+     * Asks for a value while keeping the open window open. Used where closing it
+     * would be wrong, for example the trade money button: the trade window has
+     * to stay on screen while the amount is typed in chat.
+     */
+    public void request(Player player, String prompt, Consumer<String> onAnswer, boolean closeWindow) {
         pending.put(player.getUniqueId(), onAnswer);
-        player.closeInventory();
+        if (closeWindow) {
+            player.closeInventory();
+        }
         Msg.send(player, prompt);
         Msg.send(player, "&7Type &fcancel &7to abort.");
     }

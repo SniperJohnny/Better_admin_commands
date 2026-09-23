@@ -221,6 +221,12 @@ _Add a line here every time the user reports something broken._
 | 6 | 2026-09-22 | Shop import (found in review) | Entries from shop files that gave no `slot` landed on the wrong position: the first two of every page were swapped and each further page drifted, so imported shops looked shuffled | `slot < 0 ? page : slot` used the *page number* as the slot instead of leaving it unset | Fixed: the slot stays `-1` when the file does not provide one, so the layout drops the entry into the next free slot in file order |
 | 7 | 2026-09-22 | Mail menu | Opening the mailbox read it on the server thread, so a slow database froze the whole server for the duration of the click | `Mail_Gui` called `MailService#inbox` (blocking JDBC) from the click handler | Fixed: the read runs async and the window is drawn afterwards, skipped if the player left. `MailService` writes now return a `CompletableFuture` so a redraw after a send/delete waits for the write instead of racing it |
 | 8 | 2026-09-22 | Shop access (found in review) | A shop id containing a dot (a file like `mob.drops.yml`) could not be locked: `permissionFor` compared raw top-level keys, so a key YAML had parsed as nested never matched | Dotted keys are nested by `ConfigurationSection`, and ids with `/` vs keys with `.` were compared literally | Fixed: `accessKey()` normalises `/`, `\` and `.` to `_` on both sides and `getValues(true)` sees nested keys; the editor writes the normalised key so it can never be read back as a section |
+| 9 | 2026-09-23 | Nick / rank | `/nick` did not show on everyone's tab/nametag/chat, staff could not tell who a nicked player really was, and the rank prefix never appeared unless a LuckPerms group was named | Only `displayName`/`playerListName` were set; no chat renderer of our own; a group was required for any prefix | Fixed: the nickname is also rendered by our own chat renderer (lowest priority, so another chat plugin can still take over), `nicknamePrefix` falls back to the player's own rank, `/realname` and the reveal node moved to staff, and `betteradmincommands.nick.see` adds the real name in brackets for staff only |
+| 10 | 2026-09-23 | Skin | `/skinchange` reported "that account exists but has no skin" for accounts that do have one | The profile request did not force the signed texture, and a missing/short texture was reported as a missing skin | Fixed: the request asks for the signed texture explicitly, the error names the real reason, and `/skinchange value <texture> <signature>` accepts a pasted texture |
+| 11 | 2026-09-23 | Trade (found while writing) | Clicking the money button in the trade window cancelled the whole trade | The chat prompt service closed the open window, and closing a trade window cancels the trade | Fixed: the prompt can now keep the window open, and cancelling the amount only drops the money entry |
+| 12 | 2026-09-23 | Trade history (RAM) | Keeping every trade meant holding every traded `ItemStack` in memory for 48 hours | Records stored the item arrays directly | Fixed: records hold the encoded form plus a ready-made summary, and only the newest `trade.log.max-cached` are kept in memory |
+| 13 | 2026-09-23 | Notifications | Staff notifications (trade, report, kick, ban, unban, mail) could not be switched off without taking the permission away | Notifications were sent directly with `hasPermission`/`Bukkit.broadcast` | Fixed: a `NotificationService` with per-category permissions and per-player toggles, managed with `/notify`; every sender now goes through it |
+| 14 | 2026-09-23 | Auction UI | `/ah` had no consistent look and no way to reach its actions without clicking | One flat menu, no subcommands | Fixed: a shared `Theme` (frame/border/heading) for every menu, a rebuilt `/ah` with counts, balance and price range, and `/ah browse|search|sort|sell|mine|claims|help` |
 
 ## 9. Progress
 
@@ -235,7 +241,16 @@ _Add a line here every time the user reports something broken._
 - [x] Phase 4 — Report / ticket system
 - [ ] Phase 5 — GUIs for existing features (`/warps`, `/homes`, `/kit` done)
 - [x] Nick/skin fixes from §8 entry #1
-- [x] Bug log entries #2–#4 fixed
+- [x] Bug log entries #2–#14 fixed
+- [x] Permissions: `better_admin_commands.permissionall`, config-driven default access per group, cached wildcard checks
+- [x] Nick: chat rendering, permission-gated real-name reveal, own-rank prefix by default
+- [x] Skin: signed texture request, pasted-texture input, clearer errors
+- [x] Economy: XConomy-style `/money set|give|take|reset|resetall|balance|top` behind `/eco`/`/balance`/`/money`, granular `betteradmincommands.eco.<action>` nodes
+- [x] Trade: two-sided GUI with items and money, dual confirm, request flow, full rollback on cancel/quit
+- [x] Trade logging: `trades` table + `data/trades.yml`, 48h retention, bounded in-memory cache, staff notification
+- [x] Notifications: `/notify` toggles per category, wired into trade/report/kick/ban/unban/mail
+- [x] UI: shared `Theme` frame applied across every menu
+- [ ] Phase 5 — remaining text/GUI gaps (see §10 #6)
 
 ## 10. Open questions
 
@@ -252,3 +267,10 @@ expensive/name) and a search over item name and seller are both built.
    `/eco` and the moderation commands were deliberately left as commands.
 5. **`/balance` shape** — it now prints the amount **and** opens the menu. If the menu on
    every lookup turns out to be noise, moving it behind `/balance menu` is a one-line change.
+6. **Tab/nametag reveal** — the nickname is shown to everyone through the tab list entry (which
+   is also what 1.21 draws above the head). A *per-viewer* nametag, where only staff see the
+   real name above the head and not just in chat, needs per-player packets and therefore a
+   packet library; the chat reveal and `/realname` cover the common cases without one.
+7. **Trade escrow** — money is checked at the moment both sides confirm rather than being
+   moved aside when offered. That keeps the code simple and cannot lose money; if a balance
+   drops between offering and confirming, the trade is cancelled with a message.

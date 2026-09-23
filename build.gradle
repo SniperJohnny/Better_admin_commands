@@ -45,7 +45,7 @@ dependencies {
     implementation("com.mysql:mysql-connector-j:9.1.0")
 }
 
-def serverdir = "D:\\devlopment\\Minecraft\\Plugins\\TestServer\\1.21.11\\plugins"
+def serverdir = "C:\\Users\\johnj\\Desktop\\Projects_minecraft\\Plugins"
 
 tasks.shadowJar {
     archiveClassifier.set("")

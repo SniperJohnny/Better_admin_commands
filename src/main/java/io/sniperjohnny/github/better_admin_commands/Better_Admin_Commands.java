@@ -30,6 +30,7 @@ import io.sniperjohnny.github.better_admin_commands.commands.economy.Worth_Comma
 import io.sniperjohnny.github.better_admin_commands.commands.info.Depth_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.info.Getpos_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.info.Motd_Command;
+import io.sniperjohnny.github.better_admin_commands.commands.info.Notify_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.info.Playtime_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.info.Realname_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.info.Rules_Command;
@@ -62,6 +63,7 @@ import io.sniperjohnny.github.better_admin_commands.listeners.Jail_Listener;
 import io.sniperjohnny.github.better_admin_commands.gui.ChatPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Gui_Listener;
 import io.sniperjohnny.github.better_admin_commands.listeners.Powertool_Listener;
+import io.sniperjohnny.github.better_admin_commands.listeners.Trade_Listener;
 import io.sniperjohnny.github.better_admin_commands.listeners.Unlimited_Listener;
 import io.sniperjohnny.github.better_admin_commands.player.PlaytimeService;
 import io.sniperjohnny.github.better_admin_commands.player.UnlimitedService;
@@ -165,6 +167,8 @@ import io.sniperjohnny.github.better_admin_commands.mail.MailService;
 import io.sniperjohnny.github.better_admin_commands.moderation.MuteService;
 import io.sniperjohnny.github.better_admin_commands.placeholder.NicknamePlaceholders;
 import io.sniperjohnny.github.better_admin_commands.player.AfkService;
+import io.sniperjohnny.github.better_admin_commands.notify.NotificationService;
+import io.sniperjohnny.github.better_admin_commands.permission.PermissionService;
 import io.sniperjohnny.github.better_admin_commands.player.NickService;
 import io.sniperjohnny.github.better_admin_commands.player.PlayerPreferences;
 import io.sniperjohnny.github.better_admin_commands.player.VanishService;
@@ -174,6 +178,9 @@ import io.sniperjohnny.github.better_admin_commands.storage.Database;
 import io.sniperjohnny.github.better_admin_commands.storage.LocalStore;
 import io.sniperjohnny.github.better_admin_commands.teleport.TeleportService;
 import io.sniperjohnny.github.better_admin_commands.teleport.TpaService;
+import io.sniperjohnny.github.better_admin_commands.trade.TradeLogService;
+import io.sniperjohnny.github.better_admin_commands.trade.TradeService;
+import io.sniperjohnny.github.better_admin_commands.trade.Trade_Command;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.warp.WarpManager;
 import net.milkbowl.vault.economy.Economy;
@@ -213,6 +220,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private LocalStore localAuction;
     private LocalStore localShops;
     private LocalStore localShopItems;
+    private LocalStore localTrades;
     private EconomyService economy;
     private VaultEconomy currency;
 
@@ -254,6 +262,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private UnlimitedService unlimited;
     private WorthManager worth;
     private PlaytimeService playtime;
+    private TradeService trades;
+    private TradeLogService tradeLogs;
+    private NotificationService notifications;
     private Jail_Listener jailListener;
 
     private BukkitTask saveTask;
@@ -261,7 +272,10 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private BukkitTask jailTask;
     private BukkitTask reconnectTask;
     private BukkitTask auctionTask;
+    private BukkitTask tradeTask;
 
+    private PermissionService permissions;
+    private Eco_Command ecoCommand;
     private ConfigUpdater configUpdater;
     private Plugin_Command rootCommand;
     private Disabled_Command disabledCommand;
@@ -295,6 +309,10 @@ public final class Better_Admin_Commands extends JavaPlugin {
 
         Msg.setPrefix(getConfig().getString("messages.prefix", "&8[&6BetterAdmin&8] &r"));
 
+        // Decides what every player may use when no permission plugin hands out
+        // the plugin's own nodes. Shared by the commands and the join listener.
+        permissions = new PermissionService(this);
+
         if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
             getLogger().warning("Could not create the plugin data folder.");
         }
@@ -310,6 +328,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         localAuction = new LocalStore(this, new File(dataFolder, "auction.yml"));
         localShops = new LocalStore(this, new File(dataFolder, "shops.yml"));
         localShopItems = new LocalStore(this, new File(dataFolder, "shop_items.yml"));
+        localTrades = new LocalStore(this, new File(dataFolder, "trades.yml"));
         localPlayers.load();
         localHomes.load();
         localSettings.load();
@@ -317,6 +336,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         localAuction.load();
         localShops.load();
         localShopItems.load();
+        localTrades.load();
 
         // --- storage -------------------------------------------------------
         // A missing database is not fatal: the plugin starts anyway and runs
@@ -371,6 +391,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         nicks = new NickService(this);
         skins = new SkinService(this);
         preferences = new PlayerPreferences(this, database, localSettings);
+        notifications = new NotificationService(this);
         mail = new MailService(this, database, localMail);
         afk = new AfkService(this);
         backups = new BackupService(this, database, localPlayers, localHomes, localSettings, localMail);
@@ -382,6 +403,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
         auctions.loadAll();
         shops = new ShopService(this, database, localShops, localShopItems);
         shops.loadAll();
+        tradeLogs = new TradeLogService(this, database, localTrades);
+        tradeLogs.loadAll();
+        trades = new TradeService(this);
         shopImporter = new EconomyShopGuiImporter(this);
         shopEditor = new Shop_Editor(this);
         importShopsIfNeeded();
@@ -418,6 +442,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
     @Override
     public void onDisable() {
         cancelTasks();
+        if (permissions != null) {
+            permissions.clearAll();
+        }
         if (economy != null) {
             economy.saveBlocking();
         }
@@ -442,6 +469,16 @@ public final class Better_Admin_Commands extends JavaPlugin {
         warps.load();
         jails.load();
         applyRootCommand();
+        // Re-read the cached permission and notification settings, then re-apply
+        // the permission defaults, so a changed permissions.default-access, group
+        // switch or notification list takes effect at once.
+        if (permissions != null) {
+            permissions.refresh();
+            permissions.applyToAll();
+        }
+        if (notifications != null) {
+            notifications.refresh();
+        }
         if (shops != null && shops.enabled() && shops.importForced()) {
             importShops();
         }
@@ -652,11 +689,13 @@ public final class Better_Admin_Commands extends JavaPlugin {
         startJailTask();
         startReconnectTask();
         startAuctionTask();
+        startTradeTask();
     }
 
     /** Stops every repeating task - on disable and when the plugin is switched off. */
     private void cancelTasks() {
-        for (BukkitTask task : new BukkitTask[]{saveTask, afkTask, jailTask, reconnectTask, auctionTask}) {
+        for (BukkitTask task : new BukkitTask[]{saveTask, afkTask, jailTask, reconnectTask, auctionTask,
+                tradeTask}) {
             if (task != null) {
                 task.cancel();
             }
@@ -666,6 +705,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         jailTask = null;
         reconnectTask = null;
         auctionTask = null;
+        tradeTask = null;
     }
 
     private void startSaveTask() {
@@ -726,6 +766,18 @@ public final class Better_Admin_Commands extends JavaPlugin {
                 this, () -> auctions.expire(), 20L * 60L, 20L * 60L);
     }
 
+    /**
+     * Drops trade records once they are older than the retention window, so the
+     * history stays at 48 hours by default. Runs every 10 minutes.
+     */
+    private void startTradeTask() {
+        if (!getConfig().getBoolean("trade.log.enabled", true)) {
+            return;
+        }
+        tradeTask = getServer().getScheduler().runTaskTimerAsynchronously(this,
+                () -> tradeLogs.purge(), 20L * 60L * 5L, 20L * 60L * 10L);
+    }
+
     /** Writes the local safe files back into the database after a reconnect. */
     private void resyncLocalToDatabase() {
         getLogger().info("Database is back - syncing the local safe files...");
@@ -735,6 +787,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         preferences.resyncToDatabase();
         mail.resyncToDatabase();
         shops.resyncToDatabase();
+        tradeLogs.resyncToDatabase();
         getLogger().info("Local safe files synced back into the database.");
     }
 
@@ -818,6 +871,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         listen(new Unlimited_Listener(this));
         listen(new Disposal_Command.Disposal_Listener());
         listen(new Gui_Listener());
+        listen(new Trade_Listener(this));
         jailListener = new Jail_Listener(this);
         listen(jailListener);
     }
@@ -870,7 +924,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("balance", new Balance_Command(this));
         register("baltop", new Baltop_Command(this));
         register("pay", new Pay_Command(this));
-        register("eco", new Eco_Command(this));
+        ecoCommand = new Eco_Command(this);
+        register("eco", ecoCommand);
+        register("trade", new Trade_Command(this));
 
         // ---- teleporting ---------------------------------------------------
         register("spawn", new Spawn_Command(this));
@@ -995,6 +1051,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("playtime", new Playtime_Command(this));
         register("realname", new Realname_Command(this));
         register("motd", new Motd_Command(this));
+        register("notify", new Notify_Command(this));
         register("rules", new Rules_Command(this));
         register("unbanip", new Unbanip_Command());
 
@@ -1076,6 +1133,20 @@ public final class Better_Admin_Commands extends JavaPlugin {
 
     public EconomyService economy() {
         return economy;
+    }
+
+    public PermissionService permissions() {
+        return permissions;
+    }
+
+    /** The per-player toggles behind {@code /notify}. */
+    public NotificationService notifications() {
+        return notifications;
+    }
+
+    /** The shared economy admin command behind /eco, /money and /balance. */
+    public Eco_Command ecoCommand() {
+        return ecoCommand;
     }
 
     public VaultEconomy currency() {
@@ -1184,6 +1255,14 @@ public final class Better_Admin_Commands extends JavaPlugin {
 
     public AuctionService auctions() {
         return auctions;
+    }
+
+    public TradeService trades() {
+        return trades;
+    }
+
+    public TradeLogService tradeLogs() {
+        return tradeLogs;
     }
 
     public ShopService shops() {

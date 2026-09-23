@@ -148,7 +148,7 @@ public class Shop_Command implements TabExecutor {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Shop", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < shops.size(); index++) {
@@ -231,7 +231,7 @@ public class Shop_Command implements TabExecutor {
         int current = Math.max(1, Math.min(page, pages));
 
         Menu menu = new Menu("&8Shop &8» &f" + shop.display(), rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         Map<Integer, ShopService.ShopItem> items = plugin.shops().page(shopId, current);
         for (Map.Entry<Integer, ShopService.ShopItem> entry : items.entrySet()) {
@@ -276,7 +276,7 @@ public class Shop_Command implements TabExecutor {
             return;
         }
         Menu menu = new Menu("&8Shop &8» &f" + pretty(item.display()), 4);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
         menu.button(13, describe(item, ""));
         menu.button(31, Items.of(Material.BARRIER, "&cBack"), event -> openShop(player, shopId, shopPage));
 
@@ -356,7 +356,7 @@ public class Shop_Command implements TabExecutor {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Shop &8» &fSearch: " + query, rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < results.size(); index++) {

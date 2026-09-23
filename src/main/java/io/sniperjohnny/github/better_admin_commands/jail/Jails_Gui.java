@@ -43,7 +43,7 @@ public class Jails_Gui {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Jails &7(" + names.size() + ")", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < names.size(); index++) {

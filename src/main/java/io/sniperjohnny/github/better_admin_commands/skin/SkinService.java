@@ -74,6 +74,8 @@ public class SkinService {
             "https://api.mojang.com/users/profiles/minecraft/"
     };
     private static final String PROFILE_URL = "https://sessionserver.mojang.com/session/minecraft/profile/";
+    /** Always ask for the signed texture; the client refuses an unsigned one. */
+    private static final String SIGNED = "?unsigned=false";
     private static final String TEXTURES = "textures";
 
     private final Better_Admin_Commands plugin;
@@ -114,6 +116,23 @@ public class SkinService {
     /** Looks the skin of an account up by UUID, used to restore a player's own. */
     public CompletableFuture<Skin> byUuid(UUID uuid) {
         return lookup("uuid:" + uuid, () -> profileOf(uuid.toString().replace("-", "")));
+    }
+
+    /**
+     * Builds a skin from a texture value and its signature that were pasted in,
+     * for example copied out of a NameMC profile. No request is made, and the
+     * result is used exactly like a skin read from Mojang.
+     *
+     * @return the skin, or {@code null} when the input is not usable
+     */
+    public Skin byTexture(String value, String signature, String source) {
+        if (value == null || signature == null || value.isBlank() || signature.isBlank()) {
+            return null;
+        }
+        String label = source == null || source.isBlank() ? "the pasted texture" : source.trim();
+        Skin skin = new Skin(label, value.trim(), signature.trim());
+        cache.put("texture:" + skin.value().hashCode(), new Cached(skin, System.currentTimeMillis() + cacheMillis));
+        return skin;
     }
 
     /**
@@ -192,7 +211,7 @@ public class SkinService {
     }
 
     private CompletableFuture<Skin> profileOf(String uuid) {
-        HttpRequest request = request(PROFILE_URL + uuid);
+        HttpRequest request = request(PROFILE_URL + uuid + SIGNED);
         return http.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(response -> {
             int status = response.statusCode();
             if (status == 204 || status == 404) {
@@ -205,8 +224,14 @@ public class SkinService {
             }
             Skin skin = readTextures(response.body());
             if (skin == null) {
+                // The account exists but Mojang sent no signed textures: it never
+                // set a skin, or only an unsigned one came back. Say so plainly
+                // instead of pretending there is a skin we cannot use.
                 throw new CompletionException(new IOException(
-                        "That account exists but has no skin set."));
+                        "That account exists, but Mojang has no signed skin for it - either the "
+                                + "account never set a custom skin, or the texture came back unsigned. "
+                                + "Try another name, or paste a texture with /skinchange value <value> "
+                                + "<signature>."));
             }
             return skin;
         });

@@ -29,7 +29,7 @@ public class Balance_Gui {
 
     public void open(Player player) {
         Menu menu = new Menu("&8Your balance", 3);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         menu.button(13, Items.of(Material.SUNFLOWER, "&6Your balance",
                 "&7You have &a" + plugin.economy().format(plugin.economy().getBalance(player.getUniqueId())),
@@ -77,7 +77,7 @@ public class Balance_Gui {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Send money to...", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < receivers.size(); index++) {

@@ -33,6 +33,10 @@ public class PlayerPreferences {
 
     public static final String NICKNAME = "nickname";
     public static final String NICK_GROUP = "nick_group";
+    /** Stored as the nick prefix when a player asked for no prefix at all. */
+    public static final String PREFIX_NONE = "-";
+    /** Permission that lets a viewer see the real name behind a nickname. */
+    public static final String REVEAL_PERMISSION = "betteradmincommands.nick.see";
     /** Packed {@code value|signature|source} of a skin borrowed with /skinchange. */
     public static final String SKIN = "skin";
     public static final String SOCIAL_SPY = "socialspy";
@@ -153,14 +157,37 @@ public class PlayerPreferences {
         return settings(uuid).get(NICKNAME);
     }
 
-    /** The LuckPerms group whose prefix is shown in front of the nickname. */
+    /**
+     * The LuckPerms group whose prefix is shown in front of the nickname.
+     * {@code null} means "use the player's own rank", {@link #PREFIX_NONE} means
+     * "no prefix at all".
+     */
     public String nicknameGroup(UUID uuid) {
         return settings(uuid).get(NICK_GROUP);
     }
 
-    /** The borrowed LuckPerms group prefix as a legacy string, or empty. */
+    /** Whether a viewer is allowed to see the real name behind a nickname. */
+    public boolean canRevealNickname(Player viewer) {
+        return viewer != null && plugin.permissions().has(viewer, REVEAL_PERMISSION);
+    }
+
+    /**
+     * The nickname prefix as a legacy string, never {@code null}.
+     *
+     * <p>When no group is stored the player's own rank prefix is used, so a worn
+     * rank shows up with the nickname without anyone naming a group. A stored
+     * {@link #PREFIX_NONE} suppresses the prefix entirely.</p>
+     */
     public String nicknamePrefix(UUID uuid) {
-        String prefix = plugin.nicks().prefix(nicknameGroup(uuid));
+        String group = nicknameGroup(uuid);
+        if (PREFIX_NONE.equals(group)) {
+            return "";
+        }
+        if (group == null || group.isBlank()) {
+            String own = plugin.nicks().userPrefix(uuid);
+            return own == null ? "" : own;
+        }
+        String prefix = plugin.nicks().prefix(group);
         return prefix == null ? "" : prefix;
     }
 
@@ -175,38 +202,36 @@ public class PlayerPreferences {
     }
 
     /**
-     * Applies the stored nickname and its group prefix. The result is used for
-     * the tab list, the name tag above the player and - through the display
-     * name - for chat messages on a vanilla/Paper chat.
+     * Applies the stored nickname and its rank prefix. The result is used for
+     * the tab list and - because 1.21 draws the name tag above the head from the
+     * tab list entry - for the name tag as well.
      *
      * <p>A vanished player additionally gets the configured cue in the tab list,
      * so the staff who are allowed to see them can tell them apart.</p>
      */
     public void applyNickname(Player player) {
-        String nickname = nickname(player.getUniqueId());
-        Component name = nickname == null
-                ? Component.text(player.getName())
-                : LegacyComponentSerializer.legacyAmpersand().deserialize(nickname);
-        Component shown = prefixOf(nicknameGroup(player.getUniqueId())).append(name);
+        Component shown = tabName(player.getUniqueId(), player.getName());
         player.displayName(shown);
         player.playerListName(plugin.vanish().isVanished(player) ? vanishCue().append(shown) : shown);
+    }
+
+    /**
+     * The name shown for a player in the tab list and above their head. It is the
+     * rank prefix plus the nickname, or the real name when no nickname is set.
+     */
+    public Component tabName(UUID uuid, String realName) {
+        String nickname = nickname(uuid);
+        if (nickname == null) {
+            return Component.text(realName == null ? "" : realName);
+        }
+        String raw = nicknamePrefix(uuid) + nickname;
+        return LegacyComponentSerializer.legacyAmpersand().deserialize(raw);
     }
 
     /** The tab list marker for vanished players, configured under moderation. */
     private Component vanishCue() {
         return LegacyComponentSerializer.legacyAmpersand()
                 .deserialize(plugin.getConfig().getString("moderation.vanish-tab-cue", "&7[&8V&7] &r"));
-    }
-
-    /** The borrowed LuckPerms group prefix, never {@code null}. */
-    private Component prefixOf(String group) {
-        if (group == null) {
-            return Component.empty();
-        }
-        String prefix = plugin.nicks().prefix(group);
-        return prefix == null
-                ? Component.empty()
-                : LegacyComponentSerializer.legacyAmpersand().deserialize(prefix);
     }
 
     /** Changes the nickname, keeping the group prefix that is already set. */
@@ -222,6 +247,23 @@ public class PlayerPreferences {
         set(player.getUniqueId(), NICKNAME, nickname);
         set(player.getUniqueId(), NICK_GROUP, group);
         applyNickname(player);
+    }
+
+    /* ----------------------------------------------------- notifications --- */
+
+    /**
+     * Whether a player left a notification switched on. An unset value falls
+     * back to the configured default, so a new notification is on until someone
+     * turns it off.
+     */
+    public boolean notificationEnabled(UUID uuid, String category, boolean fallback) {
+        String value = settings(uuid).get("notify." + category);
+        return value == null ? fallback : Boolean.parseBoolean(value);
+    }
+
+    /** Stores a notification toggle; {@code null} restores the configured default. */
+    public void setNotification(UUID uuid, String category, Boolean value) {
+        set(uuid, "notify." + category, value == null ? null : Boolean.toString(value));
     }
 
     /* ----------------------------------------------------------- ignore --- */

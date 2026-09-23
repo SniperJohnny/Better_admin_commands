@@ -51,7 +51,7 @@ public class Shop_Editor {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Shop editor", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < shops.size(); index++) {
@@ -102,7 +102,7 @@ public class Shop_Editor {
         int current = Math.max(1, Math.min(page, pages));
 
         Menu menu = new Menu("&8Editing &f" + shop.display(), rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         Map<Integer, ShopService.ShopItem> items = plugin.shops().page(shopId, current);
         for (Map.Entry<Integer, ShopService.ShopItem> entry : items.entrySet()) {
@@ -137,7 +137,7 @@ public class Shop_Editor {
         }
 
         Menu menu = new Menu("&8Editing entry", 4);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
         menu.button(13, describe(item));
 
         menu.button(9, Items.of(Material.EMERALD, "&aSet buy price",
@@ -210,7 +210,7 @@ public class Shop_Editor {
 
     private void openDelete(Player player, ShopService.ShopItem item, String shopId, int shopPage) {
         Menu menu = new Menu("&8Delete entry", 3);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
         menu.button(13, describe(item));
         menu.button(11, Items.of(Material.LIME_CONCRETE, "&aKeep it"), event -> openItem(player, item.key(), shopId, shopPage));
         menu.button(15, Items.of(Material.RED_CONCRETE, "&cDelete"), event -> {
@@ -236,7 +236,7 @@ public class Shop_Editor {
         boolean open = permission == null;
 
         Menu menu = new Menu("&8Shop settings", 3);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
         menu.button(13, Items.of(Material.NAME_TAG, "&6" + shop.display(),
                 "&7Access: " + (open ? "&aopen to everyone" : "&c" + permission),
                 "&7Shop id: &f" + shop.id(),

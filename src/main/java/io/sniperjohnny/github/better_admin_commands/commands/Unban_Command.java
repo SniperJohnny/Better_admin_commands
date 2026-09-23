@@ -1,5 +1,6 @@
 package io.sniperjohnny.github.better_admin_commands.commands;
 
+import io.sniperjohnny.github.better_admin_commands.notify.NotificationService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import org.bukkit.BanList;
@@ -33,8 +34,8 @@ public class Unban_Command implements TabExecutor {
         }
         banList.pardon(playerName);
         Msg.success(sender, playerName + " was unbanned.");
-        Bukkit.broadcast(Msg.color("&8[&6BetterAdmin&8] &f" + playerName + " &7was unbanned by &f"
-                + sender.getName() + "&7."), "betteradmincommands.unban.notify");
+        NotificationService.staffBroadcast("unban", "betteradmincommands.unban.notify",
+                "&f" + playerName + " &7was unbanned by &f" + sender.getName() + "&7.");
         return true;
     }
 

@@ -1,5 +1,6 @@
 package io.sniperjohnny.github.better_admin_commands.commands.moderation;
 
+import io.sniperjohnny.github.better_admin_commands.notify.NotificationService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import net.kyori.adventure.text.Component;
@@ -52,9 +53,9 @@ public class Tempban_Command implements TabExecutor {
             online.kick(Component.text(Msg.color("&cYou are banned for "
                     + Targets.formatDuration(seconds) + ".\n&7Reason: &f" + reason)));
         }
-        Bukkit.broadcast(Msg.color("&8[&6BetterAdmin&8] &f" + name + " &7was banned for &f"
-                + Targets.formatDuration(seconds) + " &7by &f" + sender.getName() + "&7."),
-                "betteradmincommands.ban.notify");
+        NotificationService.staffBroadcast("ban", "betteradmincommands.ban.notify",
+                "&f" + name + " &7was banned for &f" + Targets.formatDuration(seconds)
+                        + " &7by &f" + sender.getName() + "&7.");
         return true;
     }
 

@@ -3,6 +3,7 @@ package io.sniperjohnny.github.better_admin_commands.player;
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Access to the LuckPerms group data {@code /nick} uses.
@@ -55,5 +56,14 @@ public class NickService {
      */
     public String prefix(String group) {
         return bridge == null || group == null ? null : bridge.prefix(group);
+    }
+
+    /**
+     * The prefix of a player's own rank, used by {@code /nick <nickname>} when no
+     * group is named. Returns {@code null} when LuckPerms is absent or the rank
+     * has no prefix.
+     */
+    public String userPrefix(UUID uuid) {
+        return bridge == null || uuid == null ? null : bridge.userPrefix(uuid);
     }
 }

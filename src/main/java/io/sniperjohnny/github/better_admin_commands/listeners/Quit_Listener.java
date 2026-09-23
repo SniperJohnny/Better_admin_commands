@@ -19,6 +19,7 @@ public class Quit_Listener implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         plugin.tpa().clear(player.getUniqueId());
+        plugin.permissions().clear(player);
         plugin.economy().saveAsync(player.getUniqueId());
         plugin.afk().forget(player.getUniqueId());
         // Playtime has to be written before the settings cache is dropped.

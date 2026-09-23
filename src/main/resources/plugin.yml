@@ -211,7 +211,11 @@ commands:
     permission: "betteradmincommands.eco"
     description: "manages the economy"
     aliases: [ economy ]
-    usage: /eco <give|take|set|reset|balance> <player> [amount]
+    usage: /eco <give|take|set|reset|resetall|balance|top> <player> [amount]
+  trade:
+    permission: "betteradmincommands.trade"
+    description: "trades items and money with another player"
+    usage: /trade <player|accept|deny|log|help>
 
   # ------------------------------------------------------------ teleports ---
   spawn:
@@ -567,6 +571,11 @@ commands:
     permission: "betteradmincommands.realname"
     description: "finds the player behind a nickname"
     usage: /realname [nickname]
+  notify:
+    permission: "betteradmincommands.notify"
+    description: "chooses which notifications you receive"
+    aliases: [ notifications ]
+    usage: /notify [<name> [on|off]|all on|off|reset]
   motd:
     permission: "betteradmincommands.motd"
     description: "shows the message of the day"
@@ -588,6 +597,17 @@ commands:
     usage: /betteradmincommands <reload|backup|reconnect|info|disable|enable>
 
 permissions:
+  # One node that unlocks the whole plugin, for servers that would rather not
+  # hand out a hundred nodes. It is accepted anywhere a specific node is
+  # checked and also satisfies the command permissions above.
+  better_admin_commands.permissionall:
+    description: "Unlocks every command of the plugin (an alias for betteradmincommands.*)."
+    default: false
+    children:
+      betteradmincommands.player: true
+      betteradmincommands.mod: true
+      betteradmincommands.admin: true
+
   betteradmincommands.*:
     description: "Grants every Better_Admin_Commands permission."
     default: op
@@ -616,6 +636,7 @@ permissions:
       betteradmincommands.balance: true
       betteradmincommands.baltop: true
       betteradmincommands.pay: true
+      betteradmincommands.trade: true
       betteradmincommands.msg: true
       betteradmincommands.reply: true
       betteradmincommands.ignore: true
@@ -647,6 +668,7 @@ permissions:
       betteradmincommands.playtime: true
       betteradmincommands.motd: true
       betteradmincommands.rules: true
+      betteradmincommands.notify: true
       betteradmincommands.condense: true
       betteradmincommands.stack: true
       betteradmincommands.sort: true
@@ -661,7 +683,6 @@ permissions:
       betteradmincommands.rename: true
       betteradmincommands.lore: true
       betteradmincommands.book: true
-      betteradmincommands.realname: true
       betteradmincommands.recipe: true
 
   betteradmincommands.mod:
@@ -701,6 +722,9 @@ permissions:
       betteradmincommands.skull: true
       betteradmincommands.getpos.others: true
       betteradmincommands.playtime.others: true
+      betteradmincommands.realname: true
+      betteradmincommands.trade.log.others: true
+      betteradmincommands.trade.notify: true
 
   betteradmincommands.admin:
     description: "Full administrative access."
@@ -736,6 +760,7 @@ permissions:
       betteradmincommands.shop.admin: true
       betteradmincommands.balance.others: true
       betteradmincommands.nick.color: true
+      betteradmincommands.nick.see: true
       betteradmincommands.enderchest.others: true
       betteradmincommands.command: true
       betteradmincommands.kick.notify: true
@@ -757,6 +782,32 @@ permissions:
   # Importing the EconomyShopGUI shop files and re-reading them with /shop import.
   betteradmincommands.shop.admin:
     description: "Import the shop and re-read the EconomyShopGUI files."
+    default: op
+
+  # The /notify command that lets a player choose their notifications.
+  betteradmincommands.notify:
+    description: "Choose which notifications you receive."
+    default: true
+
+  # Trade history of other players (/trade log <player>) and the notification
+  # that a trade happened. Both are staff information.
+  betteradmincommands.trade.log.others:
+    description: "Look at the trade history of every player."
+    default: op
+
+  betteradmincommands.trade.notify:
+    description: "Get told in chat whenever two players finish a trade."
+    default: op
+
+  # The real name behind a nickname is staff information, so /realname and the
+  # nickname overview need this node (granted through the mod and admin bundles).
+  betteradmincommands.realname:
+    description: "Find the real player behind a nickname."
+    default: op
+
+  # Shows the real name behind a nickname in chat, next to the nickname.
+  betteradmincommands.nick.see:
+    description: "See the real name behind a nickname in chat."
     default: op
 
   # Vanished players stay visible to whoever holds this, with a cue in the tab

@@ -91,7 +91,7 @@ public class Mail_Gui {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Mailbox &7(" + unread + " new)", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < box.size(); index++) {
@@ -162,7 +162,7 @@ public class Mail_Gui {
         }
 
         Menu menu = new Menu("&8Mail from " + mail.senderName(), 3);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         List<String> lore = new ArrayList<>();
         lore.add("&7From: &f" + mail.senderName());
@@ -208,7 +208,7 @@ public class Mail_Gui {
 
     private void openClear(Player player, int returnPage) {
         Menu menu = new Menu("&8Clear mailbox", 3);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
         menu.button(13, Items.of(Material.LAVA_BUCKET, "&cDelete every message",
                 "&7This cannot be undone."));
         menu.button(11, Items.of(Material.LIME_CONCRETE, "&aKeep them"), event -> open(player, returnPage));
@@ -236,7 +236,7 @@ public class Mail_Gui {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Write to...", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < receivers.size(); index++) {

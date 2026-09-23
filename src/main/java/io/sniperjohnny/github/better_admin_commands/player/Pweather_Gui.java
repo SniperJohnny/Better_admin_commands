@@ -26,7 +26,7 @@ public class Pweather_Gui {
         WeatherType current = PersonalDisplay.currentWeather(player);
         int rows = Math.max(3, Math.min(6, plugin.getConfig().getInt("pweather.gui-rows", 3)));
         Menu menu = new Menu("&8Your personal weather", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         String state = current == null
                 ? "&7You see the server's own weather."

@@ -58,6 +58,25 @@ public class Skinchange_Command implements TabExecutor {
             return true;
         }
 
+        // A pasted texture: /skinchange value <base64> <signature>. Useful when a
+        // premium lookup comes back without a signed skin.
+        if (input.equalsIgnoreCase("value") || input.equalsIgnoreCase("texture")) {
+            if (args.length < 3) {
+                Msg.error(sender, "Usage: /skinchange value <texture-value> <signature> - get both from "
+                        + "a site like NameMC, or from another server's skin file.");
+                return true;
+            }
+            SkinService.Skin pasted = plugin.skins().byTexture(args[1], args[2], "the pasted texture");
+            if (pasted == null) {
+                Msg.error(sender, "That texture is incomplete - both the value and the signature are needed.");
+                return true;
+            }
+            plugin.skins().apply(player, pasted);
+            plugin.skins().remember(player, pasted);
+            Msg.success(sender, "Your skin is now the pasted texture.");
+            return true;
+        }
+
         // A UUID is looked up as it is, a username is resolved to its UUID first.
         UUID uuid = parseUuid(input);
         if (uuid == null && !input.matches("[A-Za-z0-9_]{1,16}")) {
@@ -91,7 +110,8 @@ public class Skinchange_Command implements TabExecutor {
         }
         if (skin == null) {
             Msg.error(sender, "Mojang does not know a premium account with the name or UUID "
-                    + input + ". Check the spelling, or that the account is a Java Edition one.");
+                    + input + ". Check the spelling, or that the account is a Java Edition one. "
+                    + "You can also paste a texture with /skinchange value <value> <signature>.");
             return;
         }
 
@@ -166,7 +186,7 @@ public class Skinchange_Command implements TabExecutor {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String @NotNull[] args) {
         if (args.length == 1) {
-            return Targets.completeFrom(args[0].toLowerCase(Locale.ROOT), "off");
+            return Targets.completeFrom(args[0].toLowerCase(Locale.ROOT), "off", "value");
         }
         return Collections.emptyList();
     }

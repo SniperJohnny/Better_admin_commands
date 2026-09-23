@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.commands.admin;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.player.PlayerPreferences;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import org.bukkit.command.Command;
@@ -65,30 +66,50 @@ public class Nick_Command implements TabExecutor {
         if (!mayUse(sender, nickname, group)) {
             return true;
         }
-        if (nickname.contains("&") && !sender.hasPermission("betteradmincommands.nick.color")) {
+        if (nickname.contains("&") && !plugin.permissions().has(sender, "betteradmincommands.nick.color")) {
             nickname = nickname.replace("&", "");
         }
 
+        // "off" for the group means "no prefix"; no group at all means "use my
+        // own rank", which is what most people expect from /nick.
         if (isReset(group)) {
-            group = null;
+            group = PlayerPreferences.PREFIX_NONE;
+        } else if (group == null && !plugin.getConfig().getBoolean("nick.show-rank-prefix", true)) {
+            // No group named and rank prefixes are switched off: show the
+            // nickname bare instead of borrowing the player's own rank.
+            group = PlayerPreferences.PREFIX_NONE;
         }
-        if (group != null && (!plugin.nicks().available() || !plugin.nicks().hasGroup(group))) {
+        if (group != null && !isNoPrefix(group)
+                && (!plugin.nicks().available() || !plugin.nicks().hasGroup(group))) {
             // Still rename the player - a prefix that cannot be resolved is no
             // reason to leave the nickname unset.
             Msg.send(sender, plugin.nicks().available()
                     ? "&7There is no LuckPerms group called &f" + group
-                            + "&7 - setting the nickname without a prefix."
+                            + "&7 - using your own rank prefix instead."
                     : "&7LuckPerms is not installed - setting the nickname without a prefix.");
-            group = null;
+            group = plugin.nicks().available() ? null : PlayerPreferences.PREFIX_NONE;
         }
 
         plugin.preferences().setNickname(player, nickname, group);
         plugin.getLogger().info("Nickname of " + player.getName() + " is now '" + nickname + "'"
-                + (group == null ? "" : " with the " + group + " prefix")
-                + " - applied to the display name and the tab list.");
-        String shown = group == null ? nickname : plugin.nicks().prefix(group) + nickname;
-        Msg.success(sender, "Your nickname is now " + shown + "&r.");
+                + describePrefix(group) + " - applied to the tab list, the name tag and chat.");
+        String prefix = plugin.preferences().nicknamePrefix(player.getUniqueId());
+        Msg.success(sender, "Your nickname is now " + prefix + nickname + "&r.");
+        if (plugin.nicks().available() && prefix.isEmpty() && !isNoPrefix(group)) {
+            Msg.send(sender, "&7Your rank has no prefix set, or you have no rank yet.");
+        }
         return true;
+    }
+
+    private static boolean isNoPrefix(String group) {
+        return PlayerPreferences.PREFIX_NONE.equals(group);
+    }
+
+    private static String describePrefix(String group) {
+        if (group == null) {
+            return " with the player's own rank prefix";
+        }
+        return isNoPrefix(group) ? " without a prefix" : " with the " + group + " prefix";
     }
 
     private static boolean isReset(String value) {

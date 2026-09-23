@@ -104,7 +104,7 @@ public class Report_Command implements TabExecutor {
     private void openMain(Player player) {
         boolean staff = player.hasPermission(ReportService.STAFF_PERMISSION);
         Menu menu = new Menu("&8Reports", 5);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int mine = plugin.reports().mine(player.getUniqueId()).size();
         int unread = plugin.reports().totalUnread(player.getUniqueId());
@@ -145,7 +145,7 @@ public class Report_Command implements TabExecutor {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Reports &8» &fNew report", 6);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < presets.size(); index++) {
@@ -190,7 +190,7 @@ public class Report_Command implements TabExecutor {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Reports &8» &fWho is it about?", 6);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < online.size(); index++) {
@@ -232,7 +232,7 @@ public class Report_Command implements TabExecutor {
                 ? (openOnly ? "&8Reports &8» &fAll open" : "&8Reports &8» &fAll closed")
                 : "&8Reports &8» &fMy tickets";
         Menu menu = new Menu(title, 6);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < reports.size(); index++) {
@@ -314,7 +314,7 @@ public class Report_Command implements TabExecutor {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Ticket &8#&f" + ReportService.shortId(report.id()), 6);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         Preset presetForCategory = presetById(report.category());
         Material icon = presetForCategory == null ? Material.PAPER : presetForCategory.icon();

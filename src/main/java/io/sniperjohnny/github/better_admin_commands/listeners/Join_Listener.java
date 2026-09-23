@@ -26,9 +26,18 @@ public class Join_Listener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
+        // Hand out the configured default permissions before anything checks one.
+        plugin.permissions().applyTo(player);
         plugin.economy().touch(player);
         plugin.preferences().load(player);
         plugin.preferences().applyNickname(player);
+        // LuckPerms may finish loading the user just after the join, so the rank
+        // prefix behind a nickname is applied a moment later too.
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) {
+                plugin.preferences().applyNickname(player);
+            }
+        }, 20L);
         plugin.skins().applyStored(player);
         plugin.afk().forget(player.getUniqueId());
         plugin.vanish().applyToJoining(player);
@@ -41,7 +50,9 @@ public class Join_Listener implements Listener {
 
         int unread = plugin.mail().unreadCount(player.getUniqueId());
         if (unread > 0) {
-            Msg.send(player, "&7You have &f" + unread + " &7unread mail message(s). Use &f/mail read&7.");
+            // Respects the /notify mail switch.
+            plugin.notifications().send(player, "mail",
+                    "&7You have &f" + unread + " &7unread mail message(s). Use &f/mail read&7.");
         }
 
         // Remind players and staff about report tickets with new messages.

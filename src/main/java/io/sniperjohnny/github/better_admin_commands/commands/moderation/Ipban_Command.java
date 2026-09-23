@@ -1,5 +1,6 @@
 package io.sniperjohnny.github.better_admin_commands.commands.moderation;
 
+import io.sniperjohnny.github.better_admin_commands.notify.NotificationService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import net.kyori.adventure.text.Component;
@@ -45,9 +46,8 @@ public class Ipban_Command implements TabExecutor {
         banList.addBan(ip, reason, (Date) null, sender.getName());
         target.kick(Component.text(Msg.color("&cYour IP is banned.\n&7Reason: &f" + reason)));
 
-        Bukkit.broadcast(Msg.color("&8[&6BetterAdmin&8] &f" + target.getName()
-                + " &7was IP banned by &f" + sender.getName() + "&7."),
-                "betteradmincommands.ban.notify");
+        NotificationService.staffBroadcast("ban", "betteradmincommands.ban.notify",
+                "&f" + target.getName() + " &7was IP banned by &f" + sender.getName() + "&7.");
         return true;
     }
 

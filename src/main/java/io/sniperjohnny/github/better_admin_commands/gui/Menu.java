@@ -66,6 +66,38 @@ public class Menu implements InventoryHolder {
         return this;
     }
 
+    /**
+     * Draws the outer ring with the given item. Slots that already hold a button
+     * are left alone, so this can be called before or after adding buttons.
+     */
+    public Menu border(ItemStack item) {
+        if (item == null) {
+            return this;
+        }
+        int size = inventory.getSize();
+        int rows = size / 9;
+        for (int slot = 0; slot < size; slot++) {
+            int row = slot / 9;
+            int column = slot % 9;
+            if (row == 0 || row == rows - 1 || column == 0 || column == 8) {
+                buttons.putIfAbsent(slot, item);
+            }
+        }
+        return this;
+    }
+
+    /** Gives the window the plugin's standard border and background. */
+    public Menu frame() {
+        return frame(Theme.border(), Theme.filler());
+    }
+
+    /** Gives the window a border and a background in the given style. */
+    public Menu frame(ItemStack borderItem, ItemStack fillerItem) {
+        border(borderItem);
+        fillEmpty(fillerItem);
+        return this;
+    }
+
     public int size() {
         return inventory.getSize();
     }

@@ -109,12 +109,24 @@ public class AuctionService {
         return Math.max(3, Math.min(6, plugin.getConfig().getInt("auction.gui-rows", 6)));
     }
 
-    private long listingHours() {
+    /** How long an active listing stays up, in hours; {@code 0} means never. */
+    public long listingHours() {
         return Math.max(0L, plugin.getConfig().getLong("auction.listing-hours", 48L));
     }
 
-    private int maxListings() {
+    /** How many active listings one player may have at once. */
+    public int maxListings() {
         return Math.max(1, plugin.getConfig().getInt("auction.max-listings-per-player", 10));
+    }
+
+    /** Share of a sale the server keeps, as a percentage. */
+    public double taxPercent() {
+        return percent("auction.tax-percent", 0.0);
+    }
+
+    /** Fee charged when listing, as a percentage of the price. */
+    public double listingFeePercent() {
+        return percent("auction.listing-fee-percent", 0.0);
     }
 
     private double percent(String path, double fallback) {

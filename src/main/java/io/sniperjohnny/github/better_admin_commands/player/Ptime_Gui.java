@@ -30,7 +30,7 @@ public class Ptime_Gui {
         List<PersonalDisplay.TimePreset> presets = PersonalDisplay.TIME_PRESETS;
         int rows = Math.max(3, Math.min(6, plugin.getConfig().getInt("ptime.gui-rows", 3)));
         Menu menu = new Menu("&8Your personal time", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         long offset = player.getPlayerTimeOffset();
         boolean custom = offset != 0L;

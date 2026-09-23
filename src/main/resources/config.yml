@@ -6,7 +6,30 @@
 
 # Version of this file. Do not change it by hand - the plugin uses it to add
 # new options to an existing config.yml. Values you changed are never replaced.
-config-version: 11
+config-version: 12
+
+# ------------------------------------------------------------ permissions ---
+# How the plugin hands out its own commands. With a permission plugin such as
+# LuckPerms this section can usually stay as it is; it matters most on a small
+# server without one.
+permissions:
+  # What every player may use out of the box:
+  #   default - the plugin.yml defaults: player commands for everyone, the
+  #             moderation and admin commands for operators.
+  #   all     - every command of the plugin for every player.
+  #   none    - nothing; access comes only from a permission plugin.
+  default-access: default
+  # Applied to every player on join while default-access is "default". true
+  # grants the whole bundle to everyone, false leaves it to operators.
+  groups:
+    player: true
+    mod: false
+    admin: false
+  # Granting any of these nodes unlocks the whole plugin. The first one is the
+  # short name people asked for; the second is the classic wildcard.
+  wildcards:
+    - "better_admin_commands.permissionall"
+    - "betteradmincommands.*"
 
 # --------------------------------------------------------------- commands ---
 # Name and aliases of the plugin management command. The permission stays
@@ -80,6 +103,15 @@ nick:
   restricted:
     - "dev"
     - "owner"
+  # Show the player's own rank prefix (from LuckPerms) in front of the nickname
+  # when /nick is used without a group. Turn this off to show the nickname bare -
+  # a group can then still be named explicitly.
+  show-rank-prefix: true
+  # The chat line used for every message while no other plugin formats chat.
+  # %nickname% is the nickname (or the real name when none is set), %message%
+  # the message itself. Staff holding betteradmincommands.nick.see also see the
+  # real name in brackets.
+  chat-format: "&f<%nickname%>&r %message%"
 
 # --------------------------------------------------------------- auction -----
 # /ah opens the whole auction house as a GUI: players list items, browse and buy
@@ -100,6 +132,32 @@ auction:
   # Allowed price range for a single listing.
   min-price: 1.0
   max-price: 1000000000.0
+
+# ----------------------------------------------------------------- trade -----
+# /trade <player> opens a two-sided window where both players place items and
+# money, then confirm; when both have confirmed the offers are swapped. Every
+# finished trade is written to the database and mirrored into data/trades.yml,
+# and records older than the retention window below are removed again.
+trade:
+  enabled: true
+  # Ask the other player first - they get a clickable accept/deny message -
+  # instead of a window opening on them out of nowhere.
+  require-accept: true
+  # How long a sent trade request stays valid, in seconds.
+  request-expire-seconds: 60
+  log:
+    # Keep a history of finished trades at all.
+    enabled: true
+    # How long a record is kept before it is deleted, in hours.
+    retention-hours: 48
+    # How many records are held in memory for /trade log. Older ones stay in the
+    # database and the local file until the retention window is over, but are no
+    # longer shown. Lower this to save memory on a busy server.
+    max-cached: 2000
+    # Whoever holds this permission gets a chat line naming both traders and what
+    # each side gave; they can switch it off for themselves with /notify trade.
+    # Set it to "" to fall back to the notification permission instead.
+    notify-permission: "betteradmincommands.trade.notify"
 
 # ------------------------------------------------------------------ shop -----
 # /shop opens the server shop. The contents are imported from EconomyShopGUI:
@@ -347,6 +405,38 @@ kits:
 kit-gui:
   rows: 3
   icon: CHEST
+
+# ---------------------------------------------------------- notifications ----
+# The chat notifications this plugin sends. Each one has a permission - it only
+# goes to players who hold it - and every player can additionally switch it off
+# for themselves with /notify. Removing a category from this list falls back to
+# the built-in default for it.
+notifications:
+  categories:
+    trade:
+      display: "&6Trade alerts"
+      permission: "betteradmincommands.trade.notify"
+      default: true
+    report:
+      display: "&bReport updates"
+      permission: "betteradmincommands.report.staff"
+      default: true
+    kick:
+      display: "&eKick notices"
+      permission: "betteradmincommands.kick.notify"
+      default: true
+    ban:
+      display: "&cBan notices"
+      permission: "betteradmincommands.ban.notify"
+      default: true
+    unban:
+      display: "&aUnban notices"
+      permission: "betteradmincommands.unban.notify"
+      default: true
+    mail:
+      display: "&dMail reminders"
+      permission: "betteradmincommands.mail"
+      default: true
 
 # ---------------------------------------------------------------- message ----
 messages:

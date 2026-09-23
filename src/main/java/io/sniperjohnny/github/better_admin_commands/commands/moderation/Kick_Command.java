@@ -1,5 +1,6 @@
 package io.sniperjohnny.github.better_admin_commands.commands.moderation;
 
+import io.sniperjohnny.github.better_admin_commands.notify.NotificationService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import net.kyori.adventure.text.Component;
@@ -33,9 +34,9 @@ public class Kick_Command implements TabExecutor {
                 : "No reason given";
 
         target.kick(Component.text(Msg.color("&cYou were kicked.\n&7Reason: &f" + reason)));
-        Bukkit.broadcast(Msg.color("&8[&6BetterAdmin&8] &f" + target.getName()
-                + " &7was kicked by &f" + sender.getName() + "&7. Reason: &f" + reason),
-                "betteradmincommands.kick.notify");
+        NotificationService.staffBroadcast("kick", "betteradmincommands.kick.notify",
+                "&f" + target.getName() + " &7was kicked by &f" + sender.getName()
+                        + "&7. Reason: &f" + reason);
         return true;
     }
 

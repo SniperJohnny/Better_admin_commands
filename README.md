@@ -340,6 +340,39 @@ Any folder in `plugins/` whose name starts with `EconomyShopGUI` is read as well
 premium edition are both found without editing the list. See
 [Taking over EconomyShopGUI](#taking-over-economyshopgui).
 
+### `trade`
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `enabled` | `true` | Enable `/trade` |
+| `require-accept` | `true` | Ask the other player first (they get a clickable accept/deny) |
+| `request-expire-seconds` | `60` | Lifetime of a trade request |
+| `log.enabled` | `true` | Keep a history of finished trades |
+| `log.retention-hours` | `48` | How long a record is kept before it is deleted |
+| `log.max-cached` | `2000` | Records held in memory for `/trade log` |
+| `log.notify-permission` | `betteradmincommands.trade.notify` | Who is told about a finished trade |
+
+### `permissions`
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `default-access` | `default` | `default`, `all` or `none` - what everyone may use out of the box |
+| `groups.player` / `.mod` / `.admin` | `true` / `false` / `false` | Which bundles every player gets in `default` mode |
+| `wildcards` | `better_admin_commands.permissionall`, `betteradmincommands.*` | Nodes that unlock everything |
+
+### `notifications`
+
+`notifications.categories.<id>` holds `display`, `permission` and `default` for each notification a
+player can toggle with `/notify`. The shipped ids are `trade`, `report`, `kick`, `ban`, `unban` and
+`mail`; add your own and they show up in the command automatically.
+
+### `nick` additions
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `show-rank-prefix` | `true` | Show the player's own LuckPerms rank prefix with `/nick <nick>` |
+| `chat-format` | `&f<%nickname%>&r %message%` | The chat line, used while no other plugin formats chat |
+
 ### `report`
 
 | Key | Default | Description |
@@ -484,8 +517,8 @@ maintenance windows, for example while another plugin is updated or a database m
 | `/broadcast` | `/broadcast <message>` | `betteradmincommands.broadcast` |
 | `/nick` | `/nick <nickname\|off> [luckperms-group]` | `betteradmincommands.nick` |
 | `/hat` | `/hat` | `betteradmincommands.hat` |
-| `/skinchange` | `/skinchange <username\|uuid\|off>` | `betteradmincommands.skinchange` |
-| `/ah` | `/ah` | `betteradmincommands.auction` |
+| `/skinchange` | `/skinchange <username\|uuid\|value <texture> <signature>\|off>` | `betteradmincommands.skinchange` |
+| `/ah` | `/ah [browse\|search <text>\|sort <order>\|sell [price]\|mine\|claims\|help]` | `betteradmincommands.auction` |
 | `/report` | `/report` | `betteradmincommands.report` |
 | `/reports` | `/reports` | `betteradmincommands.report.staff` |
 | `/craft` | `/craft` | `betteradmincommands.craft` |
@@ -520,6 +553,16 @@ a prefix you change in LuckPerms applies after their next login.
 Using the nicks or groups listed under `nick.restricted` (by default `dev` and `owner`) requires
 being a server operator.
 
+**Ranks.** With LuckPerms installed, `/nick <nickname>` shows **your own rank prefix** in front of
+the nickname, so the rank you already wear appears with the nick - no group has to be named.
+`/nick <nickname> off` drops the prefix and keeps the nickname, `/nick <nickname> <group>` borrows a
+different group's prefix, and `nick.show-rank-prefix: false` turns the automatic prefix off.
+
+**Seeing the real name.** The nickname is what everyone sees. Staff who hold
+`betteradmincommands.nick.see` additionally see the real name in brackets in chat (`Nick (RealName)`);
+chat is rendered per viewer, so nobody else ever sees it. `/realname <nick>` finds the account behind
+a nickname and needs `betteradmincommands.realname` (staff, `op` by default).
+
 Chat works out of the box because Paper's default chat renderer uses the display name. If another
 plugin formats chat, make it use the display name (`%player_displayname%` with PlaceholderAPI)
 rather than the real name.
@@ -548,6 +591,7 @@ be changed - there is no way to change someone else's skin.
 ```
 /skinchange <username>   use the skin of that premium account
 /skinchange <uuid>       the same, naming the account by its UUID
+/skinchange value <texture-value> <signature>   use a pasted texture
 /skinchange off          back to your own skin
 ```
 
@@ -704,7 +748,9 @@ Vanish state is kept in memory: a restart brings everyone back visible.
 | `/balance` | `/balance [player]` | `betteradmincommands.balance` |
 | `/baltop` | `/baltop [page\|list]` | `betteradmincommands.baltop` |
 | `/pay` | `/pay <player> <amount>` | `betteradmincommands.pay` |
-| `/eco` | `/eco <give\|take\|set\|reset\|balance> <player> [amount]` | `betteradmincommands.eco` |
+| `/eco` | `/eco <give\|take\|set\|reset\|resetall\|balance\|top> <player> [amount]` | `betteradmincommands.eco` (or `betteradmincommands.eco.<action>`) |
+| `/trade` | `/trade <player\|accept\|deny\|log\|help>` | `betteradmincommands.trade` |
+| `/notify` | `/notify [<name> [on\|off]\|all on\|off\|reset]` | `betteradmincommands.notify` |
 | `/worth` | `/worth [item]` | `betteradmincommands.worth` |
 | `/sell` | `/sell <hand\|all\|amount>` | `betteradmincommands.sell` |
 | `/ah` | `/ah` | `betteradmincommands.auction` |
@@ -1002,6 +1048,11 @@ Extra permissions used for finer control:
   (default `op`) — see every ticket and answer them
 - `betteradmincommands.enderchest.others`, `.broadcast.receive`, `.unlimited.list`
 - `betteradmincommands.kick.notify`, `.ban.notify`, `.unban.notify` — receive staff notifications
+  (any of these can be switched off per player with `/notify`)
+- `betteradmincommands.trade` (default `true`) — use `/trade`; `.trade.log.others` — read every
+  player's trade history; `.trade.notify` — be told what a trade exchanged
+- `better_admin_commands.permissionall` — one node that unlocks everything (alias of `betteradmincommands.*`)
+- `betteradmincommands.notify` (default `true`) — the `/notify` command itself
 - `betteradmincommands.world.manage` — create/remove worlds
 - `betteradmincommands.teleport.bypass` — skips the teleport warm-up and the `/back` cooldown (granted to admins)
 - `betteradmincommands.homes.limit.<amount>` — per-player home limit override
@@ -1022,6 +1073,88 @@ plugin can read and modify balances (shops, signs, chest shops, …).
 - Set `economy.enabled: false` to disable the economy entirely.
 - Balances are cached in memory and written back to MySQL asynchronously every
   `economy.save-interval-seconds` (and on shutdown), so the main thread never waits on the database.
+
+---
+
+## Player to player trading
+
+`/trade <player>` asks the other side for a trade and opens a two-sided window once they accept
+(the ask-ahead step can be turned off with `trade.require-accept: false`). Each player puts items
+into their own half and can offer money with the gold button; when **both** sides confirm, the
+offers are swapped. Closing the window, disconnecting or a balance that dropped in the meantime
+cancels the trade and hands everything back, so an item can never be lost.
+
+```
+/trade <player>           ask for a trade
+/trade accept [player]    accept a request
+/trade deny [player]      decline a request
+/trade log [player]       the last trades (your own, or everyone's for staff)
+```
+
+Every finished trade is written to the `trades` table **and** mirrored into `data/trades.yml`.
+Records older than `trade.log.retention-hours` (48 by default) are deleted from both. Only the
+newest `trade.log.max-cached` records are held in memory, so a busy market does not grow the heap.
+
+Staff who hold `betteradmincommands.trade.notify` are told in chat what each side gave; the
+notification can be switched off per player with `/notify`.
+
+---
+
+## Notifications
+
+The plugin tells staff about things that happen (a trade, a new report, a kick, a ban, an unban)
+and reminds players about unread mail. Each of those is a **category** with its own permission,
+listed under `notifications.categories` in `config.yml`. A player receives a notification only when
+they hold its permission *and* have not switched it off:
+
+```
+/notify                     list every notification with its state
+/notify <name>              flip one on or off
+/notify <name> on|off       set one outright
+/notify all on|off          set every one at once
+/notify reset               back to the server defaults
+```
+
+Add or remove categories in `config.yml` and the command picks them up automatically; a category
+removed from the config falls back to its built-in default.
+
+---
+
+## One permission for everything
+
+Handing out a hundred nodes is tedious, so there is a single node that unlocks the whole plugin:
+
+```yaml
+better_admin_commands.permissionall: true
+```
+
+It is accepted wherever a specific node is checked and also satisfies the command permissions,
+exactly like `betteradmincommands.*`. On a server without a permission plugin, the `permissions`
+section of `config.yml` decides what everyone gets from the start:
+
+```yaml
+permissions:
+  default-access: default   # default | all | none
+  groups:
+    player: true            # /home, /pay, /ah, /shop, /trade, ...
+    mod: false              # /ban, /kick, /mute, ...
+    admin: false            # /gm, /give, /eco, ...
+```
+
+`default-access: all` gives every command to everyone, `none` gives nothing (access then comes only
+from a permission plugin). The group switches apply in `default` mode and let a small server, for
+example, hand everyone the moderation bundle without making them operators. The switches are applied
+when a player joins and after `/betteradmincommands reload`.
+
+---
+
+## Menu look
+
+Every window shares one theme now: a dark border, a lighter background and consistent headings, so
+the auction house, the shop and the menus for homes, warps, kits, mail, reports and the rest feel
+like one piece. `/ah` was rebuilt around it with buttons that explain themselves, item and balance
+counts, the current price range and the running time of the whole listing, and every button still
+has a text form (see the Auction House section).
 
 ---
 
@@ -1084,6 +1217,7 @@ data/mail.yml                   local mirror of the mail table
 data/auction.yml                local mirror of the ah_listings table
 data/shops.yml                  local mirror of the shops table
 data/shop_items.yml             local mirror of the shop_items table
+data/trades.yml                 local mirror of the trades table
 backups/<timestamp>/            table dumps created by /betteradmincommands backup
 ```
 

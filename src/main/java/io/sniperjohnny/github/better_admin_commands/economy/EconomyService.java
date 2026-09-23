@@ -156,6 +156,7 @@ public class EconomyService {
     public double getBalance(UUID uuid) {
         Double balance = balances.get(uuid);
         if (balance == null) {
+            // A UUID lookup does not hit the network; only a name lookup would.
             String name = names.get(uuid);
             if (name == null) {
                 OfflinePlayer offline = plugin.getServer().getOfflinePlayer(uuid);
@@ -251,6 +252,16 @@ public class EconomyService {
         return plugin.getConfig().getBoolean("economy.allow-payments", true);
     }
 
+    /** The balance a fresh account starts with, used by {@code /eco reset}. */
+    public double startingBalance() {
+        return startingBalance;
+    }
+
+    /** Every account the plugin knows about, used by {@code /eco resetall}. */
+    public java.util.Set<UUID> accountIds() {
+        return new java.util.LinkedHashSet<>(balances.keySet());
+    }
+
     /** The richest players, highest balance first. */
     public List<BalanceEntry> top(int limit) {
         List<BalanceEntry> entries = new ArrayList<>();
@@ -263,6 +274,11 @@ public class EconomyService {
 
     public double maxBalance() {
         return maxBalance;
+    }
+
+    /** The configured currency symbol, handy for plain-text output. */
+    public String currencySymbol() {
+        return currencySymbol;
     }
 
     /**

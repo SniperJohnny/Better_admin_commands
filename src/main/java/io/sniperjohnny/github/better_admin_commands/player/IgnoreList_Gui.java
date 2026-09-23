@@ -39,7 +39,7 @@ public class IgnoreList_Gui {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Ignoring &7(" + ignored.size() + ")", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         List<String> names = new ArrayList<>(ignored);
         int start = current * pageSize;
@@ -97,7 +97,7 @@ public class IgnoreList_Gui {
         int current = Math.max(0, Math.min(page, pages - 1));
 
         Menu menu = new Menu("&8Ignore a player", rows);
-        menu.fillEmpty(Items.filler());
+        menu.frame();
 
         int start = current * pageSize;
         for (int index = 0; index < pageSize && start + index < online.size(); index++) {

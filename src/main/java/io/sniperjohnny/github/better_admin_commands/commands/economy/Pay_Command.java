@@ -15,7 +15,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Sends money from the sender to another player. */
+/**
+ * Sends money from the sender to another player:
+ *
+ * <ul>
+ *   <li>{@code /pay <player> <amount>} - send straight away</li>
+ *   <li>{@code /pay <player>} - ask for the amount in chat</li>
+ * </ul>
+ */
 public class Pay_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -31,7 +38,7 @@ public class Pay_Command implements TabExecutor {
             Msg.playerOnly(sender);
             return true;
         }
-        if (args.length < 2) {
+        if (args.length < 1) {
             Msg.usage(sender, command);
             return true;
         }
@@ -39,13 +46,38 @@ public class Pay_Command implements TabExecutor {
         if (target == null) {
             return true;
         }
-        Double amount = Targets.parseDouble(args[1]);
-        if (amount == null) {
-            Msg.error(self, "The amount has to be at least "
-                    + plugin.economy().format(plugin.economy().minimumPayment()) + ".");
+
+        if (args.length < 2) {
+            // No amount yet: ask for it, so the command works with just a name.
+            plugin.chatPrompts().request(self, "&7How much do you want to send to &f"
+                    + target.getName() + "&7? &8(you have &f"
+                    + plugin.economy().format(plugin.economy().getBalance(self.getUniqueId())) + "&8)",
+                    answer -> {
+                        if (answer.equalsIgnoreCase("cancel")) {
+                            Msg.send(self, "&7Payment cancelled.");
+                            return;
+                        }
+                        Double amount = Targets.parseDouble(answer);
+                        if (amount == null) {
+                            Msg.error(self, "That is not a valid amount.");
+                            return;
+                        }
+                        pay(self, target, amount);
+                    });
             return true;
         }
 
+        Double amount = Targets.parseDouble(args[1]);
+        if (amount == null) {
+            Msg.error(self, "That is not a valid amount.");
+            return true;
+        }
+        pay(self, target, amount);
+        return true;
+    }
+
+    /** Moves the money and reports the outcome to both sides. */
+    private void pay(Player self, OfflinePlayer target, double amount) {
         // The rules live in the economy service, so /pay and the balance menu
         // behave identically.
         EconomyService.TransferResult result = plugin.economy().transfer(self, target.getUniqueId(), amount);
@@ -64,7 +96,6 @@ public class Pay_Command implements TabExecutor {
             case TOO_POOR -> Msg.error(self, "You do not have enough money. Your balance is "
                     + plugin.economy().format(plugin.economy().getBalance(self.getUniqueId())) + ".");
         }
-        return true;
     }
 
     @Override

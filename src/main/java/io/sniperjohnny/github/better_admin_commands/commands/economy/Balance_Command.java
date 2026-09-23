@@ -27,7 +27,14 @@ public class Balance_Command implements TabExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String @NotNull[] args) {
         if (args.length >= 1) {
-            if (!sender.hasPermission("betteradmincommands.balance.others")) {
+            // /money and /balance double as the economy admin command, so
+            // /money set <player> <amount> works like it does on XConomy. A first
+            // argument that is not an action is treated as a player name below.
+            if (plugin.ecoCommand() != null
+                    && plugin.ecoCommand().admin(sender, command, args)) {
+                return true;
+            }
+            if (!plugin.permissions().has(sender, "betteradmincommands.balance.others")) {
                 Msg.noPermission(sender);
                 return true;
             }
@@ -51,11 +58,31 @@ public class Balance_Command implements TabExecutor {
         return true;
     }
 
+    /** True when the first argument names an economy action (for tab completion). */
+    private static boolean isAction(String value) {
+        return switch (value.toLowerCase(java.util.Locale.ROOT)) {
+            case "give", "add", "take", "remove", "reduce", "set", "reset", "resetall",
+                 "balance", "bal", "top", "help" -> true;
+            default -> false;
+        };
+    }
+
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String @NotNull[] args) {
-        if (args.length == 1 && sender.hasPermission("betteradmincommands.balance.others")) {
-            return Targets.complete(args[0]);
+        if (args.length == 1) {
+            List<String> choices = new java.util.ArrayList<>(Targets.complete(args[0]));
+            if (plugin.permissions().has(sender, "betteradmincommands.eco")) {
+                choices.addAll(Targets.completeFrom(args[0], "give", "take", "set", "reset", "resetall",
+                        "balance", "top", "help"));
+            }
+            return choices;
+        }
+        if (isAction(args[0]) && args.length == 2) {
+            return Targets.complete(args[1]);
+        }
+        if (isAction(args[0]) && args.length == 3) {
+            return Targets.completeFrom(args[2], "100", "1000", "10000");
         }
         return Collections.emptyList();
     }
