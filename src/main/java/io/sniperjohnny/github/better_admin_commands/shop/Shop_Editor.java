@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.shop;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Items;
 import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
@@ -145,7 +146,7 @@ public class Shop_Editor {
                                 ? "&6" + plugin.economy().format(item.buyPrice())
                                 : "&cnot for sale"),
                         "",
-                        "&eClick and type the price"),
+                        "&eClick and enter the price"),
                 event -> promptPrice(player, item, true, shopId, shopPage));
 
         menu.button(10, Items.of(Material.GOLD_INGOT, "&6Set sell price",
@@ -153,16 +154,17 @@ public class Shop_Editor {
                                 ? "&6" + plugin.economy().format(item.sellPrice())
                                 : "&cnot bought back"),
                         "",
-                        "&eClick and type the price"),
+                        "&eClick and enter the price"),
                 event -> promptPrice(player, item, false, shopId, shopPage));
 
         menu.button(11, Items.of(Material.NAME_TAG, "&bSet amount",
                         "&7One purchase hands out &f" + item.unit() + "&7.",
                         "",
-                        "&eClick and type the amount"),
-                event -> plugin.chatPrompts().request(player,
-                        "&7How many items should one purchase give?", answer -> {
-                            if (answer.equalsIgnoreCase("cancel")) {
+                        "&eClick and enter the amount"),
+                event -> plugin.dialogs().number(player, "Shop editor » Amount",
+                        "&7How many items should one purchase give? &8(1-64)",
+                        "Items per purchase", Integer.toString(item.unit()), 3, answer -> {
+                            if (DialogPromptService.isCancel(answer)) {
                                 Msg.send(player, "&7Cancelled.");
                                 openItem(player, itemKey, shopId, shopPage);
                                 return;
@@ -245,14 +247,16 @@ public class Shop_Editor {
                         : "&7Only holders of that permission may use it."));
 
         menu.button(11, Items.of(Material.WRITABLE_BOOK, "&bSet access permission",
-                        "&7Type the permission that unlocks this shop.",
+                        "&7Enter the permission that unlocks this shop.",
                         "&8Shop ids: " + ShopService.nodeOf(shop.id()),
                         "",
-                        "&eClick to type a permission"),
-                event -> plugin.chatPrompts().request(player,
-                        "&7Which permission unlocks &f" + shop.display() + "&7? &8(type &fnone &8to open it)",
+                        "&eClick to enter a permission"),
+                event -> plugin.dialogs().text(player, "Shop settings » Access",
+                        "&7Which permission unlocks &f" + shop.display()
+                                + "&7? &8(leave empty or &fnone &8to open it)",
+                        "Permission", permission == null ? "" : permission, 64,
                         answer -> {
-                            if (answer.equalsIgnoreCase("cancel")) {
+                            if (DialogPromptService.isCancel(answer)) {
                                 Msg.send(player, "&7Cancelled.");
                                 openSettings(player, shopId, shopPage);
                                 return;
@@ -292,9 +296,12 @@ public class Shop_Editor {
     private void promptPrice(Player player, ShopService.ShopItem item, boolean buying,
                              String shopId, int shopPage) {
         String what = buying ? "buy" : "sell";
-        plugin.chatPrompts().request(player,
-                "&7What should one &f" + what + " &7cost? &8(type &foff &8to disable it)", answer -> {
-                    if (answer.equalsIgnoreCase("cancel")) {
+        plugin.dialogs().number(player, "Shop editor » " + (buying ? "Buy" : "Sell") + " price",
+                "&7What should one &f" + what + " &7cost? &8(type &foff &8to disable it)",
+                "Price", buying && item.buyable() ? Double.toString(item.buyPrice())
+                        : (!buying && item.sellable() ? Double.toString(item.sellPrice()) : ""),
+                16, answer -> {
+                    if (DialogPromptService.isCancel(answer)) {
                         Msg.send(player, "&7Cancelled.");
                         openItem(player, item.key(), shopId, shopPage);
                         return;

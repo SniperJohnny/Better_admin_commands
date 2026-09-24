@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.listeners;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.trade.TradeMenu;
 import io.sniperjohnny.github.better_admin_commands.trade.TradeService;
 import io.sniperjohnny.github.better_admin_commands.trade.TradeSession;
@@ -17,6 +18,8 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.Map;
 
 /**
  * Drives the trade windows.
@@ -147,10 +150,10 @@ public class Trade_Listener implements Listener {
         // while the window stays open - the window-close event skips cancelling
         // while a dialog is awaited.
         session.setAwaitingInput(true);
-        plugin.dialogs().number(player, "Trade money",
+        plugin.dialogs().number(player, "Trade » Money",
                 "&7How much money do you want to offer? &8(you have &f"
                         + plugin.economy().format(balance) + "&8)", "Amount", "", 16, answer -> {
-                    if ("cancel".equalsIgnoreCase(answer)) {
+                    if (DialogPromptService.isCancel(answer)) {
                         // Only the money entry is dropped; the trade stays open.
                         Msg.send(player, "&7Money offer left unchanged.");
                         trades().reopen(session, player);
@@ -171,6 +174,25 @@ public class Trade_Listener implements Listener {
                     plugin.trades().setMoney(player, amount);
                     trades().reopen(session, player);
                 });
+    }
+
+    /**
+     * Moves one stack of the player's own half back into their inventory, so a
+     * shift-click can take an offer back without closing the trade.
+     */
+    private void moveBackToInventory(Player player, Inventory inventory, int slot) {
+        ItemStack item = inventory.getItem(slot);
+        if (item == null || item.getType().isAir()) {
+            return;
+        }
+        inventory.setItem(slot, null);
+        Map<Integer, ItemStack> leftover = player.getInventory().addItem(item);
+        if (!leftover.isEmpty()) {
+            // Whatever did not fit stays in the trade instead of being dropped.
+            ItemStack remaining = leftover.values().iterator().next();
+            inventory.setItem(slot, remaining);
+            Msg.error(player, "Your inventory is full, so the stack stayed in the trade.");
+        }
     }
 
     /** Moves a stack the player shift-clicked into their own half of the trade. */

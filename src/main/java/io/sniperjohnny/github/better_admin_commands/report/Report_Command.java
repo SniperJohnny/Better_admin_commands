@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.report;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Items;
 import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
@@ -353,7 +354,8 @@ public class Report_Command implements TabExecutor {
         }
 
         int nav = 45;
-        menu.button(nav, Items.of(Material.WRITABLE_BOOK, "&aReply", "&7Answer in chat."),
+        menu.button(nav, Items.of(Material.WRITABLE_BOOK, "&aReply",
+                        "&7Write your answer in the window that opens."),
                 event -> startReply(player, report.id()));
         menu.button(nav + 1, report.isOpen()
                         ? Items.of(Material.RED_CONCRETE, "&cClose ticket", "&7Marks it as handled.")
@@ -377,10 +379,10 @@ public class Report_Command implements TabExecutor {
     /* ------------------------------------------------------------- flows --- */
 
     private void startCreate(Player player, Preset preset, String target) {
-        plugin.dialogs().message(player, "Create a report",
+        plugin.dialogs().message(player, "Reports » Create",
                 "&7Describe the &f" + preset.display() + "&7 report.",
                 "Description", "", 256, 4, answer -> {
-                    if (answer.equalsIgnoreCase("cancel")) {
+                    if (DialogPromptService.isCancel(answer)) {
                         Msg.send(player, "&7Report cancelled.");
                         openMain(player);
                         return;
@@ -403,10 +405,10 @@ public class Report_Command implements TabExecutor {
     }
 
     private void startReply(Player player, String reportId) {
-        plugin.dialogs().message(player, "Report #" + ReportService.shortId(reportId),
+        plugin.dialogs().message(player, "Reports » Reply #" + ReportService.shortId(reportId),
                 "&7Type your reply for ticket &f#" + ReportService.shortId(reportId) + "&7.",
                 "Reply", "", 256, 4, answer -> {
-                    if (answer.equalsIgnoreCase("cancel")) {
+                    if (DialogPromptService.isCancel(answer)) {
                         Msg.send(player, "&7Reply cancelled.");
                         openTicket(player, reportId, 0);
                         return;

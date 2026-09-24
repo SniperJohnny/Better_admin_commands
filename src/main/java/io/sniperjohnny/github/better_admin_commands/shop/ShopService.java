@@ -83,7 +83,8 @@ public class ShopService {
     /* ------------------------------------------------------------ config --- */
 
     public boolean enabled() {
-        return plugin.getConfig().getBoolean("shop.enabled", true);
+        // Honours both the module switch and the older shop.enabled key.
+        return plugin.features().enabled("shop");
     }
 
     public int guiRows() {

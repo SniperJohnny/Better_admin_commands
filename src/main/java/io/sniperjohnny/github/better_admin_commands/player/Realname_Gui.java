@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.player;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Items;
 import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
@@ -82,7 +83,7 @@ public class Realname_Gui {
                         "&eClick to look one up"),
                 event -> plugin.dialogs().text(player, "Realname » Look up",
                         "&7Which nickname do you want to look up?", "Nickname", "", 32, answer -> {
-                            if (answer.equalsIgnoreCase("cancel")) {
+                            if (DialogPromptService.isCancel(answer)) {
                                 Msg.send(player, "&7Cancelled.");
                                 open(player, current);
                                 return;

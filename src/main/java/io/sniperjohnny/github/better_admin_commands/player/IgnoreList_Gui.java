@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.player;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Items;
 import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
@@ -123,9 +124,9 @@ public class IgnoreList_Gui {
                         "&7For someone who is not online.",
                         "",
                         "&eClick to type a name"),
-                event -> plugin.dialogs().text(player, "Ignore list",
+                event -> plugin.dialogs().text(player, "Ignore list » Add",
                         "&7Which player do you want to ignore?", "Player name", "", 16, answer -> {
-                            if (answer.equalsIgnoreCase("cancel")) {
+                            if (DialogPromptService.isCancel(answer)) {
                                 Msg.send(player, "&7Cancelled.");
                                 open(player, 0);
                                 return;

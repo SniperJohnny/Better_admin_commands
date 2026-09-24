@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.economy;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Items;
 import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
@@ -104,10 +105,10 @@ public class Balance_Gui {
 
     private void promptAmount(Player player, Player receiver) {
         double minimum = plugin.economy().minimumPayment();
-        plugin.dialogs().number(player, "Send money",
+        plugin.dialogs().number(player, "Balance » Send money",
                 "&7How much do you want to send to &f" + receiver.getName() + "&7? &8(min "
                         + plugin.economy().format(minimum) + ")", "Amount", "", 16, answer -> {
-                    if (answer.equalsIgnoreCase("cancel")) {
+                    if (DialogPromptService.isCancel(answer)) {
                         Msg.send(player, "&7Payment cancelled.");
                         open(player);
                         return;

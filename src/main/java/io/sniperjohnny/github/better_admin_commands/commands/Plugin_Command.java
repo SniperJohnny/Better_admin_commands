@@ -44,10 +44,11 @@ public class Plugin_Command implements TabExecutor {
             case "database", "db" -> diagnose(sender);
             case "disable", "off" -> setEnabled(sender, false);
             case "enable", "on" -> setEnabled(sender, true);
+            case "modules", "module", "features" -> listModules(sender);
             case "info" -> info(sender, command);
             default -> {
                 Msg.error(sender, "Unknown subcommand. Use /" + plugin.rootLabel()
-                        + " <reload|backup|reconnect|database|info|disable|enable>.");
+                        + " <reload|backup|reconnect|database|modules|info|disable|enable>.");
                 Msg.usage(sender, command);
             }
         }
@@ -90,6 +91,24 @@ public class Plugin_Command implements TabExecutor {
     }
 
     /**
+     * Lists every feature module with its state, so it is obvious which parts of
+     * the plugin are switched on without reading config.yml.
+     */
+    private void listModules(CommandSender sender) {
+        Msg.raw(sender, "&6Feature modules &8(config.yml » modules)");
+        for (String line : plugin.features().describeAll()) {
+            Msg.raw(sender, line);
+        }
+        java.util.Set<String> off = plugin.features().disabledCommands();
+        if (!off.isEmpty()) {
+            Msg.raw(sender, " &cOff on their own: &f" + String.join(", ", off));
+        }
+        Msg.raw(sender, " &7Switch a module off with &fmodules.<id>.enabled: false&7, a single"
+                + " command with &fmodules.disabled-commands&7, then run &f/"
+                + plugin.rootLabel() + " reload&7.");
+    }
+
+    /**
      * Walks through the database connection step by step, so a problem can be
      * narrowed down to the address, the port, the login or the tables.
      */
@@ -113,7 +132,7 @@ public class Plugin_Command implements TabExecutor {
         Msg.raw(sender, "&6Better_Admin_Commands &7v" + plugin.getDescription().getVersion());
         Msg.raw(sender, " &7State: " + (plugin.isPluginDisabled() ? "&cdisabled" : "&aenabled")
                 + " &7(command: &f/" + plugin.rootLabel() + "&7)");
-        Msg.raw(sender, " &7Economy: &f" + (plugin.getConfig().getBoolean("economy.enabled", true) ? "enabled" : "disabled")
+        Msg.raw(sender, " &7Economy: &f" + (plugin.features().enabled("economy") ? "enabled" : "disabled")
                 + " &7(Vault: " + (plugin.getServer().getPluginManager().getPlugin("Vault") != null ? "installed" : "missing") + ")");
         Msg.raw(sender, " &7Database: &f" + (plugin.database().isAvailable()
                 ? "connected" : "unavailable (using local safe files)"));
@@ -131,8 +150,13 @@ public class Plugin_Command implements TabExecutor {
             String nickname = plugin.preferences().nickname(player.getUniqueId());
             Msg.raw(sender, " &7Your nickname: &f" + (nickname == null ? "none set" : nickname));
         }
+        long off = plugin.features().modules().stream()
+                .filter(module -> !plugin.features().enabled(module.id())).count();
+        Msg.raw(sender, " &7Modules: &f" + plugin.features().modules().size()
+                + " &7(&f" + (plugin.features().modules().size() - off) + " on, &f" + off
+                + " off&7) - see &f/" + plugin.rootLabel() + " modules");
         Msg.raw(sender, " &7Subcommands: &freload&7, &fbackup&7, &freconnect&7, &fdatabase&7, "
-                + "&finfo&7, &fdisable&7, &fenable");
+                + "&fmodules&7, &finfo&7, &fdisable&7, &fenable");
     }
 
     private void reconnect(CommandSender sender) {
@@ -183,8 +207,8 @@ public class Plugin_Command implements TabExecutor {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String @NotNull[] args) {
         if (args.length == 1) {
-            return Targets.completeFrom(args[0], "reload", "backup", "reconnect", "database", "info",
-                    "disable", "enable");
+            return Targets.completeFrom(args[0], "reload", "backup", "reconnect", "database",
+                    "modules", "info", "disable", "enable");
         }
         return Collections.emptyList();
     }

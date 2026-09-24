@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.shop;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Items;
 import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
@@ -299,7 +300,7 @@ public class Shop_Command implements TabExecutor {
                             "", "&eClick to buy"),
                     event -> buy(player, item, QUANTITIES[QUANTITIES.length - 1], shopId, shopPage));
             menu.button(22, Items.of(Material.NAME_TAG, "&aBuy a custom amount",
-                            "&7Type the amount in chat.",
+                            "&7Enter the amount in the window that opens.",
                             "", "&eClick to enter an amount"),
                     event -> promptAmount(player, "buy", item, shopId, shopPage));
         } else {
@@ -333,7 +334,7 @@ public class Shop_Command implements TabExecutor {
         plugin.dialogs().text(player, "Shop » Search",
                 "&7What are you looking for? &8(part of an item name)",
                 "Item name", "", 48, answer -> {
-                    if (answer.equalsIgnoreCase("cancel")) {
+                    if (DialogPromptService.isCancel(answer)) {
                         Msg.send(player, "&7Search cancelled.");
                         onCancel.run();
                         return;
@@ -394,7 +395,7 @@ public class Shop_Command implements TabExecutor {
         plugin.dialogs().number(player, "Shop » " + mode,
                 "&7How many times do you want to " + mode + " &f" + pretty(item.display()) + "&7?",
                 "Times", "", 6, answer -> {
-                    if (answer.equalsIgnoreCase("cancel")) {
+                    if (DialogPromptService.isCancel(answer)) {
                         Msg.send(player, "&7Cancelled.");
                         return;
                     }

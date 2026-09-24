@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.mail;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Items;
 import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
@@ -178,9 +179,9 @@ public class Mail_Gui {
                         "&7Write back to &f" + mail.senderName() + "&7.",
                         "",
                         "&eClick to reply"),
-                event -> plugin.dialogs().message(player, "Reply to mail",
+                event -> plugin.dialogs().message(player, "Mail » Reply",
                         "&7Your reply to &f" + mail.senderName() + "&7:", "Message", "", 256, 3, answer -> {
-                            if (answer.equalsIgnoreCase("cancel")) {
+                            if (DialogPromptService.isCancel(answer)) {
                                 Msg.send(player, "&7Reply cancelled.");
                                 open(player, returnPage);
                                 return;
@@ -260,10 +261,10 @@ public class Mail_Gui {
                         "&7For someone who is not online.",
                         "",
                         "&eClick to type a name"),
-                event -> plugin.dialogs().text(player, "Write mail",
+                event -> plugin.dialogs().text(player, "Mail » Write",
                         "&7Who do you want to write to? &8(type a player name)",
                         "Player name", "", 16, answer -> {
-                            if (answer.equalsIgnoreCase("cancel")) {
+                            if (DialogPromptService.isCancel(answer)) {
                                 Msg.send(player, "&7Cancelled.");
                                 open(player, 0);
                                 return;
@@ -285,9 +286,9 @@ public class Mail_Gui {
     }
 
     private void promptMessage(Player player, UUID target, String targetName) {
-        plugin.dialogs().message(player, "Write mail",
+        plugin.dialogs().message(player, "Mail » Message",
                 "&7Your message to &f" + targetName + "&7:", "Message", "", 256, 3, answer -> {
-            if (answer.equalsIgnoreCase("cancel")) {
+            if (DialogPromptService.isCancel(answer)) {
                 Msg.send(player, "&7Cancelled.");
                 open(player, 0);
                 return;

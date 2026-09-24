@@ -21,7 +21,7 @@ public class Root_Command extends Command {
 
     public Root_Command(String name, List<String> aliases, Plugin_Command delegate) {
         super(name, "manages the plugin",
-                "/" + name + " <reload|backup|reconnect|info|disable|enable>",
+                "/" + name + " <reload|backup|reconnect|database|modules|info|disable|enable>",
                 aliases == null ? Collections.emptyList() : aliases);
         this.delegate = delegate;
         setPermission("betteradmincommands.command");

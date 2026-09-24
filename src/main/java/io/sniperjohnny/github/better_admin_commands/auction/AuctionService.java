@@ -102,7 +102,8 @@ public class AuctionService {
     /* ------------------------------------------------------------ config --- */
 
     public boolean enabled() {
-        return plugin.getConfig().getBoolean("auction.enabled", true);
+        // Honours both the module switch and the older auction.enabled key.
+        return plugin.features().enabled("auction");
     }
 
     public int guiRows() {

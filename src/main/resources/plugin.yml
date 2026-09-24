@@ -2,7 +2,7 @@ name: Better_Admin_Commands
 version: '$version'
 main: io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands
 api-version: '1.21'
-authors: [ SniperJohnny ]
+authors: [ SniperJohnny]
 description: Admin, teleport, economy, social and moderation commands with MySQL storage and Vault economy.
 softdepend: [ Vault, LuckPerms, PlaceholderAPI, TAB ]
 

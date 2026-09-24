@@ -65,8 +65,11 @@ public class Join_Listener implements Listener {
             return;
         }
         boolean firstJoin = !player.hasPlayedBefore();
-        boolean shouldTeleport = plugin.getConfig().getBoolean("spawn.teleport-on-join", false)
-                || (firstJoin && plugin.getConfig().getBoolean("spawn.teleport-on-first-join", false));
+        // The spawn module can be switched off, and then no join rule applies
+        // either - otherwise a disabled spawn would still move players around.
+        boolean shouldTeleport = plugin.features().enabled("spawn")
+                && (plugin.getConfig().getBoolean("spawn.teleport-on-join", false)
+                || (firstJoin && plugin.getConfig().getBoolean("spawn.teleport-on-first-join", false)));
         if (!shouldTeleport || !plugin.spawns().hasSpawn()) {
             return;
         }

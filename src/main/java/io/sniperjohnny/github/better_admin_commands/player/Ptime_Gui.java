@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.player;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Items;
 import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
@@ -12,7 +13,7 @@ import java.util.List;
 
 /**
  * The personal time menu behind {@code /ptime}: one button per preset, plus a
- * reset and a custom tick count typed in chat.
+ * reset and a custom tick count entered in a dialog.
  *
  * <p>The presets and the way a value is applied come from
  * {@link PersonalDisplay}, so the menu and the command always accept exactly the
@@ -55,17 +56,15 @@ public class Ptime_Gui {
                     event -> apply(player, preset.id()));
         }
 
-        long offset = player.getPlayerTimeOffset();
-        boolean custom = offset != 0L;
         menu.button(22, Items.of(Material.CLOCK, "&bPick a tick value",
                         "&7Set an exact time, 0-24000, with a slider.",
                         "",
                         "&eClick to pick"),
-                event -> plugin.dialogs().slider(player, "Personal time",
+                event -> plugin.dialogs().slider(player, "Personal time » Ticks",
                         "&7Which tick value do you want? &8(0-24000)",
                         "Ticks", 0f, 24000f, 500f,
                         custom ? Math.floorMod(offset, 24000L) : 12000f, answer -> {
-                            if (answer.equalsIgnoreCase("cancel")) {
+                            if (DialogPromptService.isCancel(answer)) {
                                 Msg.send(player, "&7Cancelled.");
                                 open(player);
                                 return;

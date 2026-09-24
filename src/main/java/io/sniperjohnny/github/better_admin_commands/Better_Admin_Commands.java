@@ -11,9 +11,11 @@ import io.sniperjohnny.github.better_admin_commands.backup.BackupService;
 import io.sniperjohnny.github.better_admin_commands.report.ReportService;
 import io.sniperjohnny.github.better_admin_commands.report.Report_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Disabled_Command;
+import io.sniperjohnny.github.better_admin_commands.commands.FeatureDisabled_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Plugin_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Root_Command;
 import io.sniperjohnny.github.better_admin_commands.config.ConfigUpdater;
+import io.sniperjohnny.github.better_admin_commands.feature.FeatureService;
 import io.sniperjohnny.github.better_admin_commands.gui.ChatPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Break_Command;
@@ -285,6 +287,8 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private ConfigUpdater configUpdater;
     private Plugin_Command rootCommand;
     private Disabled_Command disabledCommand;
+    private FeatureDisabled_Command featureDisabledCommand;
+    private FeatureService features;
 
     /** The command declared in plugin.yml, kept so it can be registered back. */
     private PluginCommand declaredRoot;
@@ -307,6 +311,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         saveDefaultConfig();
         declaredRoot = getCommand(DEFAULT_ROOT_COMMAND);
         disabledCommand = new Disabled_Command(this);
+        featureDisabledCommand = new FeatureDisabled_Command(this);
 
         // Bring an older config.yml up to date before anything reads from it.
         // Missing options are added, values already in the file are left alone.
@@ -318,6 +323,11 @@ public final class Better_Admin_Commands extends JavaPlugin {
         // Decides what every player may use when no permission plugin hands out
         // the plugin's own nodes. Shared by the commands and the join listener.
         permissions = new PermissionService(this);
+
+        // Which features are switched on (config.yml, section "modules"). Read
+        // before anything is registered, so commands, listeners and repeating
+        // tasks are all gated from this one place.
+        features = new FeatureService(this);
 
         if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
             getLogger().warning("Could not create the plugin data folder.");
@@ -483,6 +493,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
         warps.load();
         jails.load();
         applyRootCommand();
+        // A module may have been switched on or off, so the listeners, the command
+        // bindings and the repeating tasks are applied again from config.yml.
+        applyFeatures();
         // Re-read the cached permission and notification settings, then re-apply
         // the permission defaults, so a changed permissions.default-access, group
         // switch or notification list takes effect at once.
@@ -533,27 +546,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
             if (economy != null) {
                 economy.saveBlocking();
             }
-            for (Listener listener : listeners) {
-                HandlerList.unregisterAll(listener);
-            }
-            listeners.clear();
+            unregisterListeners();
             for (String name : executors.keySet()) {
-                if (name.equals(DEFAULT_ROOT_COMMAND)) {
-                    continue; // the management command has to stay usable
-                }
-                PluginCommand command = getCommand(name);
-                if (command != null) {
-                    command.setExecutor(disabledCommand);
-                }
-            }
-            for (String name : completers.keySet()) {
-                if (name.equals(DEFAULT_ROOT_COMMAND)) {
-                    continue;
-                }
-                PluginCommand command = getCommand(name);
-                if (command != null) {
-                    command.setTabCompleter(disabledCommand);
-                }
+                bind(name);
             }
             getLogger().info("The plugin was disabled - only /" + rootLabel + " is still answering.");
             if (preferences != null) {
@@ -561,20 +556,11 @@ public final class Better_Admin_Commands extends JavaPlugin {
                 preferences.removeNameTagTeams();
             }
         } else {
-            for (Map.Entry<String, CommandExecutor> entry : executors.entrySet()) {
-                PluginCommand command = getCommand(entry.getKey());
-                if (command != null) {
-                    command.setExecutor(entry.getValue());
-                }
-            }
-            for (Map.Entry<String, TabExecutor> entry : completers.entrySet()) {
-                PluginCommand command = getCommand(entry.getKey());
-                if (command != null) {
-                    command.setTabCompleter(entry.getValue());
-                }
-            }
             registerListeners();
             startTasks();
+            for (String name : executors.keySet()) {
+                bind(name);
+            }
             // The displays of everyone who is online are re-applied, so the rank
             // prefixes and the hidden name tags come back with the features.
             if (preferences != null) {
@@ -688,8 +674,8 @@ public final class Better_Admin_Commands extends JavaPlugin {
     /* ------------------------------------------------------------ wiring --- */
 
     private void registerVaultEconomy() {
-        if (!getConfig().getBoolean("economy.enabled", true)) {
-            getLogger().info("The built-in economy is disabled in config.yml.");
+        if (!features.enabled("economy")) {
+            getLogger().info("The built-in economy is switched off in config.yml.");
             return;
         }
         if (getServer().getPluginManager().getPlugin("Vault") == null) {
@@ -709,7 +695,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
 
     /** Starts every repeating task - on enable and after the plugin is switched back on. */
     private void startTasks() {
-        startSaveTask();
+        if (features.enabled("economy")) {
+            startSaveTask();
+        }
         startAfkTask();
         startJailTask();
         startReconnectTask();
@@ -741,7 +729,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
 
     private void startAfkTask() {
         int minutes = Math.max(1, getConfig().getInt("afk.auto-afk-minutes", 10));
-        if (!getConfig().getBoolean("afk.auto-afk-enabled", true)) {
+        if (!features.enabled("afk") || !getConfig().getBoolean("afk.auto-afk-enabled", true)) {
             return;
         }
         afkTask = getServer().getScheduler().runTaskTimer(
@@ -749,6 +737,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
     }
 
     private void startJailTask() {
+        if (!features.enabled("jail") || jailListener == null) {
+            return;
+        }
         jailTask = getServer().getScheduler().runTaskTimer(
                 this, () -> jailListener.checkExpired(), 20L * 15L, 20L * 15L);
     }
@@ -784,7 +775,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
 
     /** Marks overdue auction listings as expired once a minute. */
     private void startAuctionTask() {
-        if (!getConfig().getBoolean("auction.enabled", true)) {
+        if (!features.enabled("auction")) {
             return;
         }
         auctionTask = getServer().getScheduler().runTaskTimer(
@@ -796,7 +787,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
      * history stays at 48 hours by default. Runs every 10 minutes.
      */
     private void startTradeTask() {
-        if (!getConfig().getBoolean("trade.log.enabled", true)) {
+        if (!features.enabled("trade") || !getConfig().getBoolean("trade.log.enabled", true)) {
             return;
         }
         tradeTask = getServer().getScheduler().runTaskTimerAsynchronously(this,
@@ -885,20 +876,44 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return future;
     }
 
+    /**
+     * Registers the listeners of every module that is switched on. Called on
+     * start-up, after a reload and whenever the plugin is switched back on, so it
+     * always starts by taking the previous listeners off again.
+     */
     private void registerListeners() {
-        listeners.clear();
+        unregisterListeners();
         listen(new Join_Listener(this));
         listen(new Quit_Listener(this));
         listen(new Chat_Listener(this));
-        listen(new Respawn_Listener(this));
-        listen(new Activity_Listener(this));
-        listen(new Powertool_Listener(this));
-        listen(new Unlimited_Listener(this));
-        listen(new Disposal_Command.Disposal_Listener());
         listen(new Gui_Listener());
-        listen(new Trade_Listener(this));
-        jailListener = new Jail_Listener(this);
-        listen(jailListener);
+        if (features.enabled("spawn")) {
+            listen(new Respawn_Listener(this));
+        }
+        if (features.enabled("afk")) {
+            listen(new Activity_Listener(this));
+        }
+        if (features.enabled("items")) {
+            listen(new Powertool_Listener(this));
+            listen(new Unlimited_Listener(this));
+            listen(new Disposal_Command.Disposal_Listener());
+        }
+        if (features.enabled("trade")) {
+            listen(new Trade_Listener(this));
+        }
+        jailListener = null;
+        if (features.enabled("jail")) {
+            jailListener = new Jail_Listener(this);
+            listen(jailListener);
+        }
+    }
+
+    /** Takes every listener off again, so re-registering cannot double-handle events. */
+    private void unregisterListeners() {
+        for (Listener listener : listeners) {
+            HandlerList.unregisterAll(listener);
+        }
+        listeners.clear();
     }
 
     /**
@@ -907,7 +922,8 @@ public final class Better_Admin_Commands extends JavaPlugin {
      * PlaceholderAPI is present, which keeps the dependency optional.
      */
     private void registerPlaceholders() {
-        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
+        if (!features.enabled("nick")
+                || getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
             return;
         }
         new NicknamePlaceholders(this).register();
@@ -1086,25 +1102,59 @@ public final class Better_Admin_Commands extends JavaPlugin {
     }
 
     private void register(String name, TabExecutor executor) {
-        PluginCommand command = getCommand(name);
-        if (command == null) {
+        if (getCommand(name) == null) {
             warnCommandUnavailable(name);
             return;
         }
-        command.setExecutor(executor);
-        command.setTabCompleter(executor);
         executors.put(name, executor);
         completers.put(name, executor);
+        bind(name);
     }
 
     private void register(String name, CommandExecutor executor) {
-        PluginCommand command = getCommand(name);
-        if (command == null) {
+        if (getCommand(name) == null) {
             warnCommandUnavailable(name);
             return;
         }
-        command.setExecutor(executor);
         executors.put(name, executor);
+        bind(name);
+    }
+
+    /**
+     * Points one command at whoever has to answer it right now: its own executor,
+     * the "this feature is switched off" note or the "the plugin is disabled"
+     * note. Called for every command on start-up, after a reload and whenever the
+     * plugin or a module changes state, so the binding can never drift away from
+     * config.yml.
+     */
+    private void bind(String name) {
+        if (name.equals(DEFAULT_ROOT_COMMAND)) {
+            return; // the management command stays usable, whatever else is off
+        }
+        PluginCommand command = getCommand(name);
+        CommandExecutor executor = executors.get(name);
+        if (command == null || executor == null) {
+            return;
+        }
+        TabExecutor completer = completers.get(name);
+        if (disabled) {
+            command.setExecutor(disabledCommand);
+            if (completer != null) {
+                command.setTabCompleter(disabledCommand);
+            }
+            return;
+        }
+        if (!features.commandEnabled(name)) {
+            command.setExecutor(featureDisabledCommand);
+            if (completer != null) {
+                command.setTabCompleter(featureDisabledCommand);
+            }
+            return;
+        }
+        command.setExecutor(executor);
+        if (completer != null) {
+            command.setTabCompleter(completer);
+        }
     }
 
     /**
@@ -1113,17 +1163,23 @@ public final class Better_Admin_Commands extends JavaPlugin {
      * with our shop instead of the disabled plugin's command.
      */
     public void rebindCommands() {
-        for (Map.Entry<String, CommandExecutor> entry : executors.entrySet()) {
-            PluginCommand command = getCommand(entry.getKey());
-            if (command == null) {
-                continue;
-            }
-            command.setExecutor(entry.getValue());
-            TabExecutor completer = completers.get(entry.getKey());
-            if (completer != null) {
-                command.setTabCompleter(completer);
-            }
+        for (String name : executors.keySet()) {
+            bind(name);
         }
+    }
+
+    /**
+     * Applies the module settings from config.yml again: listeners, command
+     * bindings and repeating tasks. Used by a reload, so switching a feature on or
+     * off in the file takes effect without a restart.
+     */
+    public void applyFeatures() {
+        if (!disabled) {
+            registerListeners();
+            cancelTasks();
+            startTasks();
+        }
+        rebindCommands();
     }
 
     /**
@@ -1163,6 +1219,11 @@ public final class Better_Admin_Commands extends JavaPlugin {
 
     public PermissionService permissions() {
         return permissions;
+    }
+
+    /** The feature modules from config.yml - which commands, listeners and tasks run. */
+    public FeatureService features() {
+        return features;
     }
 
     /** The per-player toggles behind {@code /notify}. */

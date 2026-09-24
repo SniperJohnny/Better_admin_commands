@@ -1,4 +1,4 @@
-﻿package io.sniperjohnny.github.better_admin_commands.gui;
+package io.sniperjohnny.github.better_admin_commands.gui;
 
 import io.papermc.paper.dialog.Dialog;
 import io.papermc.paper.registry.data.dialog.ActionButton;
@@ -14,6 +14,7 @@ import net.kyori.adventure.text.event.ClickCallback;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -29,8 +30,10 @@ import java.util.function.Function;
  * chat as well and the answer is picked up there - both paths run through the
  * same once-only callback, first answer wins.</p>
  *
- * <p>The callback always runs on the server thread, and an escape (or a click
- * outside the dialog) answers nothing: the dialog just closes.</p>
+ * <p>The callback always runs on the server thread. An escape (or a click outside
+ * the dialog) answers nothing: the dialog just closes, and the chat prompt that was
+ * armed for the fallback expires on its own (see {@link ChatPromptService}), so a
+ * dismissed window can never swallow the player's next chat line.</p>
  */
 public class DialogPromptService {
 
@@ -40,9 +43,24 @@ public class DialogPromptService {
     /** Answer handed to the callback when the player picks the cancel button. */
     public static final String CANCEL = "cancel";
 
+    /**
+     * Whether an answer means "the player backed out". Every caller that has a
+     * cancel path checks it through this, so the cancel button, the escape key and
+     * a typed {@code cancel} can never drift apart.
+     */
+    public static boolean isCancel(String answer) {
+        return answer == null || answer.equalsIgnoreCase(CANCEL);
+    }
+
     /** Line under the question, pointing players at the chat fallback. */
     private static final String FALLBACK_HINT = "&8» &7Enter it in the window"
             + " &8(or type it in chat, &fcancel&8 to abort&7).";
+
+    /** Shorter reminder for a client that really does see the window. */
+    private static final String WINDOW_HINT = " &8(or type it here)";
+
+    /** First client protocol that can render a dialog (Minecraft 1.21.6). */
+    private static final int DIALOG_PROTOCOL = 771;
 
     private final Better_Admin_Commands plugin;
     private final ChatPromptService chat;
@@ -141,6 +159,7 @@ public class DialogPromptService {
     /** A bare yes/no dialog. */
     public void confirm(Player player, String title, String question, String yes, String no,
                         Consumer<Boolean> onAnswer) {
+        UUID uuid = player.getUniqueId();
         AtomicBoolean answered = new AtomicBoolean();
         DialogAction yesButton = confirmAction(player, true, answered, onAnswer);
         DialogAction noButton = confirmAction(player, false, answered, onAnswer);
@@ -153,7 +172,34 @@ public class DialogPromptService {
                 .type(DialogType.confirmation(
                         ActionButton.create(Msg.component(yes), null, 100, yesButton),
                         ActionButton.create(Msg.component(no), null, 100, noButton))));
+        // A client that cannot show the dialog answers the same question in chat.
+        chat.arm(uuid, text -> {
+            Boolean value = confirmationAnswer(text);
+            if (value == null) {
+                chat.clear(uuid);
+                return;
+            }
+            if (answered.compareAndSet(false, true)) {
+                chat.clear(uuid);
+                onAnswer.accept(value);
+            }
+        });
         show(player, dialog);
+        askInChat(player, question);
+    }
+
+    /**
+     * Reads a typed confirmation, in the shapes a player is likely to type.
+     *
+     * @return the answer, or {@code null} when the line was neither a yes nor a no
+     */
+    private static Boolean confirmationAnswer(String text) {
+        String value = text == null ? "" : text.trim().toLowerCase(Locale.ROOT);
+        return switch (value) {
+            case "yes", "y", "confirm", "true", "on", "ok" -> Boolean.TRUE;
+            case "no", "n", "deny", "false", "off", "cancel" -> Boolean.FALSE;
+            default -> null;
+        };
     }
 
     private DialogAction confirmAction(Player player, boolean value, AtomicBoolean answered,
@@ -208,8 +254,35 @@ public class DialogPromptService {
         chat.arm(uuid, text -> plugin.getServer().getScheduler()
                 .runTask(plugin, () -> once.accept(text)));
         show(player, dialog);
-        Msg.send(player, question);
-        Msg.send(player, FALLBACK_HINT);
+        askInChat(player, question);
+    }
+
+    /**
+     * Prints the question in chat, so the same flow works for a client that never
+     * sees the window. Which wording is used depends on whether the client can show
+     * a dialog at all: for a modern client this is only a one-line reminder that the
+     * same answer may be typed here, an older client needs the question itself.
+     */
+    private void askInChat(Player player, String question) {
+        if (supportsDialogs(player)) {
+            Msg.send(player, question + WINDOW_HINT);
+        } else {
+            Msg.send(player, question);
+            Msg.send(player, FALLBACK_HINT);
+        }
+    }
+
+    /**
+     * Whether the player's client is new enough to render a dialog (1.21.6+). An
+     * unknown client counts as "cannot", because a missing answer would leave that
+     * player with no way to reply at all.
+     */
+    private static boolean supportsDialogs(Player player) {
+        try {
+            return player.getProtocolVersion() >= DIALOG_PROTOCOL;
+        } catch (Throwable e) {
+            return false;
+        }
     }
 
     private void show(Player player, Dialog dialog) {

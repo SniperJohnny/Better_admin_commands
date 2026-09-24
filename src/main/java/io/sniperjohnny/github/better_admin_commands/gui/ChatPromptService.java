@@ -12,14 +12,29 @@ import java.util.function.Consumer;
 /**
  * Asks a player for one chat line and hands the answer to a callback.
  *
- * <p>Used where a GUI alone cannot collect input (a price, a report description).
- * The message is swallowed by {@code Chat_Listener} so it never reaches public
- * chat, and the callback always runs on the server thread.</p>
+ * <p>This is the <em>fallback</em> for clients that cannot show a dialog, not the
+ * normal way to ask a question: everything a menu button needs is collected with
+ * {@link DialogPromptService}, which arms this service so the same question can
+ * still be answered in chat. The message is swallowed by {@code Chat_Listener} so
+ * it never reaches public chat, and the callback always runs on the server
+ * thread.</p>
+ *
+ * <p>A pending prompt only lives for {@link #LIFETIME_MILLIS}. That matters
+ * because a dialog can be dismissed with escape or a click outside, which answers
+ * nothing: without a deadline the armed prompt would sit there and quietly eat the
+ * player's next chat message.</p>
  */
 public class ChatPromptService {
 
+    /** How long a question waits for an answer before it is forgotten. */
+    private static final long LIFETIME_MILLIS = 120_000L;
+
+    /** One armed question, with the moment it stops being valid. */
+    private record Pending(Consumer<String> answer, long expiresAt) {
+    }
+
     private final Better_Admin_Commands plugin;
-    private final Map<UUID, Consumer<String>> pending = new ConcurrentHashMap<>();
+    private final Map<UUID, Pending> pending = new ConcurrentHashMap<>();
 
     public ChatPromptService(Better_Admin_Commands plugin) {
         this.plugin = plugin;
@@ -36,7 +51,7 @@ public class ChatPromptService {
      * to stay on screen while the amount is typed in chat.
      */
     public void request(Player player, String prompt, Consumer<String> onAnswer, boolean closeWindow) {
-        pending.put(player.getUniqueId(), onAnswer);
+        arm(player.getUniqueId(), onAnswer);
         if (closeWindow) {
             player.closeInventory();
         }
@@ -45,7 +60,7 @@ public class ChatPromptService {
     }
 
     public boolean isWaiting(UUID uuid) {
-        return pending.containsKey(uuid);
+        return live(uuid) != null;
     }
 
     /**
@@ -55,12 +70,13 @@ public class ChatPromptService {
      * @return whether the message was consumed by a prompt
      */
     public boolean handle(UUID uuid, String message) {
-        Consumer<String> answer = pending.remove(uuid);
-        if (answer == null) {
+        Pending entry = live(uuid);
+        if (entry == null) {
             return false;
         }
+        pending.remove(uuid, entry);
         String text = message == null ? "" : message.trim();
-        plugin.getServer().getScheduler().runTask(plugin, () -> answer.accept(text));
+        plugin.getServer().getScheduler().runTask(plugin, () -> entry.answer().accept(text));
         return true;
     }
 
@@ -77,6 +93,19 @@ public class ChatPromptService {
      * still runs on the server thread.
      */
     public void arm(UUID uuid, Consumer<String> onAnswer) {
-        pending.put(uuid, onAnswer);
+        pending.put(uuid, new Pending(onAnswer, System.currentTimeMillis() + LIFETIME_MILLIS));
+    }
+
+    /** The pending prompt of a player, or {@code null} when there is none (any more). */
+    private Pending live(UUID uuid) {
+        Pending entry = pending.get(uuid);
+        if (entry == null) {
+            return null;
+        }
+        if (System.currentTimeMillis() > entry.expiresAt()) {
+            pending.remove(uuid, entry);
+            return null;
+        }
+        return entry;
     }
 }

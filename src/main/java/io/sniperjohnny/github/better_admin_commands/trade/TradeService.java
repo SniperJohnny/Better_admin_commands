@@ -45,7 +45,8 @@ public class TradeService {
     /* ------------------------------------------------------------ config --- */
 
     public boolean enabled() {
-        return plugin.getConfig().getBoolean("trade.enabled", true);
+        // Honours both the module switch and the older trade.enabled key.
+        return plugin.features().enabled("trade");
     }
 
     private boolean requireAccept() {

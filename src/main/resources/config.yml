@@ -6,7 +6,7 @@
 
 # Version of this file. Do not change it by hand - the plugin uses it to add
 # new options to an existing config.yml. Values you changed are never replaced.
-config-version: 13
+config-version: 14
 
 # ------------------------------------------------------------ permissions ---
 # How the plugin hands out its own commands. With a permission plugin such as
@@ -40,6 +40,101 @@ commands:
   root-aliases:
     - "bac"
     - "betteradmin"
+
+# ---------------------------------------------------------------- modules ---
+# The switchboard of the plugin. Every feature lives in one module and every
+# command belongs to exactly one of them, so whole areas can be switched off
+# without taking the plugin apart.
+#
+# Switching a module off:
+#   * its commands stay registered, but answer with a short note naming the option
+#     that switched the feature off - a command that silently vanishes confuses
+#     players more than one that explains itself,
+#   * its listeners are not registered and its repeating tasks do not run, so a
+#     switched-off feature costs nothing while the server runs.
+#
+# Changes are applied by /betteradmincommands reload (or a restart).
+# /betteradmincommands modules lists the state of every module.
+#
+# Four modules also have an older switch of their own further down this file -
+# economy.enabled, trade.enabled, auction.enabled and shop.enabled. They are
+# still honoured, and such a module runs only while BOTH switches are on, so a
+# server that turned the shop off long ago stays off after updating.
+modules:
+  admin:
+    # enchant, gm, fly, smite, heal, feed, god, speed, repair, vanish, near, give,
+    # clear, broadcast, hat, craft, enderchest, invsee, sudo, exp, time, weather,
+    # ptime, pweather, world, break, tree, spawner, spawnmob, nuke, fireball,
+    # potion, burn, ext, recipe, killall, butcher, remove
+    enabled: true
+  moderation:
+    # kick, ban, tempban, ipban, unban, unbanip, kickall, banlist, mute, unmute,
+    # kill, suicide - and the /vanish tab-list cue
+    enabled: true
+  economy:
+    # balance, baltop, pay, eco, worth, sell, the Vault economy and the autosave.
+    # Also switched off by economy.enabled further down.
+    enabled: true
+  trade:
+    # /trade with its window, request flow and history.
+    # Also switched off by trade.enabled further down.
+    enabled: true
+  auction:
+    # /ah with its listings, claims and expiry task.
+    # Also switched off by auction.enabled further down.
+    enabled: true
+  shop:
+    # /shop with the EconomyShopGUI import and the in-game editor.
+    # Also switched off by shop.enabled further down.
+    enabled: true
+  report:
+    # /report and /reports. Needs MySQL, there is no local safe file for tickets.
+    enabled: true
+  teleport:
+    # back, tp, tppos, tphere, tpall, tpa/tpahere with accept/deny, tpaall,
+    # tptoggle, rtp, jump, top, bottom, descend
+    enabled: true
+  spawn:
+    # spawn, setspawn, the join rules and respawning at spawn
+    enabled: true
+  homes:
+    # home, sethome, delhome, homes
+    enabled: true
+  warps:
+    # warp, setwarp, delwarp, warps
+    enabled: true
+  social:
+    # msg, reply, socialspy, ignore, ignorelist, me, mail
+    enabled: true
+  info:
+    # whois, seen, list, ping, gc, depth, getpos, playtime, realname, reveal,
+    # motd, rules, notify
+    enabled: true
+  items:
+    # more, rename, lore, skull, book, condense, stack, sort, unlimited,
+    # disposal, powertool
+    enabled: true
+  jail:
+    # jail, setjail, deljail, jails, unjail, togglejail, the jail rules and the
+    # automatic release when a sentence runs out
+    enabled: true
+  kits:
+    # kit and the kit menu
+    enabled: true
+  nick:
+    # nick, the rank prefixes in the tab list and in chat, the hidden name tags
+    # and the PlaceholderAPI expansion
+    enabled: true
+  skin:
+    # skinchange
+    enabled: true
+  afk:
+    # afk, the activity tracking and the automatic "away" after the idle time
+    enabled: true
+  # Single commands switched off on top of their module, by command name or by
+  # one of its aliases - for example ["sell", "pay"] or ["ah"]. Everything else
+  # in those modules keeps working.
+  disabled-commands: []
 
 # ----------------------------------------------------------------- MySQL -----
 # Credentials for the MySQL / MariaDB server where economy, homes and

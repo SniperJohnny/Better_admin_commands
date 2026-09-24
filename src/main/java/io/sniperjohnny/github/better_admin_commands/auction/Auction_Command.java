@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.auction;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.Items;
 import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.gui.Theme;
@@ -343,7 +344,7 @@ public class Auction_Command implements TabExecutor {
         plugin.dialogs().text(player, "Auction House » Search",
                 "&7Search the auction house for an item or a seller &8(type &fclear &8for everything)",
                 "Item or seller", state.query(), 32, answer -> {
-                    if (answer.equalsIgnoreCase("cancel")) {
+                    if (DialogPromptService.isCancel(answer)) {
                         Msg.send(player, "&7Search cancelled.");
                         openBrowse(player, 0);
                         return;
@@ -538,7 +539,7 @@ public class Auction_Command implements TabExecutor {
                         "&7Enter the price for &f" + held.getAmount() + "x " + pretty(held)
                                 + " &8(min " + plugin.economy().format(plugin.auctions().minPrice())
                                 + "&8).", "Price", String.valueOf((long) current), 16, answer -> {
-                            if (answer.equalsIgnoreCase("cancel")) {
+                            if (DialogPromptService.isCancel(answer)) {
                                 openSellPrice(player, current);
                                 return;
                             }

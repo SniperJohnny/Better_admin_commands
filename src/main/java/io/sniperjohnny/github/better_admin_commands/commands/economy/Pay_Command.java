@@ -2,6 +2,7 @@ package io.sniperjohnny.github.better_admin_commands.commands.economy;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 import io.sniperjohnny.github.better_admin_commands.economy.EconomyService;
+import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import org.bukkit.OfflinePlayer;
@@ -49,12 +50,12 @@ public class Pay_Command implements TabExecutor {
 
         if (args.length < 2) {
             // No amount yet: ask for it in a dialog, so the command works with just a name.
-            plugin.dialogs().number(self, "Send money",
+            plugin.dialogs().number(self, "Balance » Send money",
                     "&7How much do you want to send to &f"
                             + target.getName() + "&7? &8(you have &f"
                             + plugin.economy().format(plugin.economy().getBalance(self.getUniqueId())) + "&8)",
                     "Amount", "", 16, answer -> {
-                        if (answer.equalsIgnoreCase("cancel")) {
+                        if (DialogPromptService.isCancel(answer)) {
                             Msg.send(self, "&7Payment cancelled.");
                             return;
                         }
