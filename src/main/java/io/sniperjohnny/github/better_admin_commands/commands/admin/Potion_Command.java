@@ -75,7 +75,7 @@ public class Potion_Command implements TabExecutor {
         }
 
         target.addPotionEffect(new PotionEffect(type, duration * 20, amplifier - 1));
-        Msg.success(sender, "Applied " + args[0].toLowerCase(Locale.ROOT) + " to " + target.getName() + ".");
+        Msg.success(sender, "Applied " + args[0].toLowerCase(Locale.ROOT) + " to " + Targets.displayName(target) + ".");
         if (!target.equals(sender)) {
             Msg.send(target, "&7You received a potion effect from &f" + sender.getName() + "&7.");
         }

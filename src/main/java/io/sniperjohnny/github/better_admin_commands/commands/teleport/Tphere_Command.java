@@ -38,7 +38,7 @@ public class Tphere_Command implements TabExecutor {
             return true;
         }
         plugin.teleports().teleportNow(target, self.getLocation());
-        Msg.success(self, "Teleported " + target.getName() + " to you.");
+        Msg.success(self, "Teleported " + Targets.displayName(target) + " to you.");
         return true;
     }
 

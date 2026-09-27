@@ -4,6 +4,7 @@ import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 import io.sniperjohnny.github.better_admin_commands.economy.EconomyService;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -120,13 +121,13 @@ public class Eco_Command implements TabExecutor {
         if (add) {
             service.deposit(target.getUniqueId(), amount);
         } else if (!service.withdraw(target.getUniqueId(), amount)) {
-            Msg.error(sender, target.getName() + " only has "
+            Msg.error(sender, Targets.displayName(target) + " only has "
                     + service.format(service.getBalance(target.getUniqueId())) + ".");
             return;
         }
         service.saveAsync();
         Msg.success(sender, (add ? "Gave " : "Took ") + service.format(amount)
-                + (add ? " to " : " from ") + target.getName()
+                + (add ? " to " : " from ") + Targets.displayName(target)
                 + ". New balance: " + service.format(service.getBalance(target.getUniqueId())) + ".");
     }
 
@@ -145,7 +146,7 @@ public class Eco_Command implements TabExecutor {
         EconomyService service = plugin.economy();
         service.setBalance(target.getUniqueId(), amount);
         service.saveAsync();
-        Msg.success(sender, "Set the balance of " + target.getName() + " to "
+        Msg.success(sender, "Set the balance of " + Targets.displayName(target) + " to "
                 + service.format(service.getBalance(target.getUniqueId())) + ".");
     }
 
@@ -160,7 +161,7 @@ public class Eco_Command implements TabExecutor {
         EconomyService service = plugin.economy();
         service.setBalance(target.getUniqueId(), service.startingBalance());
         service.saveAsync();
-        Msg.success(sender, "Reset the balance of " + target.getName() + " to "
+        Msg.success(sender, "Reset the balance of " + Targets.displayName(target) + " to "
                 + service.format(service.getBalance(target.getUniqueId())) + ".");
     }
 
@@ -195,7 +196,7 @@ public class Eco_Command implements TabExecutor {
         if (target == null) {
             return;
         }
-        Msg.send(sender, "&7Balance of &f" + target.getName() + "&7: &a"
+        Msg.send(sender, "&7Balance of &f" + Targets.displayName(target) + "&7: &a"
                 + service.format(service.getBalance(target.getUniqueId())));
     }
 
@@ -224,9 +225,15 @@ public class Eco_Command implements TabExecutor {
         int start = (page - 1) * perPage;
         for (int index = start; index < Math.min(entries.size(), start + perPage); index++) {
             EconomyService.BalanceEntry entry = entries.get(index);
-            Msg.raw(sender, " &7" + (index + 1) + ". &f" + entry.name()
+            Msg.raw(sender, " &7" + (index + 1) + ". &f" + shown(entry)
                     + " &7- &a" + service.format(entry.balance()));
         }
+    }
+
+    /** The name shown in the leaderboard: the nickname while the player is online. */
+    private static String shown(EconomyService.BalanceEntry entry) {
+        Player online = Bukkit.getPlayer(entry.uuid());
+        return online != null ? Targets.displayName(online) : entry.name();
     }
 
     /* ------------------------------------------------------------ helpers --- */

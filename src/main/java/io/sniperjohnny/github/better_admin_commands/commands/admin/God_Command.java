@@ -35,7 +35,7 @@ public class God_Command implements TabExecutor {
         target.setInvulnerable(enabled);
         Msg.success(sender, target.equals(sender)
                 ? (enabled ? "God mode enabled." : "God mode disabled.")
-                : target.getName() + (enabled ? " is now invulnerable." : " is no longer invulnerable."));
+                : Targets.displayName(target) + (enabled ? " is now invulnerable." : " is no longer invulnerable."));
         if (!target.equals(sender)) {
             Msg.send(target, enabled ? "&7You are now invulnerable." : "&7You are no longer invulnerable.");
         }

@@ -35,7 +35,7 @@ public class Kick_Command implements TabExecutor {
 
         target.kick(Component.text(Msg.color("&cYou were kicked.\n&7Reason: &f" + reason)));
         NotificationService.staffBroadcast("kick", "betteradmincommands.kick.notify",
-                "&f" + target.getName() + " &7was kicked by &f" + sender.getName()
+                "&f" + Targets.displayName(target) + " &7was kicked by &f" + sender.getName()
                         + "&7. Reason: &f" + reason);
         return true;
     }

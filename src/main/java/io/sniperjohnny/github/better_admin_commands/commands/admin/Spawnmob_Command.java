@@ -60,7 +60,7 @@ public class Spawnmob_Command implements TabExecutor {
             target.getWorld().spawnEntity(location, type);
         }
         Msg.success(sender, "Spawned " + amount + "x " + args[0].toLowerCase(Locale.ROOT)
-                + " at " + target.getName() + ".");
+                + " at " + Targets.displayName(target) + ".");
         return true;
     }
 

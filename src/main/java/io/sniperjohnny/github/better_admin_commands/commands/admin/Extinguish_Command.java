@@ -32,7 +32,7 @@ public class Extinguish_Command implements TabExecutor {
         }
         target.setFireTicks(0);
         Msg.success(sender, target.equals(sender) ? "You are no longer burning."
-                : target.getName() + " is no longer burning.");
+                : Targets.displayName(target) + " is no longer burning.");
         return true;
     }
 

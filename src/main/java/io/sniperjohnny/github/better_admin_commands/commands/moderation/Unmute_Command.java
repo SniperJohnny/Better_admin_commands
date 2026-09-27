@@ -34,11 +34,11 @@ public class Unmute_Command implements TabExecutor {
             return true;
         }
         if (!plugin.mutes().isMuted(target.getUniqueId())) {
-            Msg.error(sender, target.getName() + " is not muted.");
+            Msg.error(sender, Targets.displayName(target) + " is not muted.");
             return true;
         }
         plugin.mutes().unmute(target.getUniqueId());
-        Msg.success(sender, target.getName() + " was unmuted.");
+        Msg.success(sender, Targets.displayName(target) + " was unmuted.");
         if (target.isOnline() && target.getPlayer() != null) {
             Msg.send(target.getPlayer(), "&aYou were unmuted.");
         }

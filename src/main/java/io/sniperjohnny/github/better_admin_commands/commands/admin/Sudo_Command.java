@@ -32,7 +32,7 @@ public class Sudo_Command implements TabExecutor {
             forced = forced.substring(1);
         }
         target.performCommand(forced);
-        Msg.success(sender, "Made " + target.getName() + " run /" + forced + ".");
+        Msg.success(sender, "Made " + Targets.displayName(target) + " run /" + forced + ".");
         return true;
     }
 

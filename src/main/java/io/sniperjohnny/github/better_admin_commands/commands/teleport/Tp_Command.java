@@ -45,7 +45,7 @@ public class Tp_Command implements TabExecutor {
                 return true;
             }
             plugin.teleports().requestTeleport(self, target.getLocation());
-            Msg.success(self, "Teleported to " + target.getName() + ".");
+            Msg.success(self, "Teleported to " + Targets.displayName(target) + ".");
             return true;
         }
         if (args.length == 2) {
@@ -55,7 +55,7 @@ public class Tp_Command implements TabExecutor {
                 return true;
             }
             plugin.teleports().teleportNow(who, target.getLocation());
-            Msg.success(sender, "Teleported " + who.getName() + " to " + target.getName() + ".");
+            Msg.success(sender, "Teleported " + Targets.displayName(who) + " to " + Targets.displayName(target) + ".");
             return true;
         }
         if (args.length == 3) {
@@ -79,7 +79,7 @@ public class Tp_Command implements TabExecutor {
                 return true;
             }
             plugin.teleports().teleportNow(who, location);
-            Msg.success(sender, "Teleported " + who.getName() + " to " + format(location) + ".");
+            Msg.success(sender, "Teleported " + Targets.displayName(who) + " to " + format(location) + ".");
             return true;
         }
         Msg.usage(sender, command);

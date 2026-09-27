@@ -34,16 +34,22 @@ public class Ban_Command implements TabExecutor {
                 ? String.join(" ", Arrays.copyOfRange(args, 1, args.length))
                 : "Banned by an operator";
 
-        BanList banList = Bukkit.getBanList(BanList.Type.NAME);
-        banList.addBan(name, reason, (Date) null, sender.getName());
+        // A nickname only exists while the player is online; resolve it to the
+        // real name, which is what the ban list has to record.
+        Player nicked = Targets.byNickname(name);
+        String banName = nicked != null ? nicked.getName() : name;
+        String shownName = nicked != null ? Targets.displayName(nicked) : name;
 
-        Player online = Bukkit.getPlayerExact(name);
+        BanList banList = Bukkit.getBanList(BanList.Type.NAME);
+        banList.addBan(banName, reason, (Date) null, sender.getName());
+
+        Player online = Bukkit.getPlayerExact(banName);
         if (online != null) {
             online.kick(Component.text(Msg.color("&cYou are banned.\n&7Reason: &f" + reason)));
         }
 
         NotificationService.staffBroadcast("ban", "betteradmincommands.ban.notify",
-                "&f" + name + " &7was banned by &f" + sender.getName()
+                "&f" + shownName + " &7was banned by &f" + sender.getName()
                         + "&7. Reason: &f" + reason);
         return true;
     }

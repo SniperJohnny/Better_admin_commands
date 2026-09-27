@@ -18,6 +18,7 @@ import io.sniperjohnny.github.better_admin_commands.config.ConfigUpdater;
 import io.sniperjohnny.github.better_admin_commands.feature.FeatureService;
 import io.sniperjohnny.github.better_admin_commands.gui.ChatPromptService;
 import io.sniperjohnny.github.better_admin_commands.gui.DialogPromptService;
+import io.sniperjohnny.github.better_admin_commands.commands.admin.Admin_Audit;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Break_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Burn_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Entity_Command;
@@ -85,9 +86,11 @@ import io.sniperjohnny.github.better_admin_commands.commands.admin.Repair_Comman
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Speed_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Craft_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Enderchest_Command;
+import io.sniperjohnny.github.better_admin_commands.commands.admin.EnderchestSee_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Exp_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Hat_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Invsee_Command;
+import io.sniperjohnny.github.better_admin_commands.commands.admin.Nametags_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Nick_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Ptime_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.admin.Pweather_Command;
@@ -939,7 +942,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private void registerCommands() {
         // ---- admin ---------------------------------------------------------
         register("enchant", new Enchant_Command());
-        register("gm", new Gamemode_Command());
+        register("gm", new Gamemode_Command(this));
         register("fly", new Fly_Command());
         register("smite", new Smite_Command());
         register("unban", new Unban_Command());
@@ -987,6 +990,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("warps", new Warps_Command(this));
 
         register("nick", new Nick_Command(this));
+        register("nametags", new Nametags_Command(this));
         register("hat", new Hat_Command());
         register("skinchange", new Skinchange_Command(this));
         register("ah", new Auction_Command(this));
@@ -996,6 +1000,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("reports", new Report_Command(this));
         register("craft", new Craft_Command());
         register("enderchest", new Enderchest_Command());
+        register("ecsee", new EnderchestSee_Command());
         register("invsee", new Invsee_Command());
         register("sudo", new Sudo_Command());
         register("exp", new Exp_Command());
@@ -1106,8 +1111,9 @@ public final class Better_Admin_Commands extends JavaPlugin {
             warnCommandUnavailable(name);
             return;
         }
-        executors.put(name, executor);
-        completers.put(name, executor);
+        TabExecutor bound = audited(name, executor);
+        executors.put(name, bound);
+        completers.put(name, bound);
         bind(name);
     }
 
@@ -1116,8 +1122,27 @@ public final class Better_Admin_Commands extends JavaPlugin {
             warnCommandUnavailable(name);
             return;
         }
-        executors.put(name, executor);
+        executors.put(name, audited(name, executor));
         bind(name);
+    }
+
+    /**
+     * Wraps an administration command so its use is reported to the staff
+     * through the {@code /notify} system. Commands of other modules are returned
+     * untouched.
+     */
+    private TabExecutor audited(String name, TabExecutor executor) {
+        return isAdminCommand(name) ? Admin_Audit.wrap(executor) : executor;
+    }
+
+    /** The same for a command that does not complete arguments. */
+    private CommandExecutor audited(String name, CommandExecutor executor) {
+        return isAdminCommand(name) ? Admin_Audit.wrap(executor) : executor;
+    }
+
+    /** Whether a command belongs to the {@code admin} module. */
+    private boolean isAdminCommand(String name) {
+        return "admin".equals(features.moduleOf(name));
     }
 
     /**

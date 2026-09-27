@@ -44,11 +44,11 @@ public class Tpahere_Command implements TabExecutor {
             return true;
         }
         if (!plugin.preferences().getBoolean(target.getUniqueId(), PlayerPreferences.TELEPORT_TOGGLE, true)) {
-            Msg.error(self, target.getName() + " does not accept teleport requests.");
+            Msg.error(self, Targets.displayName(target) + " does not accept teleport requests.");
             return true;
         }
         plugin.tpa().add(self.getUniqueId(), target.getUniqueId(), true);
-        Msg.success(self, "Teleport request sent to " + target.getName() + ".");
+        Msg.success(self, "Teleport request sent to " + Targets.displayName(target) + ".");
         TpaService.sendNotice(target, self.getName(), true);
         return true;
     }

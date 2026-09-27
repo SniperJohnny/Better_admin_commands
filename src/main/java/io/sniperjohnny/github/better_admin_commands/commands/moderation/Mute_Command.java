@@ -54,7 +54,7 @@ public class Mute_Command implements TabExecutor {
         long until = seconds < 0 ? -1L : System.currentTimeMillis() + (seconds * 1000L);
         plugin.mutes().mute(target.getUniqueId(), until, reason);
 
-        Msg.success(sender, target.getName() + " was muted"
+        Msg.success(sender, Targets.displayName(target) + " was muted"
                 + (seconds < 0 ? " permanently." : " for " + Targets.formatDuration(seconds) + "."));
         if (target.isOnline() && target.getPlayer() != null) {
             Msg.send(target.getPlayer(), "&cYou were muted. &7Reason: &f" + reason);

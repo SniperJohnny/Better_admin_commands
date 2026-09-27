@@ -295,7 +295,7 @@ The modules are:
 
 | Module | Commands |
 | --- | --- |
-| `admin` | enchant, gm, fly, smite, heal, feed, god, speed, repair, vanish, near, give, clear, broadcast, hat, craft, enderchest, invsee, sudo, exp, time, weather, ptime, pweather, world, break, tree, bigtree, spawner, spawnmob, nuke, fireball, potion, burn, ext, recipe, killall, butcher, remove |
+| `admin` | enchant, gm, fly, smite, heal, feed, god, speed, repair, vanish, near, give, clear, broadcast, hat, craft, enderchest, ecsee, invsee, sudo, exp, time, weather, ptime, pweather, world, break, tree, bigtree, spawner, spawnmob, nuke, fireball, potion, burn, ext, recipe, killall, butcher, remove |
 | `moderation` | kick, ban, tempban, ipban, unban, unbanip, kickall, banlist, mute, unmute, kill, suicide |
 | `economy` | balance, baltop, pay, eco, worth, sell (+ the Vault economy and the autosave) |
 | `trade` | trade |
@@ -311,7 +311,7 @@ The modules are:
 | `items` | more, rename, lore, skull, book, condense, stack, sort, unlimited, disposal, powertool |
 | `jail` | jail, setjail, deljail, jails, unjail, togglejail (+ the jail rules and the automatic release) |
 | `kits` | kit |
-| `nick` | nick (+ rank prefixes, hidden name tags, the PlaceholderAPI expansion) |
+| `nick` | nick, nametags (+ rank prefixes, hidden name tags, the PlaceholderAPI expansion) |
 | `skin` | skinchange |
 | `afk` | afk (+ activity tracking and auto-away) |
 
@@ -371,7 +371,7 @@ console warning. The permission stays `betteradmincommands.command`.
 | Command | Usage | Permission |
 | --- | --- | --- |
 | `/enchant` | `/enchant <enchantment> [level]` | `betteradmincommands.enchant` |
-| `/gm` | `/gm <mode> [player]` | `betteradmincommands.gamemode` |
+| `/gm` | `/gm <mode> [player]` | `betteradmincommands.gamemode` (or `.survival`, `.creative`, `.adventure`, `.spectator` for a single mode; `.others` to change another player) |
 | `/fly` | `/fly [player]` | `betteradmincommands.fly` |
 | `/smite` | `/smite [player]` | `betteradmincommands.smite` |
 | `/heal` | `/heal [player]` | `betteradmincommands.heal` |
@@ -386,7 +386,8 @@ console warning. The permission stays `betteradmincommands.command`.
 | `/broadcast` | `/broadcast <message>` | `betteradmincommands.broadcast` |
 | `/hat` | `/hat` | `betteradmincommands.hat` |
 | `/craft` | `/craft` | `betteradmincommands.craft` |
-| `/enderchest` | `/enderchest [player]` | `betteradmincommands.enderchest` |
+| `/enderchest` | `/enderchest [player]` | `betteradmincommands.enderchest` (`.enderchest.others` for another player) |
+| `/ecsee` | `/ecsee <player>` | `betteradmincommands.enderchest.others` |
 | `/invsee` | `/invsee <player>` | `betteradmincommands.invsee` |
 | `/sudo` | `/sudo <player> <command>` | `betteradmincommands.sudo` |
 | `/exp` | `/exp <show\|give\|set> [player] [amount]` | `betteradmincommands.exp` |
@@ -765,7 +766,8 @@ default), so the tab list is the only place a name shows up. With TAB installed 
 through **TAB's API** (tab list name, rank prefix, borrowed rank, hidden name tag); without TAB the
 same is done through Bukkit and one scoreboard team per player. The teams are removed again when the
 plugin is disabled, and `hide-nametag: false` turns the scoreboard part off for servers where
-another plugin relies on the teams.
+another plugin relies on the teams. A server owner can flip this for the whole server at any time
+with **`/nametags <enable|disable>`** (see below) instead of editing the file.
 
 **Colour in chat.** Players holding `betteradmincommands.chat.color` can use `&` colour codes in
 their chat messages; `betteradmincommands.nick.color` does the same for a nickname.
@@ -781,6 +783,23 @@ fighting over the same packets:
 
 For TAB, set `customtabname` in `groups.yml`/`users.yml` to `%betteradmincommands_nickname%`, and
 replace `%essentials_nickname%` with the same placeholder in the `nick` condition in `config.yml`.
+
+### `/nametags`
+
+`/nametags` turns the name tags above **every** player's head on or off for the whole server. It is
+the in-game form of `nick.hide-nametag` and is aimed at server owners rather than players.
+
+```
+/nametags                  show the current state
+/nametags enable            show the name tags above every player again
+/nametags disable           hide the name tags for every player
+/nametags toggle            flip the current state
+```
+
+The choice is written back into `config.yml` (`nick.hide-nametag`), so it survives a restart, and it
+is applied to everyone online right away — hiding is on by default (`disable`), so a server owner
+only has to run `/nametags enable` to bring the tags back. It needs
+`betteradmincommands.nametags`.
 
 ### `/skinchange`
 
@@ -986,7 +1005,7 @@ premium edition are both found without editing the list.
 | --- | --- | --- |
 | `nick.restricted` | `dev`, `owner` | Nicks and LuckPerms groups only server operators may use |
 | `nick.show-rank-prefix` | `true` | Show the player's own LuckPerms rank prefix with `/nick <nick>` |
-| `nick.hide-nametag` | `true` | Hide the name tag above **every** player's head |
+| `nick.hide-nametag` | `true` | Hide the name tag above **every** player's head (also `/nametags <enable\|disable>`) |
 | `nick.chat-format` | `&f<%nickname%>&r %message%` | The chat line, used while no other plugin formats chat |
 | `skin.cache-minutes` | `60` | How long a skin fetched from Mojang is cached |
 | `skin.timeout-seconds` | `10` | How long to wait for an answer from Mojang |

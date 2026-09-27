@@ -12,31 +12,37 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Fills the hunger bar of a player. */
-public class Feed_Command implements TabExecutor {
+/**
+ * Opens the ender chest of another player: {@code /ecsee <player>}.
+ *
+ * <p>A standalone form of {@code /enderchest <player>}, so staff can reach
+ * another player's ender chest without the optional argument that the normal
+ * command has. The chest is opened editable, exactly like {@code /enderchest}
+ * does for another player, and the same permission is used
+ * ({@code betteradmincommands.enderchest.others}).</p>
+ */
+public class EnderchestSee_Command implements TabExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String @NotNull[] args) {
-        Player target;
-        if (args.length >= 1) {
-            target = Targets.online(sender, args[0]);
-            if (target == null) {
-                return true;
-            }
-        } else if (sender instanceof Player self) {
-            target = self;
-        } else {
+        if (!(sender instanceof Player player)) {
             Msg.playerOnly(sender);
             return true;
         }
-
-        target.setFoodLevel(20);
-        target.setSaturation(20f);
-        target.setExhaustion(0f);
-        Msg.success(sender, target.equals(sender) ? "You were fed." : Targets.displayName(target) + " was fed.");
-        if (!target.equals(sender)) {
-            Msg.send(target, "&7You were fed by &f" + sender.getName() + "&7.");
+        if (args.length < 1) {
+            Msg.usage(sender, command);
+            return true;
+        }
+        Player target = Targets.online(sender, args[0]);
+        if (target == null) {
+            return true;
+        }
+        try {
+            player.openInventory(target.getEnderChest());
+            Msg.send(player, "&7Viewing the ender chest of &f" + Targets.displayName(target) + "&7.");
+        } catch (Exception e) {
+            Msg.error(player, "The ender chest of " + Targets.displayName(target) + " cannot be opened from here.");
         }
         return true;
     }

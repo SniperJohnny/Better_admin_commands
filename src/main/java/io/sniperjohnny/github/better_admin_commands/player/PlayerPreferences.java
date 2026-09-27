@@ -163,6 +163,22 @@ public class PlayerPreferences {
     }
 
     /**
+     * The nickname of a player with every colour code stripped, or {@code null}
+     * when no nickname is set. This is the form that is used as a command
+     * argument and in tab completion, where colour codes would only get in the
+     * way.
+     */
+    public String plainNickname(UUID uuid) {
+        String nickname = nickname(uuid);
+        return nickname == null ? null : stripColor(nickname);
+    }
+
+    /** Removes legacy {@code &} and section-sign colour codes from a string. */
+    public static String stripColor(String value) {
+        return value == null ? null : value.replaceAll("(?i)[&\u00A7][0-9a-fk-or]", "");
+    }
+
+    /**
      * The LuckPerms group whose prefix is shown in front of the nickname.
      * {@code null} means "use the player's own rank", {@link #PREFIX_NONE} means
      * "no prefix at all".
@@ -252,6 +268,26 @@ public class PlayerPreferences {
     /** Whether the name tag above players' heads is hidden (config: {@code nick.hide-nametag}). */
     public boolean hideNameTags() {
         return plugin.getConfig().getBoolean("nick.hide-nametag", true);
+    }
+
+    /**
+     * Hides or shows the name tags above every player's head from {@code /nametags}.
+     *
+     * <p>The choice is written back into config.yml ({@code nick.hide-nametag}), so
+     * it survives a restart, and it is applied to everyone who is online right
+     * away - hiding is on by default, so a server owner only has to turn it off
+     * to bring the tags back.</p>
+     *
+     * @param hidden {@code true} to hide the name tags, {@code false} to show them
+     * @return the state that was stored, i.e. {@code hidden}
+     */
+    public boolean setNameTagsHidden(boolean hidden) {
+        plugin.getConfig().set("nick.hide-nametag", hidden);
+        plugin.saveConfig();
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            applyNickname(online);
+        }
+        return hidden;
     }
 
     /**

@@ -34,7 +34,8 @@ public class NotificationService {
             new Category("kick", "&eKick notices", "betteradmincommands.kick.notify", true),
             new Category("ban", "&cBan notices", "betteradmincommands.ban.notify", true),
             new Category("unban", "&aUnban notices", "betteradmincommands.unban.notify", true),
-            new Category("mail", "&dMail reminders", "betteradmincommands.mail", true));
+            new Category("mail", "&dMail reminders", "betteradmincommands.mail", true),
+            new Category("admin", "&6Admin usage", "betteradmincommands.admin.notify", true));
 
     private final Better_Admin_Commands plugin;
     /** The categories are read from config once and re-read after a reload. */
@@ -172,11 +173,23 @@ public class NotificationService {
      *                   used
      */
     public void broadcast(String categoryId, String permission, String message) {
+        broadcast(categoryId, permission, message, null);
+    }
+
+    /**
+     * The same as {@link #broadcast}, but never sends the notice to
+     * {@code exclude} - used so the player who ran an administration command is
+     * not told about their own action.
+     */
+    public void broadcast(String categoryId, String permission, String message, Player exclude) {
         Category category = category(categoryId);
         String node = permission != null && !permission.isBlank()
                 ? permission
                 : (category == null ? null : category.permission());
         for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (online.equals(exclude)) {
+                continue;
+            }
             if (node != null && !node.isBlank() && !plugin.permissions().has(online, node)) {
                 continue;
             }

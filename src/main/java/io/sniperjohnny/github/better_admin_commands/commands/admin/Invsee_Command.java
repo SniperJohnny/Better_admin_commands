@@ -35,7 +35,7 @@ public class Invsee_Command implements TabExecutor {
             return true;
         }
         player.openInventory(target.getInventory());
-        Msg.send(player, "&7Viewing the inventory of &f" + target.getName() + "&7.");
+        Msg.send(player, "&7Viewing the inventory of &f" + Targets.displayName(target) + "&7.");
         return true;
     }
 

@@ -33,7 +33,7 @@ public class Clear_Command implements TabExecutor {
 
         target.getInventory().clear();
         Msg.success(sender, target.equals(sender) ? "Your inventory was cleared."
-                : "Cleared the inventory of " + target.getName() + ".");
+                : "Cleared the inventory of " + Targets.displayName(target) + ".");
         if (!target.equals(sender)) {
             Msg.send(target, "&7Your inventory was cleared by &f" + sender.getName() + "&7.");
         }

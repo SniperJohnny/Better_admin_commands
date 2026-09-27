@@ -38,7 +38,7 @@ public class Heal_Command implements TabExecutor {
         }
         target.setFireTicks(0);
         Msg.success(sender, target.equals(sender) ? "You were healed."
-                : target.getName() + " was healed.");
+                : Targets.displayName(target) + " was healed.");
         if (!target.equals(sender)) {
             Msg.send(target, "&7You were healed by &f" + sender.getName() + "&7.");
         }

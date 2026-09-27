@@ -36,7 +36,7 @@ public class Burn_Command implements TabExecutor {
             seconds = parsed;
         }
         target.setFireTicks(seconds * 20);
-        Msg.success(sender, "Set " + target.getName() + " on fire for " + seconds + " seconds.");
+        Msg.success(sender, "Set " + Targets.displayName(target) + " on fire for " + seconds + " seconds.");
         return true;
     }
 

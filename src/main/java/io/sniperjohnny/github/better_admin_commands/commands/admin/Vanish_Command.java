@@ -41,7 +41,7 @@ public class Vanish_Command implements TabExecutor {
         boolean vanished = plugin.vanish().toggle(target);
         Msg.success(sender, target.equals(sender)
                 ? (vanished ? "You are now hidden." : "You are visible again.")
-                : target.getName() + (vanished ? " is now hidden." : " is visible again."));
+                : Targets.displayName(target) + (vanished ? " is now hidden." : " is visible again."));
         if (!target.equals(sender)) {
             Msg.send(target, vanished ? "&7You are now hidden." : "&7You are visible again.");
         }

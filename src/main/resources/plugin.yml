@@ -14,7 +14,6 @@ commands:
     aliases: [ e ]
     usage: /enchant <enchantment> [level]
   gm:
-    permission: "betteradmincommands.gamemode"
     description: "lets you do /gm1- 1 for creative and so on."
     aliases: [ gamemode ]
     usage: /gm <mode> [player]
@@ -83,6 +82,11 @@ commands:
     permission: "betteradmincommands.nick"
     description: "changes your nickname"
     usage: /nick <nickname|off> [luckperms-group]
+  nametags:
+    permission: "betteradmincommands.nametags"
+    description: "shows or hides the name tags above every player's head"
+    aliases: [ nametag ]
+    usage: /nametags <enable|disable|toggle|status>
   hat:
     permission: "betteradmincommands.hat"
     description: "puts the held item on your head"
@@ -117,6 +121,11 @@ commands:
     description: "opens an ender chest"
     aliases: [ ec ]
     usage: /enderchest [player]
+  ecsee:
+    permission: "betteradmincommands.enderchest.others"
+    description: "opens the ender chest of another player"
+    aliases: [ enderchestsee, ecs ]
+    usage: /ecsee <player>
   invsee:
     permission: "betteradmincommands.invsee"
     description: "shows the inventory of another player"
@@ -756,6 +765,12 @@ permissions:
       betteradmincommands.gamemode: true
       betteradmincommands.enchant: true
       betteradmincommands.near: true
+      betteradmincommands.admin.notify: true
+      betteradmincommands.gamemode.survival: true
+      betteradmincommands.gamemode.creative: true
+      betteradmincommands.gamemode.adventure: true
+      betteradmincommands.gamemode.spectator: true
+      betteradmincommands.gamemode.others: true
       betteradmincommands.broadcast: true
       betteradmincommands.broadcast.receive: true
       betteradmincommands.exp: true
@@ -766,6 +781,7 @@ permissions:
       betteradmincommands.shop.admin: true
       betteradmincommands.balance.others: true
       betteradmincommands.nick.color: true
+      betteradmincommands.nametags: true
       betteradmincommands.reveal: true
       betteradmincommands.chat.color: true
       betteradmincommands.enderchest.others: true
@@ -796,6 +812,13 @@ permissions:
     description: "Choose which notifications you receive."
     default: true
 
+  # Get told whenever somebody uses an administration command (/gm, /enchant,
+  # /give, …), including the mode or arguments they used. Part of the admin
+  # bundle, so every operator receives it by default.
+  betteradmincommands.admin.notify:
+    description: "Get told whenever an administration command is used."
+    default: op
+
   # Trade history of other players (/trade log <player>) and the notification
   # that a trade happened. Both are staff information.
   betteradmincommands.trade.log.others:
@@ -816,6 +839,35 @@ permissions:
   # the mod and admin bundles).
   betteradmincommands.reveal:
     description: "Report the real name and rank behind a nickname."
+    default: op
+
+  # /nametags turns the name tags above every player's head on or off for the
+  # whole server (granted through the admin bundle).
+  betteradmincommands.nametags:
+    description: "Show or hide the name tags above every player's head."
+    default: op
+
+  # /gm checks its own permissions so one rank can be given a single gamemode
+  # instead of all of them. The general node grants every mode on yourself and
+  # on other players; each per-mode node grants only that one mode on yourself,
+  # and .others alone lets a rank change someone else's mode.
+  betteradmincommands.gamemode:
+    description: "Use /gm with every gamemode, on yourself and on other players."
+    default: op
+  betteradmincommands.gamemode.survival:
+    description: "Use /gm 0 (survival) on yourself."
+    default: op
+  betteradmincommands.gamemode.creative:
+    description: "Use /gm 1 (creative) on yourself."
+    default: op
+  betteradmincommands.gamemode.adventure:
+    description: "Use /gm 2 (adventure) on yourself."
+    default: op
+  betteradmincommands.gamemode.spectator:
+    description: "Use /gm 3 (spectator) on yourself."
+    default: op
+  betteradmincommands.gamemode.others:
+    description: "Change the gamemode of another player."
     default: op
 
   # Lets a player use colour codes (&) in their own chat messages.

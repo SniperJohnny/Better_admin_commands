@@ -36,9 +36,9 @@ public class Enderchest_Command implements TabExecutor {
         }
         try {
             player.openInventory(target.getEnderChest());
-            Msg.send(player, "&7Viewing the ender chest of &f" + target.getName() + "&7.");
+            Msg.send(player, "&7Viewing the ender chest of &f" + Targets.displayName(target) + "&7.");
         } catch (Exception e) {
-            Msg.error(player, "The ender chest of " + target.getName() + " cannot be opened from here.");
+            Msg.error(player, "The ender chest of " + Targets.displayName(target) + " cannot be opened from here.");
         }
         return true;
     }

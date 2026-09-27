@@ -42,7 +42,7 @@ public class Balance_Command implements TabExecutor {
             if (target == null) {
                 return true;
             }
-            Msg.send(sender, "&7Balance of &f" + target.getName() + "&7: &a"
+            Msg.send(sender, "&7Balance of &f" + Targets.displayName(target) + "&7: &a"
                     + plugin.economy().format(plugin.economy().getBalance(target.getUniqueId())));
             return true;
         }

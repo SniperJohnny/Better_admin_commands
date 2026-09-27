@@ -56,7 +56,7 @@ public class Give_Command implements TabExecutor {
         }
 
         Msg.success(sender, "Gave " + amount + "x " + material.name().toLowerCase(Locale.ROOT)
-                + " to " + target.getName() + ".");
+                + " to " + Targets.displayName(target) + ".");
         if (!target.equals(sender)) {
             Msg.send(target, "&7You received &f" + amount + "x "
                     + material.name().toLowerCase(Locale.ROOT) + "&7.");

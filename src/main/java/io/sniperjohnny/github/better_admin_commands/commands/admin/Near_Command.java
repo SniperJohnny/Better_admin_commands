@@ -1,6 +1,7 @@
 package io.sniperjohnny.github.better_admin_commands.commands.admin;
 
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
+import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -53,7 +54,7 @@ public class Near_Command implements TabExecutor {
         Msg.raw(self, "&6Players within " + (int) radius + " blocks:");
         for (Player other : nearby) {
             Msg.raw(self, String.format(Locale.ROOT, " &8- &f%s &7(%.0f blocks)",
-                    other.getName(), other.getLocation().distance(self.getLocation())));
+                    Targets.displayName(other), other.getLocation().distance(self.getLocation())));
         }
         return true;
     }

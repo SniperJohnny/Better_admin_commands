@@ -63,7 +63,7 @@ commands:
 modules:
   admin:
     # enchant, gm, fly, smite, heal, feed, god, speed, repair, vanish, near, give,
-    # clear, broadcast, hat, craft, enderchest, invsee, sudo, exp, time, weather,
+    # clear, broadcast, hat, craft, enderchest, ecsee, invsee, sudo, exp, time, weather,
     # ptime, pweather, world, break, tree, spawner, spawnmob, nuke, fireball,
     # potion, burn, ext, recipe, killall, butcher, remove
     enabled: true
@@ -544,6 +544,10 @@ notifications:
     mail:
       display: "&dMail reminders"
       permission: "betteradmincommands.mail"
+      default: true
+    admin:
+      display: "&6Admin usage"
+      permission: "betteradmincommands.admin.notify"
       default: true
 
 # ---------------------------------------------------------------- message ----

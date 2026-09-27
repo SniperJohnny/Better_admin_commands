@@ -39,7 +39,7 @@ public class Exp_Command implements TabExecutor {
                 Msg.playerOnly(sender);
                 return true;
             }
-            Msg.send(sender, "&f" + target.getName() + " &7has &f" + target.getLevel()
+            Msg.send(sender, "&f" + Targets.displayName(target) + " &7has &f" + target.getLevel()
                     + " &7levels and &f" + target.getTotalExperience() + " &7XP.");
             return true;
         }
@@ -71,7 +71,7 @@ public class Exp_Command implements TabExecutor {
             target.giveExp(parsed);
         }
         Msg.success(sender, (action.equals("give") ? "Gave " : "Set ") + parsed + " XP for "
-                + target.getName() + ". New level: " + target.getLevel() + ".");
+                + Targets.displayName(target) + ". New level: " + target.getLevel() + ".");
         if (!target.equals(sender)) {
             Msg.send(target, "&7Your experience was changed by &f" + sender.getName() + "&7.");
         }

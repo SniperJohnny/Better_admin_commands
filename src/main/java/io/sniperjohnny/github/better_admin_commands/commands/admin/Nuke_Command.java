@@ -44,7 +44,7 @@ public class Nuke_Command implements TabExecutor {
             tnt.setFuseTicks(40);
             tnt.setYield(4f);
         }
-        Msg.success(sender, "Nuked " + target.getName() + ".");
+        Msg.success(sender, "Nuked " + Targets.displayName(target) + ".");
         return true;
     }
 

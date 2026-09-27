@@ -46,7 +46,7 @@ public final class FeatureService {
     private static final List<Module> DEFINITIONS = List.of(
             new Module("admin", "Administration", List.of(
                     "enchant", "gm", "fly", "smite", "heal", "feed", "god", "speed", "repair", "vanish",
-                    "near", "give", "clear", "broadcast", "hat", "craft", "enderchest", "invsee", "sudo",
+                    "near", "give", "clear", "broadcast", "hat", "craft", "enderchest", "ecsee", "invsee", "sudo",
                     "exp", "time", "weather", "ptime", "pweather", "world", "break", "tree", "bigtree",
                     "spawner", "spawnmob", "nuke", "fireball", "potion", "burn", "ext", "recipe",
                     "killall", "butcher", "remove")),
@@ -76,7 +76,7 @@ public final class FeatureService {
             new Module("jail", "Jail", List.of(
                     "jail", "setjail", "deljail", "jails", "unjail", "togglejail")),
             new Module("kits", "Kits", List.of("kit")),
-            new Module("nick", "Nicknames", List.of("nick")),
+            new Module("nick", "Nicknames", List.of("nick", "nametags")),
             new Module("skin", "Skins", List.of("skinchange")),
             new Module("afk", "AFK", List.of("afk")));
 

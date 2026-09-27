@@ -31,7 +31,7 @@ public class Kill_Command implements TabExecutor {
             return true;
         }
         target.setHealth(0);
-        Msg.success(sender, target.equals(sender) ? "You died." : target.getName() + " was killed.");
+        Msg.success(sender, target.equals(sender) ? "You died." : Targets.displayName(target) + " was killed.");
         return true;
     }
 
