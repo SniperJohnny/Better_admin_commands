@@ -12,14 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * The warp menu behind {@code /warps}. Every warp is a button that teleports on
- * click; warps the player may not use are shown greyed out so they can see what
- * exists without being able to jump there.
- *
- * <p>Icons come from {@code warps.gui-icon} with an optional per-warp override
- * in {@code warps.gui-icons.<name>}.</p>
- */
 public class Warp_Gui {
 
     private final Better_Admin_Commands plugin;

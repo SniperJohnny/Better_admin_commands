@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Gives a player head. */
 public class Skull_Command implements TabExecutor {
 
     @Override

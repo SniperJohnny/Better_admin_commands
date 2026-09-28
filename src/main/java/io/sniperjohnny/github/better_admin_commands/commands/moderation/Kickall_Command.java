@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Kicks every player from the server. */
 public class Kickall_Command implements TabExecutor {
 
     @Override

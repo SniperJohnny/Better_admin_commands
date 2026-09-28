@@ -8,10 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Binds a command to an item type. The binding is stored in the player settings
- * under {@code powertool.<MATERIAL>} so it survives a restart.
- */
 public class PowertoolService {
 
     private static final String PREFIX = "powertool.";
@@ -36,7 +32,6 @@ public class PowertoolService {
         }
     }
 
-    /** All bindings of a player, keyed by material name. */
     public Map<String, String> bindings(Player player) {
         Map<String, String> result = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : plugin.preferences().allEntries(player.getUniqueId()).entrySet()) {
@@ -51,7 +46,6 @@ public class PowertoolService {
         return plugin.preferences().get(player.getUniqueId(), PREFIX + material.name(), null);
     }
 
-    /** Runs the bound command for an item, replacing {@code {player}}. */
     public boolean run(Player player, Material material) {
         String command = commandFor(player, material);
         if (command == null || command.isBlank()) {

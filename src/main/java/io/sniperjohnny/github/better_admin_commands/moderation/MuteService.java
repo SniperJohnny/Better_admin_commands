@@ -15,13 +15,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Mutes are stored in the players table so they survive restarts and restarts
- * of a network that shares the same database.
- */
 public class MuteService {
 
-    /** A stored mute. {@code until < 0} means permanent. */
     public record Mute(long until, String reason) {
 
         public boolean permanent() {
@@ -48,10 +43,6 @@ public class MuteService {
         this.local = local;
     }
 
-    /**
-     * Loads every active mute. Called once at start-up. Falls back to the local
-     * safe file while MySQL is unavailable.
-     */
     public void loadAll() throws SQLException {
         mutes.clear();
         if (database.isAvailable()) {
@@ -138,7 +129,6 @@ public class MuteService {
         return muteOf(uuid) != null;
     }
 
-    /** Applies a mute. {@code until} is an epoch millisecond timestamp, or -1 for permanent. */
     public void mute(UUID uuid, long until, String reason) {
         mutes.put(uuid, new Mute(until, reason));
         persistAsync(uuid, until, reason);
@@ -189,7 +179,6 @@ public class MuteService {
         });
     }
 
-    /** Pushes the locally stored mute columns back into MySQL after a reconnect. */
     public void resyncToDatabase() {
         if (!database.isAvailable()) {
             return;

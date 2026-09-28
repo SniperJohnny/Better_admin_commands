@@ -27,27 +27,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * The auction house.
- *
- * <p>{@code /ah} opens the whole thing as a menu: browse, sell, my listings and
- * claims. Everything is reachable through buttons, and the same actions are also
- * available as text subcommands for players who prefer typing:</p>
- *
- * <pre>
- *   /ah                       open the menu
- *   /ah browse [page]         the listings, optionally a page
- *   /ah search &lt;text&gt;         filter by item or seller
- *   /ah sort &lt;order&gt;          newest, oldest, cheapest, expensive, name
- *   /ah sell [price]          list the held item (asks for the price when none)
- *   /ah mine                  your own listings
- *   /ah claims                collect items back
- *   /ah help                  this list
- * </pre>
- */
 public class Auction_Command implements TabExecutor {
 
-    /** Slots the browse grid uses: four inner rows, seven columns. */
     private static final int[] GRID = {
             10, 11, 12, 13, 14, 15, 16,
             19, 20, 21, 22, 23, 24, 25,
@@ -55,10 +36,8 @@ public class Auction_Command implements TabExecutor {
             37, 38, 39, 40, 41, 42, 43
     };
 
-    /** Centre of the grid, used for the "nothing here" message. */
     private static final int EMPTY = 22;
 
-    /** What one player is currently looking at: their search term and sort order. */
     private record BrowseState(String query, AuctionService.Sort sort) {
     }
 
@@ -77,8 +56,6 @@ public class Auction_Command implements TabExecutor {
     private void setState(Player player, String query, AuctionService.Sort sort) {
         browseStates.put(player.getUniqueId(), new BrowseState(query, sort));
     }
-
-    /* ------------------------------------------------------------ command --- */
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
@@ -186,8 +163,6 @@ public class Auction_Command implements TabExecutor {
         Msg.raw(sender, " &f/" + label + " claims &7- collect items back");
     }
 
-    /* -------------------------------------------------------- main menu --- */
-
     private void openMain(Player player) {
         int rows = plugin.auctions().guiRows();
         Menu menu = new Menu(Theme.heading("Auction House"), rows);
@@ -265,8 +240,6 @@ public class Auction_Command implements TabExecutor {
         menu.open(player);
     }
 
-    /* ----------------------------------------------------------- browse --- */
-
     private void openBrowse(Player player, int page) {
         BrowseState state = stateOf(player);
         List<AuctionService.Listing> listings = plugin.auctions().browse(state.query(), state.sort());
@@ -338,7 +311,6 @@ public class Auction_Command implements TabExecutor {
         menu.open(player);
     }
 
-    /** Asks for a search term and reopens the browse menu with it. */
     private void promptSearch(Player player) {
         BrowseState state = stateOf(player);
         plugin.dialogs().text(player, "Auction House » Search",
@@ -389,8 +361,6 @@ public class Auction_Command implements TabExecutor {
         menu.button(15, Items.of(Material.RED_CONCRETE, "&cCancel"), event -> openBrowse(player, 0));
         menu.open(player);
     }
-
-    /* ------------------------------------------------------ my listings --- */
 
     private void openMine(Player player, int page) {
         List<AuctionService.Listing> listings = plugin.auctions().mine(player.getUniqueId());
@@ -452,8 +422,6 @@ public class Auction_Command implements TabExecutor {
         menu.open(player);
     }
 
-    /* ------------------------------------------------------------ claims --- */
-
     private void openClaims(Player player) {
         List<AuctionService.Listing> claims = plugin.auctions().claims(player.getUniqueId());
         int rows = plugin.auctions().guiRows();
@@ -483,8 +451,6 @@ public class Auction_Command implements TabExecutor {
         menu.open(player);
     }
 
-    /* -------------------------------------------------------------- sell --- */
-
     private void startSell(Player player) {
         if (!plugin.permissions().has(player, "betteradmincommands.auction.sell")) {
             Msg.noPermission(player);
@@ -501,10 +467,6 @@ public class Auction_Command implements TabExecutor {
         openSellPrice(player, clampPrice(100.0));
     }
 
-    /**
-     * The price picker: the held item plus buttons that raise or lower the price
-     * and a confirm button. A "type it" button opens a dialog for an exact amount.
-     */
     private void openSellPrice(Player player, double price) {
         ItemStack held = player.getInventory().getItemInMainHand();
         if (held.getType().isAir()) {
@@ -561,18 +523,15 @@ public class Auction_Command implements TabExecutor {
         menu.open(player);
     }
 
-    /** Clamps a price into the configured window, so a button can never break the limits. */
     private double clampPrice(double price) {
         return Math.max(plugin.auctions().minPrice(),
                 Math.min(plugin.auctions().maxPrice(), price));
     }
 
-    /** What the seller keeps after the auction tax. */
     private double afterTax(double price) {
         return price - price * (plugin.auctions().taxPercent() / 100.0);
     }
 
-    /** A plus/minus button that adjusts the price in the sell menu. */
     private ItemStack step(double amount) {
         boolean up = amount > 0.0;
         String label = (up ? "&a+" : "&c-") + (long) Math.abs(amount);
@@ -583,7 +542,6 @@ public class Auction_Command implements TabExecutor {
                 "&eClick to apply");
     }
 
-    /** The held item with the price it is being listed for. */
     private ItemStack sellPreview(ItemStack item, double price) {
         ItemStack display = item.clone();
         ItemMeta meta = display.getItemMeta();
@@ -603,7 +561,6 @@ public class Auction_Command implements TabExecutor {
         return display;
     }
 
-    /** Lists whatever the player holds at the given price, after re-checking it. */
     private void listHeld(Player player, double price) {
         if (!plugin.permissions().has(player, "betteradmincommands.auction.sell")) {
             Msg.noPermission(player);
@@ -634,9 +591,6 @@ public class Auction_Command implements TabExecutor {
         openMain(player);
     }
 
-    /* ----------------------------------------------------------- helpers --- */
-
-    /** The listing's own item with sale details appended to the lore. */
     private ItemStack describe(AuctionService.Listing listing, String footer) {
         ItemStack display = listing.item().clone();
         ItemMeta meta = display.getItemMeta();
@@ -668,7 +622,6 @@ public class Auction_Command implements TabExecutor {
         return Targets.formatDuration(left / 1000L);
     }
 
-    /** A friendly name for an item, preferring its custom name. */
     private static String pretty(ItemStack item) {
         ItemMeta meta = item.getItemMeta();
         if (meta != null && meta.hasDisplayName() && meta.displayName() != null) {

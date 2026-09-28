@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Jails a player if they are free, releases them otherwise. */
 public class Togglejail_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

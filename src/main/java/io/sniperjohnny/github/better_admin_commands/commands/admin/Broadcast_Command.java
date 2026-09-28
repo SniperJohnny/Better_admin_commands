@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Sends a message to every online player. */
 public class Broadcast_Command implements TabExecutor {
 
     @Override

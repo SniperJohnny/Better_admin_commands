@@ -17,12 +17,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 
-/**
- * The ignore list behind {@code /ignorelist}. Every ignored name is a head;
- * clicking it stops ignoring that player, which is safe because ignoring them
- * again is one click away. Names are worked with as text, so someone can be
- * ignored while they are offline.
- */
 public class IgnoreList_Gui {
 
     private final Better_Admin_Commands plugin;
@@ -80,8 +74,6 @@ public class IgnoreList_Gui {
         }
         menu.open(player);
     }
-
-    /* ---------------------------------------------------------- picker ---- */
 
     private void openPicker(Player player, int page) {
         List<Player> online = new ArrayList<>();
@@ -149,10 +141,6 @@ public class IgnoreList_Gui {
         openPicker(player, returnPage);
     }
 
-    /**
-     * The skin for a name, or {@code null} when no account is cached for it.
-     * Only cached lookups are used, so opening the menu never waits for Mojang.
-     */
     private static UUID uuidOf(String name) {
         Player online = Bukkit.getPlayerExact(name);
         if (online != null) {

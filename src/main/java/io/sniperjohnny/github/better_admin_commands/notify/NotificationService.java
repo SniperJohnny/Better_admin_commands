@@ -11,23 +11,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * The staff notifications the plugin sends, and whether a given player wants
- * them.
- *
- * <p>Two switches decide whether somebody is told about something: the
- * permission of the notification decides whether they may receive it at all, and
- * the personal toggle (changed with {@code /notify}) narrows that down. The
- * permissions stay with the server owner, the toggle is the player's own
- * choice.</p>
- */
 public class NotificationService {
 
-    /** One switchable notification. */
     public record Category(String id, String display, String permission, boolean defaultOn) {
     }
 
-    /** The categories shipped with the plugin, used when the config has none. */
     private static final List<Category> DEFAULTS = List.of(
             new Category("trade", "&6Trade alerts", "betteradmincommands.trade.notify", true),
             new Category("report", "&bReport updates", "betteradmincommands.report.staff", true),
@@ -38,21 +26,17 @@ public class NotificationService {
             new Category("admin", "&6Admin usage", "betteradmincommands.admin.notify", true));
 
     private final Better_Admin_Commands plugin;
-    /** The categories are read from config once and re-read after a reload. */
+
     private volatile List<Category> cachedCategories;
 
     public NotificationService(Better_Admin_Commands plugin) {
         this.plugin = plugin;
     }
 
-    /** Drops the cached category list, so the next read uses the new config. */
     public void refresh() {
         cachedCategories = null;
     }
 
-    /* -------------------------------------------------------- categories --- */
-
-    /** Every notification, in the order they are listed in config.yml. */
     public List<Category> categories() {
         List<Category> cached = cachedCategories;
         if (cached != null) {
@@ -91,7 +75,6 @@ public class NotificationService {
         return copy;
     }
 
-    /** One category by id, or {@code null} when there is no such notification. */
     public Category category(String id) {
         if (id == null) {
             return null;
@@ -105,9 +88,6 @@ public class NotificationService {
         return null;
     }
 
-    /* ------------------------------------------------------------ toggles --- */
-
-    /** Whether a player wants this notification, ignoring the permission. */
     public boolean toggleEnabled(Player player, Category category) {
         if (player == null || category == null) {
             return false;
@@ -116,10 +96,6 @@ public class NotificationService {
                 category.id(), category.defaultOn());
     }
 
-    /**
-     * Whether a player receives this notification: they have the permission and
-     * have not switched it off.
-     */
     public boolean enabled(Player player, String categoryId) {
         Category category = category(categoryId);
         if (player == null || category == null) {
@@ -132,10 +108,6 @@ public class NotificationService {
         return toggleEnabled(player, category);
     }
 
-    /**
-     * Flips a notification on or off, or sets it outright when {@code force} is
-     * given. Returns the new state.
-     */
     public boolean toggle(Player player, String categoryId, Boolean force) {
         Category category = category(categoryId);
         if (player == null || category == null) {
@@ -147,7 +119,6 @@ public class NotificationService {
         return value;
     }
 
-    /** Drops a player's override, so the configured default applies again. */
     public void reset(Player player, String categoryId) {
         Category category = category(categoryId);
         if (player != null && category != null) {
@@ -155,32 +126,16 @@ public class NotificationService {
         }
     }
 
-    /* ------------------------------------------------------------- sending --- */
-
-    /** Sends a notification to one player when they want it. */
     public void send(Player player, String categoryId, String message) {
         if (enabled(player, categoryId)) {
             Msg.send(player, message);
         }
     }
 
-    /**
-     * Sends a notification to every online player who holds the permission and
-     * left the notification switched on.
-     *
-     * @param categoryId the {@code /notify} switch to respect
-     * @param permission the node to check; when blank the category's own node is
-     *                   used
-     */
     public void broadcast(String categoryId, String permission, String message) {
         broadcast(categoryId, permission, message, null);
     }
 
-    /**
-     * The same as {@link #broadcast}, but never sends the notice to
-     * {@code exclude} - used so the player who ran an administration command is
-     * not told about their own action.
-     */
     public void broadcast(String categoryId, String permission, String message, Player exclude) {
         Category category = category(categoryId);
         String node = permission != null && !permission.isBlank()
@@ -200,11 +155,6 @@ public class NotificationService {
         }
     }
 
-    /**
-     * The same as {@link #broadcast} for the places that do not hold the plugin
-     * instance, such as the moderation commands. Silently does nothing while the
-     * plugin is not fully started.
-     */
     public static void staffBroadcast(String categoryId, String permission, String message) {
         Better_Admin_Commands plugin = Better_Admin_Commands.get_Instance();
         if (plugin == null || plugin.notifications() == null) {

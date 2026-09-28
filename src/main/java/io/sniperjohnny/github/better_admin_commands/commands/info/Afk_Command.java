@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Marks the sender as away from keyboard, or back. */
 public class Afk_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Spawns one or more mobs at a player. */
 public class Spawnmob_Command implements TabExecutor {
 
     @Override

@@ -7,10 +7,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Tracks how long a player has been on the server. The finished seconds are
- * stored in the player settings, the current session is kept in memory.
- */
 public class PlaytimeService {
 
     private static final String SETTING = "playtime";
@@ -26,7 +22,6 @@ public class PlaytimeService {
         sessionStart.put(player.getUniqueId(), System.currentTimeMillis());
     }
 
-    /** Stores the session length and forgets it. Called on quit. */
     public void onQuit(Player player) {
         Long start = sessionStart.remove(player.getUniqueId());
         if (start == null) {
@@ -46,7 +41,6 @@ public class PlaytimeService {
         }
     }
 
-    /** Total playtime including the running session. */
     public long seconds(Player player) {
         long stored = storedSeconds(player.getUniqueId());
         Long start = sessionStart.get(player.getUniqueId());
@@ -56,7 +50,6 @@ public class PlaytimeService {
         return stored + Math.max(0, (System.currentTimeMillis() - start) / 1000L);
     }
 
-    /** Formats seconds as {@code 3d 4h 12m}. */
     public static String format(long seconds) {
         if (seconds < 60) {
             return seconds + "s";

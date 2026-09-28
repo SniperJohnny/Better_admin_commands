@@ -1,22 +1,16 @@
 package io.sniperjohnny.github.better_admin_commands.player;
 
 import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Keeps track of vanished players and hides them from everyone else.
- */
 public class VanishService {
 
-    /**
-     * Lets a player see vanished players in the world and in the tab list. The
-     * tab list then marks them with a cue, so staff can tell a vanished player
-     * apart from someone who is simply online.
-     */
     public static final String SEE_PERMISSION = "betteradmincommands.vanish.see";
 
     private final Better_Admin_Commands plugin;
@@ -34,7 +28,6 @@ public class VanishService {
         return vanished.contains(uuid);
     }
 
-    /** Toggles vanish and returns the new state. */
     public boolean toggle(Player player) {
         if (isVanished(player)) {
             setVanished(player, false);
@@ -47,6 +40,11 @@ public class VanishService {
     public void setVanished(Player player, boolean value) {
         if (value) {
             vanished.add(player.getUniqueId());
+            // A mob that is already chasing the player would keep attacking even
+            // though new targets are refused, so the existing targets are cleared.
+            if (plugin.getConfig().getBoolean("moderation.vanish-mobs-ignore", true)) {
+                clearMobTargets(player);
+            }
         } else {
             vanished.remove(player.getUniqueId());
         }
@@ -60,7 +58,6 @@ public class VanishService {
         plugin.preferences().applyNickname(player);
     }
 
-    /** Hides every vanished player from a player who just joined. */
     public void applyToJoining(Player joiner) {
         boolean maySee = joiner.hasPermission(SEE_PERMISSION);
         for (UUID uuid : vanished) {
@@ -72,14 +69,6 @@ public class VanishService {
         }
     }
 
-    /**
-     * Makes one viewer see or not see a vanished player.
-     *
-     * <p>The entity and the tab list entry are handled separately on purpose:
-     * in current Paper {@code hidePlayer} only hides the entity, it no longer
-     * removes the player from the tab list, so a vanished player would otherwise
-     * stay listed for everyone.</p>
-     */
     private void apply(Player viewer, Player vanishedPlayer, boolean visible) {
         if (visible) {
             viewer.showEntity(plugin, vanishedPlayer);
@@ -94,5 +83,15 @@ public class VanishService {
 
     public Set<UUID> vanishedPlayers() {
         return Set.copyOf(vanished);
+    }
+
+    private static void clearMobTargets(Player player) {
+        // A generous box: anything that could reasonably be following a player.
+        for (Entity entity : player.getWorld().getNearbyEntities(player.getLocation(), 96.0, 96.0, 96.0)) {
+            if (entity instanceof Mob mob && mob.getTarget() != null
+                    && mob.getTarget().getUniqueId().equals(player.getUniqueId())) {
+                mob.setTarget(null);
+            }
+        }
     }
 }

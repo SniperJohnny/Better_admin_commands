@@ -19,25 +19,19 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * A deliberately small JDBC connection pool around the MySQL/MariaDB driver.
- * The pool is enough for a Minecraft server where all queries are short.
- */
 public class Database {
 
-    /** Functional interface for work that needs a pooled connection. */
     @FunctionalInterface
     public interface SqlFunction<T> {
         T apply(Connection connection) throws SQLException;
     }
 
-    /** One step of the connection check behind {@code /betteradmincommands database}. */
     public record Check(String label, boolean ok, String detail) {
     }
 
     private final Better_Admin_Commands plugin;
     private final String url;
-    /** The same url without the database, used to create a missing database. */
+
     private final String serverUrl;
     private final String user;
     private final String password;
@@ -49,7 +43,7 @@ public class Database {
     private final int port;
     private final String databaseName;
     private final boolean createIfMissing;
-    /** Where the settings came from, so a diagnosis can say so. */
+
     private final String source;
 
     private final Deque<Connection> idle = new ArrayDeque<>();
@@ -90,10 +84,6 @@ public class Database {
         this.url = buildUrl(host, port, databaseName, useSsl, extra);
     }
 
-    /**
-     * Opens one connection to verify the credentials, creates the database when
-     * it does not exist yet, and then creates the tables.
-     */
     public void connect() throws SQLException {
         if (!engine.supported()) {
             throw new SQLException("The connection details point at " + engine.label()
@@ -112,17 +102,10 @@ public class Database {
         available = true;
     }
 
-    /** Opens and closes one connection, to prove the credentials work. */
     private void verifyConnection() throws SQLException {
         closeQuietly(openRawConnection());
     }
 
-    /**
-     * Creates the configured database when the only problem is that it does not
-     * exist yet.
-     *
-     * @return {@code true} when the database is usable afterwards
-     */
     private boolean tryCreateDatabase(SQLException failure) throws SQLException {
         boolean missing = failure.getMessage() != null
                 && failure.getMessage().toLowerCase(Locale.ROOT).contains("unknown database");
@@ -143,7 +126,6 @@ public class Database {
         return true;
     }
 
-    /** Adds a suggestion to the message of a failure that looks familiar. */
     private static SQLException hint(SQLException failure) {
         String hint = DatabaseSettings.hintFor(failure.getMessage());
         return hint == null ? failure : new SQLException(failure.getMessage() + " - " + hint, failure);
@@ -163,14 +145,10 @@ public class Database {
         return url.toString();
     }
 
-    /** Prefers the value from the connection string, else the config field. */
     private static String fill(String preferred, String fallback) {
         return preferred != null && !preferred.isBlank() ? preferred : (fallback == null ? "" : fallback);
     }
 
-    /* ---------------------------------------------------------- diagnosis --- */
-
-    /** What the plugin thinks it is connecting to, without the password. */
     public String describe() {
         StringBuilder text = new StringBuilder(engine.label()).append(' ');
         if (!user.isBlank()) {
@@ -183,10 +161,6 @@ public class Database {
         return text.append(" (from ").append(source).append(')').toString();
     }
 
-    /**
-     * Walks through the connection step by step. Blocking, so call it from an
-     * async task - used by {@code /betteradmincommands database}.
-     */
     public List<Check> diagnose() {
         List<Check> checks = new ArrayList<>();
         checks.add(new Check("Engine", engine.supported(), engine.label()
@@ -250,20 +224,10 @@ public class Database {
         }
     }
 
-    /**
-     * Whether the database is currently usable. When this is {@code false} the
-     * plugin keeps running from its local safe files and retries periodically.
-     */
     public boolean isAvailable() {
         return available && !closed;
     }
 
-    /**
-     * Verifies the pooled connection, reconnecting when the database is down.
-     * Called periodically so a database that comes back is picked up without a
-     * server restart. Returns {@code true} when the database is reachable
-     * afterwards.
-     */
     public boolean checkConnection() {
         if (closed || !engine.supported()) {
             return false;
@@ -296,12 +260,10 @@ public class Database {
         return false;
     }
 
-    /** Marks the database as unavailable so the reconnect task starts trying again. */
     public void markUnavailable() {
         available = false;
     }
 
-    /** Creates every table the plugin needs, if it does not exist yet. */
     public void createTables() throws SQLException {
         withConnection(connection -> {
             try (Statement statement = connection.createStatement()) {
@@ -448,17 +410,16 @@ public class Database {
                         + "`last_read` BIGINT NOT NULL DEFAULT 0,"
                         + "PRIMARY KEY (`report_id`, `uuid`)"
                         + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
             }
             return null;
         });
     }
 
-    /** Prefixes a table name with the configured prefix. */
     public String table(String name) {
         return tablePrefix + name;
     }
 
-    /** Last time a player was stored, or {@code null} when they are unknown. */
     public Long lastSeen(java.util.UUID uuid) {
         try {
             return withConnection(connection -> {
@@ -475,10 +436,6 @@ public class Database {
         }
     }
 
-    /**
-     * Runs the given work on a pooled connection and returns its result.
-     * The connection is always released back into the pool afterwards.
-     */
     public <T> T withConnection(SqlFunction<T> work) throws SQLException {
         Connection connection = getConnection();
         try {

@@ -4,9 +4,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-/**
- * Tiny messaging helper. All strings may use legacy '&amp;' colour codes.
- */
 public final class Msg {
 
     private static String prefix = "&8[&6BetterAdmin&8] &r";
@@ -22,34 +19,25 @@ public final class Msg {
         return message == null ? "" : ChatColor.translateAlternateColorCodes('&', message);
     }
 
-    /** Converts a legacy coloured string into an Adventure component. */
     public static net.kyori.adventure.text.Component component(String message) {
         return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
                 .legacySection().deserialize(color(message));
     }
 
-    /** Prepends the configured plugin prefix to a component. */
     public static net.kyori.adventure.text.Component prefixed(net.kyori.adventure.text.Component message) {
         return component(prefix).append(message);
     }
 
-    /** Sends a message prefixed with the configured plugin prefix. */
     public static void send(CommandSender to, String message) {
         to.sendMessage(color(prefix + message));
     }
 
-    /**
-     * A chat button: clicking the label runs the given command as the player
-     * who clicked. {@code command} is sent exactly as written, so it has to
-     * start with a slash.
-     */
     public static net.kyori.adventure.text.Component button(String label, String command, String hover) {
         return component(label)
                 .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(command))
                 .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(component(hover)));
     }
 
-    /** Sends a message without the plugin prefix. */
     public static void raw(CommandSender to, String message) {
         to.sendMessage(color(message));
     }

@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Changes the weather of a world. */
 public class Weather_Command implements TabExecutor {
 
     @Override

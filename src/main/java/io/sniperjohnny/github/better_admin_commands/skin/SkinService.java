@@ -24,28 +24,14 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-/**
- * Reads player skins from the Mojang API and puts them on a player.
- *
- * <p>Mojang's own API is the source because it hands out skins with a signature
- * the Minecraft client accepts. NameMC, which most people look names up on, is
- * only a viewer for exactly this data and offers no API of its own.</p>
- *
- * <p>The lookup happens asynchronously and is cached, so a name requested twice
- * only hits Mojang once. The chosen skin is stored in the player settings and
- * applied again whenever the player joins.</p>
- */
 public class SkinService {
 
-    /** A skin exactly as Mojang signed it. */
     public record Skin(String source, String value, String signature) {
 
-        /** Packs the skin into the single string kept in the player settings. */
         public String pack() {
             return value + "|" + signature + "|" + source;
         }
 
-        /** Unpacks what {@link #pack()} produced, or returns {@code null}. */
         public static Skin unpack(String raw) {
             if (raw == null) {
                 return null;
@@ -64,17 +50,12 @@ public class SkinService {
         }
     }
 
-    /**
-     * Name to UUID endpoints, tried in order. The services endpoint is the one
-     * Mojang points developers at now; the older api.mojang.com host is kept as
-     * a fallback because it has had outages and blocks.
-     */
     private static final String[] NAME_URLS = {
             "https://api.minecraftservices.com/minecraft/profile/lookup/name/",
             "https://api.mojang.com/users/profiles/minecraft/"
     };
     private static final String PROFILE_URL = "https://sessionserver.mojang.com/session/minecraft/profile/";
-    /** Always ask for the signed texture; the client refuses an unsigned one. */
+
     private static final String SIGNED = "?unsigned=false";
     private static final String TEXTURES = "textures";
 
@@ -95,16 +76,6 @@ public class SkinService {
                 .build();
     }
 
-    /* ----------------------------------------------------------- lookups --- */
-
-    /**
-     * Looks a Minecraft name up at Mojang.
-     *
-     * @return a future that completes with the skin, with {@code null} when no
-     *         premium account uses that name, or exceptionally when Mojang could
-     *         not be reached - the exception message names the HTTP status, so a
-     *         rate limit or a blocked request is not mistaken for a wrong name
-     */
     public CompletableFuture<Skin> byUsername(String username) {
         String name = username == null ? "" : username.trim();
         return lookup("name:" + name.toLowerCase(java.util.Locale.ROOT), () ->
@@ -113,18 +84,10 @@ public class SkinService {
                         : profileOf(uuid)));
     }
 
-    /** Looks the skin of an account up by UUID, used to restore a player's own. */
     public CompletableFuture<Skin> byUuid(UUID uuid) {
         return lookup("uuid:" + uuid, () -> profileOf(uuid.toString().replace("-", "")));
     }
 
-    /**
-     * Builds a skin from a texture value and its signature that were pasted in,
-     * for example copied out of a NameMC profile. No request is made, and the
-     * result is used exactly like a skin read from Mojang.
-     *
-     * @return the skin, or {@code null} when the input is not usable
-     */
     public Skin byTexture(String value, String signature, String source) {
         if (value == null || signature == null || value.isBlank() || signature.isBlank()) {
             return null;
@@ -135,10 +98,6 @@ public class SkinService {
         return skin;
     }
 
-    /**
-     * Caches results and shares one request between callers asking for the same
-     * name at the same time.
-     */
     private CompletableFuture<Skin> lookup(String key, Supplier<CompletableFuture<Skin>> source) {
         Cached cached = cache.get(key);
         if (cached != null) {
@@ -170,11 +129,6 @@ public class SkinService {
         return uuidOf(username, 0);
     }
 
-    /**
-     * Resolves a name, moving on to the next endpoint when one of them fails.
-     * Only a 204/404 counts as "no such account"; everything else is an error
-     * that must not be reported as a wrong name.
-     */
     private CompletableFuture<String> uuidOf(String username, int index) {
         return resolveName(NAME_URLS[index], username).handle((uuid, error) -> {
             if (error == null) {
@@ -204,7 +158,6 @@ public class SkinService {
         });
     }
 
-    /** Unwraps the CompletionException a failed future is wrapped in. */
     private static Throwable cause(Throwable error) {
         return error instanceof CompletionException && error.getCause() != null
                 ? error.getCause() : error;
@@ -237,7 +190,6 @@ public class SkinService {
         });
     }
 
-    /** A message that names what Mojang actually answered. */
     private static String statusMessage(String what, int status) {
         String extra = switch (status) {
             case 429 -> " (Mojang is rate limiting this server, try again in a minute)";
@@ -248,7 +200,6 @@ public class SkinService {
         return "Mojang answered HTTP " + status + " while " + what + extra + ".";
     }
 
-    /** Picks the signed textures property out of a profile response. */
     private static Skin readTextures(String body) {
         JsonObject json = JsonParser.parseString(body).getAsJsonObject();
         JsonElement properties = json.get("properties");
@@ -285,40 +236,26 @@ public class SkinService {
                 .build();
     }
 
-    /* ---------------------------------------------------------- applying --- */
-
-    /**
-     * Puts a skin on a player. Has to run on the server thread.
-     *
-     * <p>The profile is cloned first: handing the server the very instance it
-     * already knows about can be treated as no change at all.</p>
-     */
     public void apply(Player player, Skin skin) {
         PlayerProfile profile = player.getPlayerProfile().clone();
         profile.setProperty(new ProfileProperty(TEXTURES, skin.value(), skin.signature()));
         player.setPlayerProfile(profile);
     }
 
-    /** Drops a borrowed skin, leaving the player with whatever the server sends. */
     public void clear(Player player) {
         PlayerProfile profile = player.getPlayerProfile().clone();
         profile.removeProperty(TEXTURES);
         player.setPlayerProfile(profile);
     }
 
-    /* ------------------------------------------------------- persistence --- */
-
-    /** Remembers a skin so it can be applied again on every join. */
     public void remember(Player player, Skin skin) {
         plugin.preferences().set(player.getUniqueId(), PlayerPreferences.SKIN, skin.pack());
     }
 
-    /** Forgets the borrowed skin, so the player joins with their own again. */
     public void forget(UUID uuid) {
         plugin.preferences().set(uuid, PlayerPreferences.SKIN, null);
     }
 
-    /** Re-applies the stored skin, called when a player joins. */
     public void applyStored(Player player) {
         Skin skin = Skin.unpack(plugin.preferences().get(player.getUniqueId(), PlayerPreferences.SKIN, null));
         if (skin != null) {

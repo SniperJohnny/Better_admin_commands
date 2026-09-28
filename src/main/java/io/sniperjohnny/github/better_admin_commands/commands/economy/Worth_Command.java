@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Shows what an item is worth. */
 public class Worth_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

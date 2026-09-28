@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Renames the item in the main hand. */
 public class Rename_Command implements TabExecutor {
 
     @Override

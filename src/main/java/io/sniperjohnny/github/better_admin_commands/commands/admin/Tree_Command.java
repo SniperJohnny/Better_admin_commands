@@ -17,10 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Grows a tree at the block you are looking at. Registered for {@code /tree}
- * and {@code /bigtree}.
- */
 public class Tree_Command implements TabExecutor {
 
     @Override

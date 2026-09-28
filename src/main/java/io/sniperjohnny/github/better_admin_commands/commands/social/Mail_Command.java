@@ -20,10 +20,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Offline messaging: {@code /mail send <player> <message>}, {@code /mail read}
- * and {@code /mail clear}.
- */
 public class Mail_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

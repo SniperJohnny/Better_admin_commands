@@ -561,8 +561,8 @@ commands:
     usage: /worth [item]
   sell:
     permission: "betteradmincommands.sell"
-    description: "sells items"
-    usage: /sell <hand|all|amount>
+    description: "sells items, or opens the sell window without an argument"
+    usage: /sell [hand|all|amount]
   depth:
     permission: "betteradmincommands.depth"
     description: "shows how deep you are"

@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Sells items for the prices defined in config.yml. */
 public class Sell_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -32,7 +31,13 @@ public class Sell_Command implements TabExecutor {
             Msg.playerOnly(sender);
             return true;
         }
-        String mode = args.length >= 1 ? args[0].toLowerCase(Locale.ROOT) : "hand";
+        if (args.length == 0) {
+            // No argument opens the sell window: drop items in, close it, and
+            // everything the server buys is sold while the rest comes back.
+            plugin.sellGui().open(player);
+            return true;
+        }
+        String mode = args[0].toLowerCase(Locale.ROOT);
 
         double total = 0;
         int sold = 0;

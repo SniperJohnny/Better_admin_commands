@@ -16,26 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Changes the nickname of the player running the command, stored in the
- * database. The nickname is used in the tab list and in chat.
- *
- * <p>The tab list entry shows the rank the nickname is worn with - the player's
- * own LuckPerms rank, or the group named on the command line - so the rank
- * updates together with the nickname. The name tag above a player's head is
- * hidden for everyone ({@code nick.hide-nametag}), so the tab list is the only
- * place a name shows up.</p>
- *
- * <p>The optional group argument borrows the prefix of a LuckPerms group, so a
- * nickname can be shown with a rank tag. No permission or group of the player is
- * ever changed.</p>
- *
- * <ul>
- *   <li>{@code /nick <nickname> [group]} - your own nickname</li>
- *   <li>{@code /nick <nickname> off} keeps the nickname but drops the prefix</li>
- *   <li>{@code /nick off} - removes the nickname entirely</li>
- * </ul>
- */
 public class Nick_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -122,10 +102,6 @@ public class Nick_Command implements TabExecutor {
                 || value.equalsIgnoreCase("clear"));
     }
 
-    /**
-     * The nicks and groups listed under {@code nick.restricted} are reserved for
-     * server operators, so a player cannot dress up as staff.
-     */
     private boolean mayUse(CommandSender sender, String nickname, String group) {
         if (!(sender instanceof Player) || sender.isOp()) {
             return true; // console counts as an operator
@@ -140,7 +116,6 @@ public class Nick_Command implements TabExecutor {
         return true;
     }
 
-    /** Strips colour codes, so "&4dev" cannot slip past the reserved list. */
     private static String plain(String value) {
         return value == null ? "" : value.replaceAll("(?i)&[0-9a-fk-or]", "").trim();
     }
@@ -157,7 +132,6 @@ public class Nick_Command implements TabExecutor {
         return Collections.emptyList();
     }
 
-    /** Every LuckPerms group plus the words that clear the prefix. */
     private List<String> groupChoices() {
         List<String> choices = new ArrayList<>(plugin.nicks().groupNames());
         choices.add("off");

@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Opens a portable crafting table. */
 public class Craft_Command implements TabExecutor {
 
     @Override

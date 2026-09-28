@@ -13,10 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Opens the ignore menu, where an ignored name is one click from being removed
- * again. {@code /ignorelist list} keeps the plain text listing.
- */
 public class IgnoreList_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

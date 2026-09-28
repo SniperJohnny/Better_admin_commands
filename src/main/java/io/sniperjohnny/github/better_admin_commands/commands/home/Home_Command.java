@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Teleports the sender to one of their homes. */
 public class Home_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

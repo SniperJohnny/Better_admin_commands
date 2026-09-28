@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Kills a player. */
 public class Kill_Command implements TabExecutor {
 
     @Override

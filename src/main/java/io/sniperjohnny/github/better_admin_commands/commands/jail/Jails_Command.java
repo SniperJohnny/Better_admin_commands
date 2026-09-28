@@ -14,11 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Opens the jail menu, where a cell can be teleported to with one click.
- * {@code /jails list} keeps the plain text listing, and the console always gets
- * that form.
- */
 public class Jails_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

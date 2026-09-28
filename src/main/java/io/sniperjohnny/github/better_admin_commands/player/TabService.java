@@ -5,25 +5,11 @@ import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
-/**
- * Optional hook into the TAB plugin.
- *
- * <p>TAB renders the tab list and the name tags from its own packets, so it
- * overwrites whatever the server sets on a player. This service lets {@code /nick}
- * drive TAB instead: the nickname and the rank prefix it is shown with are put
- * into the tab list for everyone, a borrowed LuckPerms group is applied for real
- * (sorting included), the name tag above a head is hidden as configured and the
- * vanish cue is drawn by TAB.</p>
- *
- * <p>Like {@link NickService}, the whole thing stays optional: the API is only
- * touched through {@link TabBridge}, which is created when TAB is installed and
- * left alone otherwise. Every method answers something sensible without it.</p>
- */
 public class TabService {
 
     private final Better_Admin_Commands plugin;
     private TabBridge bridge;
-    /** Errors are logged once, so a version mismatch cannot spam the console. */
+
     private boolean warned;
 
     public TabService(Better_Admin_Commands plugin) {
@@ -47,10 +33,6 @@ public class TabService {
         }
     }
 
-    /**
-     * The bridge, created late when TAB only became reachable after this plugin
-     * started. Returns {@code null} when TAB is not installed or not reachable.
-     */
     private TabBridge bridge() {
         if (bridge == null && plugin.getServer().getPluginManager().getPlugin("TAB") != null) {
             bridge = create();
@@ -59,7 +41,6 @@ public class TabService {
         return bridge;
     }
 
-    /** Says exactly which TAB features answer, so a wrong config is easy to spot. */
     private void logState() {
         if (bridge == null) {
             return;
@@ -71,32 +52,19 @@ public class TabService {
                 + ".");
     }
 
-    /** Whether TAB is installed and its API can be reached. */
     public boolean available() {
         return bridge() != null;
     }
 
-    /** Whether TAB can hide a player's name tag (its name tag feature is on). */
     public boolean nameTagsAvailable() {
         TabBridge active = bridge();
         return active != null && active.nameTagsAvailable();
     }
 
-    /**
-     * Hands a player's nickname and rank to TAB. Does nothing when TAB is absent.
-     *
-     * @param uuid     the player
-     * @param nickname the nickname, or {@code null} to reset back to the real name
-     * @param group    the borrowed LuckPerms group, or {@code null} for the own rank
-     */
     public void apply(UUID uuid, String nickname, String group) {
         apply(uuid, nickname, group, "");
     }
 
-    /**
-     * The same, with the vanish cue that TAB puts in front of the player's rank
-     * prefix while they are vanished (empty when they are not).
-     */
     public void apply(UUID uuid, String nickname, String group, String vanishCue) {
         TabBridge active = bridge();
         if (active == null || uuid == null) {
@@ -124,11 +92,6 @@ public class TabService {
         }
     }
 
-    /**
-     * Registers TAB's load events so a nickname survives TAB loading a player
-     * late or being reloaded. TAB may finish with a player after the join event,
-     * so this is what actually makes the nickname stick on some servers.
-     */
     public void registerEvents() {
         TabBridge active = bridge();
         if (active == null) {

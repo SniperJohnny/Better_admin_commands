@@ -10,35 +10,18 @@ import me.neznamy.tab.api.tablist.TabListFormatManager;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-/**
- * Every direct call into the TAB API lives in this class.
- *
- * <p>It is deliberately kept apart from {@link TabService}: that class only
- * instantiates this one when the TAB plugin is actually installed, so the API
- * classes are never loaded - and never missed - on a server without TAB.</p>
- *
- * <p>TAB is the plugin that owns the tab list and the name tags, so instead of
- * fighting it over the same packets {@code /nick} hands the nickname to TAB:
- * the tab list name is replaced, a borrowed LuckPerms group is applied through
- * {@code setTemporaryGroup} (so sorting and the group's own prefix behave as if
- * the player really held that rank), and the real name above a nicked player's
- * head is hidden with the name tag manager.</p>
- */
 class TabBridge {
 
     private final TabAPI api = TabAPI.getInstance();
 
-    /** Whether TAB's tab list name formatting is enabled and can be driven. */
     boolean tabListAvailable() {
         return api.getTabListFormatManager() != null;
     }
 
-    /** Whether TAB's name tag feature is enabled and can hide a name tag. */
     boolean nameTagsAvailable() {
         return api.getNameTagManager() != null;
     }
 
-    /** The TAB representation of a player, or {@code null} while TAB has not loaded them. */
     TabPlayer player(UUID uuid) {
         try {
             return api.getPlayer(uuid);
@@ -47,19 +30,6 @@ class TabBridge {
         }
     }
 
-    /**
-     * Applies a player's nickname and rank to TAB.
-     *
-     * @param uuid         the player
-     * @param nickname     the nickname, or {@code null} to reset back to the real name
-     * @param group        the borrowed LuckPerms group, or {@code null} for the own rank
-     * @param noPrefix     {@code true} when the player asked for no prefix at all
-     * @param vanishCue    the vanish marker to put in front of the prefix, or empty
-     * @param rankPrefix   the rank shown next to the nickname (the own rank, or the
-     *                     group borrowed with {@code /nick}), as a legacy string
-     * @param hideNameTags {@code true} when the name tag above the head has to be
-     *                     hidden for everyone
-     */
     void apply(UUID uuid, String nickname, String group, boolean noPrefix, String vanishCue,
                String rankPrefix, boolean hideNameTags) {
         TabPlayer player = player(uuid);
@@ -128,13 +98,6 @@ class TabBridge {
         }
     }
 
-    /**
-     * Registers TAB's own events so the nickname is applied even when TAB only
-     * finishes loading a player after the join, and re-applied after a
-     * {@code /tab reload}.
-     *
-     * @param onLoad receives the player UUID, or {@code null} to re-apply everyone
-     */
     void registerLoad(Consumer<UUID> onLoad) {
         if (api.getEventBus() == null) {
             return;

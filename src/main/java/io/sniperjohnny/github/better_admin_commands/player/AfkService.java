@@ -8,11 +8,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Tracks who is away from keyboard, both manually through /afk and
- * automatically after the configured amount of idle time. Activity is recorded
- * from movement events, so no server internal API is needed.
- */
 public class AfkService {
 
     private final Better_Admin_Commands plugin;
@@ -31,7 +26,6 @@ public class AfkService {
         return afk.get(uuid);
     }
 
-    /** Called whenever a player moves to a new block or interacts. */
     public void recordActivity(Player player) {
         lastActivity.put(player.getUniqueId(), System.currentTimeMillis());
         if (afk.containsKey(player.getUniqueId())) {
@@ -63,7 +57,6 @@ public class AfkService {
         lastActivity.remove(uuid);
     }
 
-    /** Marks everybody who has been idle long enough as afk. */
     public void checkIdle(int idleMinutes) {
         long threshold = System.currentTimeMillis() - (idleMinutes * 60_000L);
         for (Player player : plugin.getServer().getOnlinePlayers()) {

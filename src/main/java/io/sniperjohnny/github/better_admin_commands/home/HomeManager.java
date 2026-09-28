@@ -23,10 +23,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Player homes. Homes live in the {@code homes} table so they survive server
- * restarts and are available on every server sharing the database.
- */
 public class HomeManager {
 
     private final Better_Admin_Commands plugin;
@@ -40,10 +36,6 @@ public class HomeManager {
         this.local = local;
     }
 
-    /**
-     * Reads every home into memory. Called once at start-up. Falls back to the
-     * local safe file while MySQL is unavailable.
-     */
     public void loadAll() throws SQLException {
         homes.clear();
         if (database.isAvailable()) {
@@ -129,7 +121,6 @@ public class HomeManager {
         return row;
     }
 
-    /** All homes of a player, sorted alphabetically. Never {@code null}. */
     public Map<String, Location> homesOf(UUID uuid) {
         Map<String, Location> stored = homes.get(uuid);
         if (stored == null || stored.isEmpty()) {
@@ -152,7 +143,6 @@ public class HomeManager {
         return stored != null && stored.containsKey(name.toLowerCase(Locale.ROOT));
     }
 
-    /** Maximum number of homes a player may own, based on permissions then config. */
     public int limitFor(Player player) {
         int limit = plugin.getConfig().getInt("homes.max", 3);
         for (int candidate = 100; candidate >= 1; candidate--) {
@@ -163,10 +153,6 @@ public class HomeManager {
         return limit;
     }
 
-    /**
-     * Stores a home. Returns {@code false} when the player already reached
-     * their home limit and the home does not exist yet.
-     */
     public boolean set(Player player, String name, Location location) {
         UUID uuid = player.getUniqueId();
         String key = name.toLowerCase(Locale.ROOT);
@@ -248,11 +234,6 @@ public class HomeManager {
         });
     }
 
-    /**
-     * Replaces the homes table with the local safe file after a reconnect. The
-     * safe file is a complete mirror, so this also propagates deletions made
-     * while the database was down.
-     */
     public void resyncToDatabase() {
         if (!database.isAvailable()) {
             return;
@@ -315,7 +296,6 @@ public class HomeManager {
         }
     }
 
-    /** Raw, unmodifiable view used for debug output. */
     public Map<UUID, Map<String, Location>> all() {
         Map<UUID, Map<String, Location>> copy = new LinkedHashMap<>();
         homes.forEach((uuid, map) -> copy.put(uuid, Collections.unmodifiableMap(new TreeMap<>(map))));

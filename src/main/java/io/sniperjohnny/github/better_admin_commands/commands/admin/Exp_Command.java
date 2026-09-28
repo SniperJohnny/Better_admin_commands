@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Manages experience points: /exp &lt;show|give|set&gt; [player] [amount]. */
 public class Exp_Command implements TabExecutor {
 
     @Override

@@ -16,22 +16,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Player to player trading, with a GUI at its core:
- *
- * <ul>
- *   <li>{@code /trade <player>} - ask for a trade (opens the window)</li>
- *   <li>{@code /trade accept [player]} - accept a request</li>
- *   <li>{@code /trade deny [player]} - decline a request</li>
- *   <li>{@code /trade log [player]} - the last trades, for staff or for yourself</li>
- * </ul>
- *
- * <p>The window itself is where items and money are added; the command covers
- * everything for players who prefer typing.</p>
- */
 public class Trade_Command implements TabExecutor {
 
-    /** Permission that may look at everyone's trade history. */
     public static final String LOG_OTHERS_PERMISSION = "betteradmincommands.trade.log.others";
 
     private static final List<String> SUBCOMMANDS = List.of("accept", "deny", "log", "help");
@@ -102,7 +88,6 @@ public class Trade_Command implements TabExecutor {
         return true;
     }
 
-    /** Shows the newest trades of one player, or everyone's for staff. */
     private void log(CommandSender sender, String[] args) {
         if (plugin.tradeLogs() == null) {
             Msg.error(sender, "The trade history is not available.");

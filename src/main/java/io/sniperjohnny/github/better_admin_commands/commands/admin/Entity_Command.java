@@ -19,16 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Entity clean up helpers, registered for {@code /killall}, {@code /butcher}
- * and {@code /remove}.
- *
- * <ul>
- *     <li>{@code /killall [type]} kills every matching entity in every world</li>
- *     <li>{@code /butcher [radius]} removes hostile mobs around you</li>
- *     <li>{@code /remove <type> [radius]} removes one entity type around you</li>
- * </ul>
- */
 public class Entity_Command implements TabExecutor {
 
     @Override

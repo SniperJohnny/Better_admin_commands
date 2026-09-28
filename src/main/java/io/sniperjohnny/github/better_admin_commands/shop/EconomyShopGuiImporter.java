@@ -25,22 +25,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Reads EconomyShopGUI's shop files and turns them into this plugin's own shops.
- *
- * <p>The importer is deliberately defensive: instead of relying on the layout of
- * one edition, it walks every YAML file it finds and treats <em>anything that
- * names a material</em> as a shop entry. That works for both the free and the
- * premium edition, and for shop files written by hand, because the layouts only
- * differ in where they put the entries, not in how an entry is described.</p>
- *
- * <p>Every file becomes one shop, named after the file unless the file names
- * itself. Prices, amounts, slots, display names, lore and enchantments are read
- * from the usual key spellings, and unknown keys are simply ignored.</p>
- */
 public class EconomyShopGuiImporter {
 
-    /** The result of one import run. */
     public record Imported(List<ShopService.Shop> shops,
                            Map<String, List<ShopService.ShopItem>> items,
                            List<String> sources) {
@@ -50,12 +36,10 @@ public class EconomyShopGuiImporter {
         }
     }
 
-    /** Files that are never shop files, even though they may contain a material somewhere. */
     private static final Set<String> IGNORED_FILES = Set.of(
             "config.yml", "config.yaml", "messages.yml", "messages.yaml", "sounds.yml", "sounds.yaml",
             "plugin.yml", "language.yml", "language.yaml", "lang.yml", "lang.yaml", "data.yml", "data.yaml");
 
-    /** Key spellings that mark a section as a shop entry. */
     private static final List<String> MATERIAL_KEYS = List.of("material", "item", "type", "material-data");
     private static final List<String> BUY_KEYS = List.of(
             "buy", "buy-price", "buyprice", "buy_price", "price", "cost", "money", "buy-amount", "purchase");
@@ -77,9 +61,6 @@ public class EconomyShopGuiImporter {
         this.plugin = plugin;
     }
 
-    /* ------------------------------------------------------------- scan --- */
-
-    /** Scans every configured EconomyShopGUI folder. Never throws. */
     public Imported scan() {
         List<File> folders = folders();
         List<ShopService.Shop> shops = new ArrayList<>();
@@ -119,7 +100,6 @@ public class EconomyShopGuiImporter {
         return new Imported(shops, items, sources);
     }
 
-    /** The plugins/ folders to scan: the configured ones plus anything named EconomyShopGUI*. */
     private List<File> folders() {
         File pluginsDir = plugin.getDataFolder().getParentFile();
         List<File> found = new ArrayList<>();
@@ -165,9 +145,6 @@ public class EconomyShopGuiImporter {
         }
     }
 
-    /* -------------------------------------------------------- one file ---- */
-
-    /** @return every entry in one shop file; empty when the file holds no shop */
     private List<ShopService.ShopItem> readShopFile(File folder, File file) {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
         String id = shopId(folder, file);
@@ -196,7 +173,6 @@ public class EconomyShopGuiImporter {
         return found;
     }
 
-    /** Walks a section, turning every item-looking child into a shop entry. */
     private void walk(ConfigurationSection section, String shopId, String path, List<ShopService.ShopItem> out) {
         for (String key : section.getKeys(false)) {
             String childPath = path.isEmpty() ? key : path + "." + key;
@@ -225,7 +201,6 @@ public class EconomyShopGuiImporter {
         }
     }
 
-    /** Handles {@code items:} written as a list, either of maps or of material names. */
     private void collectList(String shopId, String path, List<?> list, List<ShopService.ShopItem> out) {
         if (list == null) {
             return;
@@ -256,9 +231,6 @@ public class EconomyShopGuiImporter {
         }
     }
 
-    /* ------------------------------------------------------- item building - */
-
-    /** Whether a section describes a shop entry, i.e. whether it names a material. */
     private boolean looksLikeItem(ConfigurationSection section) {
         for (String key : MATERIAL_KEYS) {
             String raw = rawString(section, key);
@@ -328,13 +300,6 @@ public class EconomyShopGuiImporter {
                 searchText(stack));
     }
 
-    /**
-     * Reads the buy or sell price. Prices may sit directly on the entry or in a
-     * nested {@code price:}/{@code economy:} section, and may be written as a
-     * number or as a string such as {@code "*1.5"}.
-     *
-     * @return the price, or -1 when this entry does not offer that side of the trade
-     */
     private double priceOf(ConfigurationSection section, boolean buying) {
         List<String> keys = buying ? BUY_KEYS : SELL_KEYS;
         Double direct = doubleOf(section, keys);
@@ -432,9 +397,6 @@ public class EconomyShopGuiImporter {
         return List.of();
     }
 
-    /* --------------------------------------------------- shop metadata ----- */
-
-    /** A stable, lowercase id built from the path inside the plugin folder. */
     private static String shopId(File folder, File file) {
         String relative = relative(folder, file);
         int dot = relative.lastIndexOf('.');
@@ -492,14 +454,6 @@ public class EconomyShopGuiImporter {
         return 0; // 0 means "use the configured default"
     }
 
-    /* -------------------------------------------------------- plugins ----- */
-
-    /**
-     * Turns EconomyShopGUI off after a successful import, so the two shops
-     * cannot both answer to /shop.
-     *
-     * @return the name of the plugin that was disabled, or {@code null}
-     */
     public String disablePluginIfPresent() {
         PluginManager manager = plugin.getServer().getPluginManager();
         for (String name : List.of("EconomyShopGUI-Premium", "EconomyShopGUI")) {
@@ -512,9 +466,6 @@ public class EconomyShopGuiImporter {
         return null;
     }
 
-    /* --------------------------------------------------------- helpers ---- */
-
-    /** Every key spelling for a section that actually exists in the config. */
     private static List<String> keys(ConfigurationSection section, String wanted) {
         List<String> found = new ArrayList<>(1);
         for (String key : section.getKeys(false)) {

@@ -11,10 +11,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Shows how deep the sender is, both as a Y value and below sea level. */
 public class Depth_Command implements TabExecutor {
 
-    /** Sea level, the reference used for the "depth below sea" value. */
     private static final int SEA_LEVEL = 63;
 
     @Override

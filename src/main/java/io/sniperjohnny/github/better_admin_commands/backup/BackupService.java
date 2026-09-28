@@ -18,16 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-/**
- * Dumps every table the plugin owns into human readable YAML files inside
- * {@code plugins/Better_Admin_Commands/backups/<timestamp>/}.
- *
- * <p>The dump is generic: it reads the column labels from the result set, so a
- * table that gains a column is backed up correctly without code changes.</p>
- */
 public class BackupService {
 
-    /** Result of a backup run. */
     public record BackupResult(File folder, Map<String, Integer> rowCounts) {
 
         public int totalRows() {
@@ -54,7 +46,6 @@ public class BackupService {
         this.localMail = localMail;
     }
 
-    /** Runs a full backup. Blocking - call from an async task. */
     public BackupResult backup() throws SQLException, IOException {
         File root = new File(plugin.getDataFolder(), "backups");
         File folder = new File(root, LocalDateTime.now().format(FOLDER_FORMAT));
@@ -80,10 +71,6 @@ public class BackupService {
         return new BackupResult(folder, counts);
     }
 
-    /**
-     * Reads a whole table into a YAML file and returns the row count. Falls
-     * back to the local safe file when the database is unavailable.
-     */
     public int dumpTable(String shortName, File target) throws SQLException, IOException {
         String table = database.table(shortName);
         List<Map<String, Object>> rows;

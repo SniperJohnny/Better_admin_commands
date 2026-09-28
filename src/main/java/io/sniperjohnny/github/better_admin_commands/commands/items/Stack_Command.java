@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Merges identical items in the inventory into full stacks. */
 public class Stack_Command implements TabExecutor {
 
     @Override

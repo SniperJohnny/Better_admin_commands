@@ -16,20 +16,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-/**
- * Keeps {@code config.yml} in sync with the template that is shipped inside the
- * plugin jar.
- *
- * <p>Updating works by <em>adding missing options only</em>: an option that is
- * already present in the file on disk is never touched, so the values a server
- * owner set survive every plugin update. The comments belonging to a newly
- * added option are copied over as well, and the file is only rewritten when
- * something actually changed. A version bump also drops a copy of the previous
- * file next to it, so a bad migration is easy to undo.</p>
- */
 public class ConfigUpdater {
 
-    /** Version of the template bundled with this build. */
     public static final int CURRENT_VERSION = 1;
 
     private static final String FILE_NAME = "config.yml";
@@ -41,13 +29,6 @@ public class ConfigUpdater {
         this.plugin = plugin;
     }
 
-    /**
-     * Merges the bundled template into {@code config.yml}. Safe to call more
-     * than once, for example from a reload.
-     *
-     * @return the number of options that were added, or {@code 0} when the file
-     *         was already up to date
-     */
     public int update() {
         YamlConfiguration template = template();
         if (template == null) {
@@ -110,7 +91,6 @@ public class ConfigUpdater {
         return added;
     }
 
-    /** Copies the current file aside before it is migrated. */
     private void backup(int previousVersion) {
         File file = new File(plugin.getDataFolder(), FILE_NAME);
         if (!file.exists() || file.length() == 0) {
@@ -126,7 +106,6 @@ public class ConfigUpdater {
         }
     }
 
-    /** Reads the config.yml that is packaged inside the plugin jar. */
     private YamlConfiguration template() {
         try (InputStream stream = plugin.getResource(FILE_NAME)) {
             if (stream == null) {

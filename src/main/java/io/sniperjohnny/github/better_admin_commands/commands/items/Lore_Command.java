@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Edits the lore of the item in the main hand. */
 public class Lore_Command implements TabExecutor {
 
     @Override

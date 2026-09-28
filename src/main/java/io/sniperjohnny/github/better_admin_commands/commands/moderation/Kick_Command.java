@@ -15,7 +15,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Kicks a player from the server. */
 public class Kick_Command implements TabExecutor {
 
     @Override

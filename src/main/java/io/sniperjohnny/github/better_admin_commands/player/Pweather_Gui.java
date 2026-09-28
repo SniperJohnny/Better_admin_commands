@@ -9,11 +9,6 @@ import org.bukkit.Material;
 import org.bukkit.WeatherType;
 import org.bukkit.entity.Player;
 
-/**
- * The personal weather menu behind {@code /pweather}: always sun, always rain,
- * or back to whatever the server has. Values are applied through
- * {@link PersonalDisplay}, the same code {@code /pweather} uses.
- */
 public class Pweather_Gui {
 
     private final Better_Admin_Commands plugin;

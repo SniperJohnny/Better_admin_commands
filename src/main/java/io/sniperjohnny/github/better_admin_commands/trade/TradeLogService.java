@@ -24,22 +24,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Stores every completed trade, so staff can look back at what was exchanged.
- *
- * <p>A record lives in memory, is mirrored into {@code data/trades.yml} and is
- * written to MySQL in the background - the same pattern the rest of the plugin
- * uses. Records older than {@code trade.log.retention-hours} (48 hours by
- * default) are dropped from all three places.</p>
- *
- * <p>To keep the memory footprint small, the items are held as their encoded form
- * plus a ready-made one-line summary instead of as {@link ItemStack} lists, and
- * only the newest {@code trade.log.max-cached} records are kept in memory - the
- * rest stay on disk and in the database until their time is up.</p>
- */
 public class TradeLogService {
 
-    /** One completed trade. Items stay encoded; the summary is pre-rendered. */
     public record TradeRecord(String id, UUID firstUuid, String firstName, UUID secondUuid, String secondName,
                               double firstMoney, double secondMoney, String firstItems, String secondItems,
                               String summary, long createdAt) {
@@ -60,8 +46,6 @@ public class TradeLogService {
         this.local = local;
     }
 
-    /* ------------------------------------------------------------ config --- */
-
     public boolean enabled() {
         return plugin.getConfig().getBoolean("trade.log.enabled", true);
     }
@@ -71,20 +55,15 @@ public class TradeLogService {
         return hours * 3_600_000L;
     }
 
-    /** How many records are held in memory; older ones stay on disk only. */
     private int maxCached() {
         return Math.max(100, plugin.getConfig().getInt("trade.log.max-cached", 2000));
     }
 
-    /** The permission that receives trade notifications. */
     public String notifyPermission() {
         return plugin.getConfig().getString("trade.log.notify-permission",
                 "betteradmincommands.trade.notify");
     }
 
-    /* -------------------------------------------------------------- load --- */
-
-    /** Reads the stored history, preferring MySQL and falling back locally. */
     public void loadAll() {
         records.clear();
         if (database.isAvailable()) {
@@ -135,9 +114,6 @@ public class TradeLogService {
         }
     }
 
-    /* ------------------------------------------------------------ record --- */
-
-    /** Stores a completed trade and tells the staff about it. */
     public void record(UUID firstUuid, String firstName, UUID secondUuid, String secondName,
                        double firstMoney, double secondMoney,
                        ItemStack[] firstItems, ItemStack[] secondItems) {
@@ -158,7 +134,6 @@ public class TradeLogService {
         notifyStaff(record);
     }
 
-    /** Drops the oldest cached records once the cache grew past its cap. */
     private void trim() {
         int max = maxCached();
         if (records.size() <= max) {
@@ -171,7 +146,6 @@ public class TradeLogService {
         }
     }
 
-    /** Tells every online staff member what was traded, respecting their /notify toggle. */
     private void notifyStaff(TradeRecord record) {
         NotificationService.Category category = plugin.notifications() == null
                 ? null : plugin.notifications().category("trade");
@@ -201,10 +175,6 @@ public class TradeLogService {
                 + ": " + PlainTextComponentSerializer.plainText().serialize(Msg.component(record.summary())));
     }
 
-    /**
-     * A one-line description of a trade, with colour codes when {@code plain} is
-     * {@code false} (they are translated for the console).
-     */
     public String summaryOf(TradeRecord record, boolean plain) {
         return plain ? Msg.color(record.summary()) : record.summary();
     }
@@ -240,16 +210,12 @@ public class TradeLogService {
         }
     }
 
-    /* ------------------------------------------------------------- reads --- */
-
-    /** The newest trades first, at most {@code limit} rows. */
     public List<TradeRecord> recent(int limit) {
         List<TradeRecord> list = new ArrayList<>(records.values());
         list.sort(Comparator.comparingLong(TradeRecord::createdAt).reversed());
         return list.size() <= limit ? list : list.subList(0, limit);
     }
 
-    /** The newest trades one player took part in. */
     public List<TradeRecord> recentFor(UUID uuid, int limit) {
         List<TradeRecord> list = new ArrayList<>();
         for (TradeRecord record : records.values()) {
@@ -265,9 +231,6 @@ public class TradeLogService {
         return records.size();
     }
 
-    /* -------------------------------------------------------------- purge --- */
-
-    /** Drops every record older than the configured retention window. */
     public int purge() {
         long cutoff = System.currentTimeMillis() - retentionMillis();
         List<String> expired = new ArrayList<>();
@@ -302,8 +265,6 @@ public class TradeLogService {
             database.markUnavailable();
         }
     }
-
-    /* -------------------------------------------------------- persistence --- */
 
     private void persist(TradeRecord record) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -402,7 +363,6 @@ public class TradeLogService {
         return row;
     }
 
-    /** Pushes the local history back into MySQL after a reconnect. */
     public void resyncToDatabase() {
         if (!database.isAvailable()) {
             return;
@@ -411,8 +371,6 @@ public class TradeLogService {
             persist(record);
         }
     }
-
-    /* ------------------------------------------------------------ helpers --- */
 
     private static String encode(ItemStack[] items) {
         StringBuilder text = new StringBuilder();

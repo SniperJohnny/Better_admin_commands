@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Teleports the sender to the spawn stored in spawn.yml. */
 public class Spawn_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

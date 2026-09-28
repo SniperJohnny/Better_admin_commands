@@ -11,7 +11,6 @@ import io.sniperjohnny.github.better_admin_commands.backup.BackupService;
 import io.sniperjohnny.github.better_admin_commands.report.ReportService;
 import io.sniperjohnny.github.better_admin_commands.report.Report_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Disabled_Command;
-import io.sniperjohnny.github.better_admin_commands.commands.FeatureDisabled_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Plugin_Command;
 import io.sniperjohnny.github.better_admin_commands.commands.Root_Command;
 import io.sniperjohnny.github.better_admin_commands.config.ConfigUpdater;
@@ -149,6 +148,7 @@ import io.sniperjohnny.github.better_admin_commands.commands.teleport.Warps_Comm
 import io.sniperjohnny.github.better_admin_commands.economy.Balance_Gui;
 import io.sniperjohnny.github.better_admin_commands.economy.Baltop_Gui;
 import io.sniperjohnny.github.better_admin_commands.economy.EconomyService;
+import io.sniperjohnny.github.better_admin_commands.economy.Sell_Gui;
 import io.sniperjohnny.github.better_admin_commands.economy.VaultEconomy;
 import io.sniperjohnny.github.better_admin_commands.jail.Jails_Gui;
 import io.sniperjohnny.github.better_admin_commands.mail.Mail_Gui;
@@ -171,6 +171,7 @@ import io.sniperjohnny.github.better_admin_commands.listeners.Chat_Listener;
 import io.sniperjohnny.github.better_admin_commands.listeners.Join_Listener;
 import io.sniperjohnny.github.better_admin_commands.listeners.Quit_Listener;
 import io.sniperjohnny.github.better_admin_commands.listeners.Respawn_Listener;
+import io.sniperjohnny.github.better_admin_commands.listeners.Vanish_Listener;
 import io.sniperjohnny.github.better_admin_commands.mail.MailService;
 import io.sniperjohnny.github.better_admin_commands.moderation.MuteService;
 import io.sniperjohnny.github.better_admin_commands.placeholder.NicknamePlaceholders;
@@ -193,6 +194,7 @@ import io.sniperjohnny.github.better_admin_commands.trade.Trade_Command;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.warp.WarpManager;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.PluginCommand;
@@ -204,6 +206,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
@@ -216,7 +219,6 @@ import java.util.Set;
 
 public final class Better_Admin_Commands extends JavaPlugin {
 
-    /** Name of the management command as declared in plugin.yml. */
     public static final String DEFAULT_ROOT_COMMAND = "betteradmincommands";
 
     private static Better_Admin_Commands instance;
@@ -272,6 +274,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private PowertoolService powerTools;
     private UnlimitedService unlimited;
     private WorthManager worth;
+    private Sell_Gui sellGui;
     private PlaytimeService playtime;
     private TradeService trades;
     private TradeLogService tradeLogs;
@@ -290,22 +293,20 @@ public final class Better_Admin_Commands extends JavaPlugin {
     private ConfigUpdater configUpdater;
     private Plugin_Command rootCommand;
     private Disabled_Command disabledCommand;
-    private FeatureDisabled_Command featureDisabledCommand;
     private FeatureService features;
 
-    /** The command declared in plugin.yml, kept so it can be registered back. */
     private PluginCommand declaredRoot;
-    /** Replacement command when commands.root-name is changed, else {@code null}. */
+
     private Root_Command customRoot;
-    /** Name the management command currently answers to. */
+
     private String rootLabel = DEFAULT_ROOT_COMMAND;
 
-    /** Executors and completers of every command, needed for the soft toggle. */
     private final Map<String, CommandExecutor> executors = new LinkedHashMap<>();
     private final Map<String, TabExecutor> completers = new LinkedHashMap<>();
+
+    private final Map<String, PluginCommand> releasedCommands = new LinkedHashMap<>();
     private final List<Listener> listeners = new ArrayList<>();
 
-    /** True while the plugin was switched off with /betteradmincommands disable. */
     private boolean disabled;
 
     @Override
@@ -314,7 +315,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         saveDefaultConfig();
         declaredRoot = getCommand(DEFAULT_ROOT_COMMAND);
         disabledCommand = new Disabled_Command(this);
-        featureDisabledCommand = new FeatureDisabled_Command(this);
 
         // Bring an older config.yml up to date before anything reads from it.
         // Missing options are added, values already in the file are left alone.
@@ -336,7 +336,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
             getLogger().warning("Could not create the plugin data folder.");
         }
 
-        // --- local safe files ----------------------------------------------
         // These always mirror the database, and become the source of truth
         // while the database is unreachable. They never require MySQL.
         File dataFolder = new File(getDataFolder(), "data");
@@ -357,7 +356,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         localShopItems.load();
         localTrades.load();
 
-        // --- storage -------------------------------------------------------
         // A missing database is not fatal: the plugin starts anyway and runs
         // from the local safe files until the connection comes back.
         database = new Database(this);
@@ -372,7 +370,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
                     + " minute(s).");
         }
 
-        // --- economy -------------------------------------------------------
         economy = new EconomyService(this, database, localPlayers);
         try {
             economy.loadAll();
@@ -381,7 +378,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         }
         registerVaultEconomy();
 
-        // --- files & data --------------------------------------------------
         spawns = new SpawnManager(this);
         spawns.load();
 
@@ -402,7 +398,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
             getLogger().severe("Could not load mutes: " + e.getMessage());
         }
 
-        // --- runtime services ----------------------------------------------
         teleports = new TeleportService(this);
         tpa = new TpaService(this);
         kits = new KitManager(this);
@@ -418,6 +413,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         powerTools = new PowertoolService(this);
         unlimited = new UnlimitedService(this);
         worth = new WorthManager(this);
+        sellGui = new Sell_Gui(this);
         playtime = new PlaytimeService(this);
         auctions = new AuctionService(this, database, localAuction);
         auctions.loadAll();
@@ -449,7 +445,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         jails = new JailManager(this);
         jails.load();
 
-        // --- wiring ---------------------------------------------------------
         rootCommand = new Plugin_Command(this);
         registerCommands();
         applyRootCommand();
@@ -481,14 +476,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         getLogger().info("Better_Admin_Commands disabled.");
     }
 
-    /* -------------------------------------------- config and soft toggle --- */
-
-    /**
-     * Reloads config.yml (adding any new options), the file based stores and the
-     * configured command name. Used by {@code /betteradmincommands reload}.
-     *
-     * @return the number of new options that were added to config.yml
-     */
     public int reloadAll() {
         int added = configUpdater.update();
         Msg.setPrefix(getConfig().getString("messages.prefix", "&8[&6BetterAdmin&8] &r"));
@@ -520,25 +507,14 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return added;
     }
 
-    /** Name the plugin management command currently answers to. */
     public String rootLabel() {
         return rootLabel;
     }
 
-    /** Whether the plugin was switched off with {@code /betteradmincommands disable}. */
     public boolean isPluginDisabled() {
         return disabled;
     }
 
-    /**
-     * Turns every feature of the plugin on or off without unloading it.
-     *
-     * <p>While it is off no listener runs, every command except the management
-     * command answers with a notice, and the repeating tasks are stopped.
-     * Balances are written back before the features stop, so a maintenance
-     * window cannot lose data. The plugin stays loaded, so replacing the jar
-     * file still needs a server restart.</p>
-     */
     public void setPluginDisabled(boolean value) {
         if (disabled == value) {
             return;
@@ -550,9 +526,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
                 economy.saveBlocking();
             }
             unregisterListeners();
-            for (String name : executors.keySet()) {
-                bind(name);
-            }
+            bindAll();
             getLogger().info("The plugin was disabled - only /" + rootLabel + " is still answering.");
             if (preferences != null) {
                 // Features are off, so the players get their name tags back.
@@ -561,9 +535,7 @@ public final class Better_Admin_Commands extends JavaPlugin {
         } else {
             registerListeners();
             startTasks();
-            for (String name : executors.keySet()) {
-                bind(name);
-            }
+            bindAll();
             // The displays of everyone who is online are re-applied, so the rank
             // prefixes and the hidden name tags come back with the features.
             if (preferences != null) {
@@ -575,12 +547,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         }
     }
 
-    /**
-     * Registers the management command under the name and aliases from
-     * config.yml. Command names cannot be changed once plugin.yml is loaded, so
-     * when the configured name differs the plugin.yml command is replaced by a
-     * {@link Root_Command} that is registered in the command map directly.
-     */
     private void applyRootCommand() {
         String configuredName = normalizeCommandName(getConfig().getString("commands.root-name", DEFAULT_ROOT_COMMAND));
         if (configuredName == null) {
@@ -644,7 +610,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         rootLabel = DEFAULT_ROOT_COMMAND;
     }
 
-    /** Puts the plugin.yml command back when the configured name was dropped. */
     private void registerDeclaredRoot(CommandMap commandMap) {
         if (declaredRoot == null || commandMap.getCommand(DEFAULT_ROOT_COMMAND) != null) {
             return;
@@ -652,7 +617,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         commandMap.register(getName().toLowerCase(Locale.ROOT), declaredRoot);
     }
 
-    /** Lowercases a configured command name, or {@code null} when it is unusable. */
     private static String normalizeCommandName(String value) {
         if (value == null) {
             return null;
@@ -664,7 +628,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return name.matches("[a-z0-9_\\-]{1,32}") ? name : null;
     }
 
-    /** The server's command map, or {@code null} when it cannot be reached. */
     private CommandMap commandMap() {
         try {
             Object server = getServer();
@@ -673,8 +636,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
             return null;
         }
     }
-
-    /* ------------------------------------------------------------ wiring --- */
 
     private void registerVaultEconomy() {
         if (!features.enabled("economy")) {
@@ -696,7 +657,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         getLogger().info("Registered the MySQL economy with Vault.");
     }
 
-    /** Starts every repeating task - on enable and after the plugin is switched back on. */
     private void startTasks() {
         if (features.enabled("economy")) {
             startSaveTask();
@@ -708,7 +668,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         startTradeTask();
     }
 
-    /** Stops every repeating task - on disable and when the plugin is switched off. */
     private void cancelTasks() {
         for (BukkitTask task : new BukkitTask[]{saveTask, afkTask, jailTask, reconnectTask, auctionTask,
                 tradeTask}) {
@@ -747,10 +706,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
                 this, () -> jailListener.checkExpired(), 20L * 15L, 20L * 15L);
     }
 
-    /**
-     * Periodically checks the database connection and, when it has just come
-     * back, pushes everything that was written to the local safe files.
-     */
     private void startReconnectTask() {
         long minutes = Math.max(1L, getConfig().getLong("database.reconnect-interval-minutes", 30L));
         long ticks = minutes * 60L * 20L;
@@ -763,11 +718,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         }, ticks, ticks);
     }
 
-    /**
-     * Forced by {@code /betteradmincommands reconnect}. Attempts the connection
-     * immediately and, when it succeeds, pushes the local safe files into the
-     * database. Returns whether the database is reachable afterwards.
-     */
     public boolean reconnectDatabase() {
         boolean nowAvailable = database.checkConnection();
         if (nowAvailable) {
@@ -776,7 +726,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return nowAvailable;
     }
 
-    /** Marks overdue auction listings as expired once a minute. */
     private void startAuctionTask() {
         if (!features.enabled("auction")) {
             return;
@@ -785,10 +734,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
                 this, () -> auctions.expire(), 20L * 60L, 20L * 60L);
     }
 
-    /**
-     * Drops trade records once they are older than the retention window, so the
-     * history stays at 48 hours by default. Runs every 10 minutes.
-     */
     private void startTradeTask() {
         if (!features.enabled("trade") || !getConfig().getBoolean("trade.log.enabled", true)) {
             return;
@@ -797,7 +742,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
                 () -> tradeLogs.purge(), 20L * 60L * 5L, 20L * 60L * 10L);
     }
 
-    /** Writes the local safe files back into the database after a reconnect. */
     private void resyncLocalToDatabase() {
         getLogger().info("Database is back - syncing the local safe files...");
         economy.resyncToDatabase();
@@ -810,9 +754,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         getLogger().info("Local safe files synced back into the database.");
     }
 
-    /* --------------------------------------------------------------- shop --- */
-
-    /** Runs the shop import at start-up when the shop is empty or a re-import was asked for. */
     private void importShopsIfNeeded() {
         if (!shops.enabled() || !shops.importOnStartup()) {
             return;
@@ -827,13 +768,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         getServer().getScheduler().runTask(this, this::importShops);
     }
 
-    /**
-     * Scans the EconomyShopGUI files and replaces the stored shop with what was
-     * found. Reading the files happens off the server thread; swapping the shop
-     * over happens back on it.
-     *
-     * @return a message describing what happened, for whoever asked (chat or log)
-     */
     public CompletableFuture<String> importShops() {
         CompletableFuture<String> future = new CompletableFuture<>();
         getServer().getScheduler().runTaskAsynchronously(this, () -> {
@@ -879,17 +813,16 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return future;
     }
 
-    /**
-     * Registers the listeners of every module that is switched on. Called on
-     * start-up, after a reload and whenever the plugin is switched back on, so it
-     * always starts by taking the previous listeners off again.
-     */
     private void registerListeners() {
         unregisterListeners();
         listen(new Join_Listener(this));
         listen(new Quit_Listener(this));
         listen(new Chat_Listener(this));
         listen(new Gui_Listener());
+        if (features.enabled("admin")) {
+            // Mobs ignoring a vanished player and containers opening silently.
+            listen(new Vanish_Listener(this));
+        }
         if (features.enabled("spawn")) {
             listen(new Respawn_Listener(this));
         }
@@ -901,6 +834,10 @@ public final class Better_Admin_Commands extends JavaPlugin {
             listen(new Unlimited_Listener(this));
             listen(new Disposal_Command.Disposal_Listener());
         }
+        if (features.enabled("economy")) {
+            // Sells the contents of the /sell window when it is closed.
+            listen(sellGui);
+        }
         if (features.enabled("trade")) {
             listen(new Trade_Listener(this));
         }
@@ -911,7 +848,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         }
     }
 
-    /** Takes every listener off again, so re-registering cannot double-handle events. */
     private void unregisterListeners() {
         for (Listener listener : listeners) {
             HandlerList.unregisterAll(listener);
@@ -919,11 +855,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         listeners.clear();
     }
 
-    /**
-     * Hands the nickname to PlaceholderAPI when it is installed, so a tab list
-     * or name tag plugin can render it. The expansion class is only touched when
-     * PlaceholderAPI is present, which keeps the dependency optional.
-     */
     private void registerPlaceholders() {
         if (!features.enabled("nick")
                 || getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
@@ -933,14 +864,13 @@ public final class Better_Admin_Commands extends JavaPlugin {
         getLogger().info("Registered the PlaceholderAPI expansion %betteradmincommands_nickname%.");
     }
 
-    /** Registers a listener and remembers it, so it can be taken off again. */
     private void listen(Listener listener) {
         getServer().getPluginManager().registerEvents(listener, this);
         listeners.add(listener);
     }
 
     private void registerCommands() {
-        // ---- admin ---------------------------------------------------------
+
         register("enchant", new Enchant_Command());
         register("gm", new Gamemode_Command(this));
         register("fly", new Fly_Command());
@@ -958,13 +888,11 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("kit", new Kit_Command(this));
         register("broadcast", new Broadcast_Command());
 
-        // ---- moderation ----------------------------------------------------
         register("kick", new Kick_Command());
         register("ban", new Ban_Command());
         register("mute", new Mute_Command(this));
         register("unmute", new Unmute_Command(this));
 
-        // ---- economy -------------------------------------------------------
         register("balance", new Balance_Command(this));
         register("baltop", new Baltop_Command(this));
         register("pay", new Pay_Command(this));
@@ -972,7 +900,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("eco", ecoCommand);
         register("trade", new Trade_Command(this));
 
-        // ---- teleporting ---------------------------------------------------
         register("spawn", new Spawn_Command(this));
         register("setspawn", new SetSpawn_Command(this));
         register("back", new Back_Command(this));
@@ -1010,13 +937,11 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("pweather", new Pweather_Command(this));
         register("world", new World_Command(this));
 
-        // ---- moderation ----------------------------------------------------
         register("tempban", new Tempban_Command());
         register("ipban", new Ipban_Command());
         register("kickall", new Kickall_Command());
         register("banlist", new Banlist_Command());
 
-        // ---- social --------------------------------------------------------
         register("msg", new Msg_Command(this));
         register("reply", new Reply_Command(this));
         register("socialspy", new SocialSpy_Command(this));
@@ -1025,7 +950,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("me", new Me_Command(this));
         register("mail", new Mail_Command(this));
 
-        // ---- info ----------------------------------------------------------
         register("whois", new Whois_Command(this));
         register("seen", new Seen_Command(this));
         register("list", new List_Command(this));
@@ -1033,17 +957,14 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("gc", new Gc_Command());
         register("afk", new Afk_Command(this));
 
-        // ---- homes ---------------------------------------------------------
         register("home", new Home_Command(this));
         register("sethome", new Sethome_Command(this));
         register("delhome", new Delhome_Command(this));
         register("homes", new Homes_Command(this));
 
-        // ---- teleport extras -----------------------------------------------
         register("tptoggle", new Tptoggle_Command(this));
         register("tpaall", new Tpaall_Command(this));
 
-        // ---- items ---------------------------------------------------------
         register("more", new More_Command());
         register("rename", new Rename_Command());
         register("lore", new Lore_Command());
@@ -1056,14 +977,12 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("disposal", new Disposal_Command());
         register("powertool", new Powertool_Command(this));
 
-        // ---- movement ------------------------------------------------------
         register("top", new Vertical_Command(this));
         register("bottom", new Vertical_Command(this));
         register("descend", new Vertical_Command(this));
         register("jump", new Jump_Command(this));
         register("rtp", new Rtp_Command(this));
 
-        // ---- world and mobs ------------------------------------------------
         register("break", new Break_Command());
         register("tree", new Tree_Command());
         register("bigtree", new Tree_Command());
@@ -1081,7 +1000,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("kill", new Kill_Command());
         register("suicide", new Suicide_Command());
 
-        // ---- jail ----------------------------------------------------------
         register("jail", new Jail_Command(this));
         register("setjail", new Setjail_Command(this));
         register("deljail", new Deljail_Command(this));
@@ -1089,7 +1007,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("unjail", new Unjail_Command(this));
         register("togglejail", new Togglejail_Command(this));
 
-        // ---- economy and info ----------------------------------------------
         register("worth", new Worth_Command(this));
         register("sell", new Sell_Command(this));
         register("depth", new Depth_Command());
@@ -1102,8 +1019,8 @@ public final class Better_Admin_Commands extends JavaPlugin {
         register("rules", new Rules_Command(this));
         register("unbanip", new Unbanip_Command());
 
-        // ---- plugin management ---------------------------------------------
         register(DEFAULT_ROOT_COMMAND, rootCommand);
+        bindAll();
     }
 
     private void register(String name, TabExecutor executor) {
@@ -1114,7 +1031,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         TabExecutor bound = audited(name, executor);
         executors.put(name, bound);
         completers.put(name, bound);
-        bind(name);
     }
 
     private void register(String name, CommandExecutor executor) {
@@ -1123,56 +1039,47 @@ public final class Better_Admin_Commands extends JavaPlugin {
             return;
         }
         executors.put(name, audited(name, executor));
-        bind(name);
     }
 
-    /**
-     * Wraps an administration command so its use is reported to the staff
-     * through the {@code /notify} system. Commands of other modules are returned
-     * untouched.
-     */
     private TabExecutor audited(String name, TabExecutor executor) {
         return isAdminCommand(name) ? Admin_Audit.wrap(executor) : executor;
     }
 
-    /** The same for a command that does not complete arguments. */
     private CommandExecutor audited(String name, CommandExecutor executor) {
         return isAdminCommand(name) ? Admin_Audit.wrap(executor) : executor;
     }
 
-    /** Whether a command belongs to the {@code admin} module. */
     private boolean isAdminCommand(String name) {
         return "admin".equals(features.moduleOf(name));
     }
 
-    /**
-     * Points one command at whoever has to answer it right now: its own executor,
-     * the "this feature is switched off" note or the "the plugin is disabled"
-     * note. Called for every command on start-up, after a reload and whenever the
-     * plugin or a module changes state, so the binding can never drift away from
-     * config.yml.
-     */
     private void bind(String name) {
         if (name.equals(DEFAULT_ROOT_COMMAND)) {
             return; // the management command stays usable, whatever else is off
         }
         PluginCommand command = getCommand(name);
+        if (command == null) {
+            // Switched off earlier - the command object is kept aside until its
+            // feature is switched on again.
+            command = releasedCommands.get(name);
+        }
         CommandExecutor executor = executors.get(name);
         if (command == null || executor == null) {
             return;
         }
+        if (!commandEnabled(name, command)) {
+            // A switched-off feature gives its command names away instead of
+            // answering with a note, so another plugin can take them over - a
+            // shop plugin can answer /shop while our shop module is off.
+            release(name, command);
+            return;
+        }
+        claim(name, command);
         TabExecutor completer = completers.get(name);
         if (disabled) {
             command.setExecutor(disabledCommand);
             if (completer != null) {
                 command.setTabCompleter(disabledCommand);
-            }
-            return;
-        }
-        if (!features.commandEnabled(name)) {
-            command.setExecutor(featureDisabledCommand);
-            if (completer != null) {
-                command.setTabCompleter(featureDisabledCommand);
             }
             return;
         }
@@ -1182,22 +1089,125 @@ public final class Better_Admin_Commands extends JavaPlugin {
         }
     }
 
-    /**
-     * Binds every command executor again. Used after another plugin that held one
-     * of our command names was switched off, so for example {@code /shop} answers
-     * with our shop instead of the disabled plugin's command.
-     */
-    public void rebindCommands() {
-        for (String name : executors.keySet()) {
+    private void bindAll() {
+        Set<String> before = new LinkedHashSet<>(releasedCommands.keySet());
+        for (String name : new ArrayList<>(executors.keySet())) {
             bind(name);
+        }
+        List<String> freed = new ArrayList<>(releasedCommands.keySet());
+        freed.removeAll(before);
+        List<String> taken = new ArrayList<>(before);
+        taken.removeAll(releasedCommands.keySet());
+        if (!freed.isEmpty()) {
+            getLogger().info("Switched off in config.yml, so not registered (the names are free"
+                    + " for other plugins): " + names(freed));
+        }
+        if (!taken.isEmpty()) {
+            getLogger().info("Switched on again, so registered: " + names(taken));
+        }
+        if (!freed.isEmpty() || !taken.isEmpty()) {
+            syncCommands();
         }
     }
 
-    /**
-     * Applies the module settings from config.yml again: listeners, command
-     * bindings and repeating tasks. Used by a reload, so switching a feature on or
-     * off in the file takes effect without a restart.
-     */
+    private boolean commandEnabled(String name, PluginCommand command) {
+        if (!features.commandEnabled(name)) {
+            return false;
+        }
+        for (String alias : command.getAliases()) {
+            if (features.disabledCommands().contains(alias.toLowerCase(Locale.ROOT))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void release(String name, PluginCommand command) {
+        if (releasedCommands.containsKey(name)) {
+            return; // already out of the map
+        }
+        CommandMap commandMap = commandMap();
+        Map<String, Command> known = commandMap == null ? null : knownCommands(commandMap);
+        if (known == null) {
+            return; // the command table is out of reach - the command keeps answering
+        }
+        releasedCommands.put(name, command);
+        command.unregister(commandMap);
+        for (String label : labelsOf(command)) {
+            // Only an entry that is ours is dropped, so a name another plugin
+            // holds is never taken away from it.
+            known.remove(label, command);
+        }
+    }
+
+    private void claim(String name, PluginCommand command) {
+        if (!releasedCommands.containsKey(name)) {
+            return; // never taken out of the map
+        }
+        CommandMap commandMap = commandMap();
+        if (commandMap == null) {
+            return;
+        }
+        releasedCommands.remove(name);
+        String prefix = getName().toLowerCase(Locale.ROOT);
+        if (!commandMap.register(prefix, command)) {
+            getLogger().warning("The command name '" + name + "' is owned by another plugin now - /"
+                    + name + " stays with it, this plugin answers as /" + prefix + ":" + name + ".");
+        }
+    }
+
+    public void rebindCommands() {
+        bindAll();
+    }
+
+    private Set<String> labelsOf(Command command) {
+        Set<String> labels = new LinkedHashSet<>();
+        labels.add(command.getName().toLowerCase(Locale.ROOT));
+        labels.add(command.getLabel().toLowerCase(Locale.ROOT));
+        for (String alias : command.getAliases()) {
+            labels.add(alias.toLowerCase(Locale.ROOT));
+        }
+        String fallback = getName().toLowerCase(Locale.ROOT) + ":";
+        for (String label : new ArrayList<>(labels)) {
+            labels.add(fallback + label);
+        }
+        return labels;
+    }
+
+    private Map<String, Command> knownCommands(CommandMap commandMap) {
+        for (Class<?> type = commandMap.getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                Field field = type.getDeclaredField("knownCommands");
+                field.setAccessible(true);
+                Object value = field.get(commandMap);
+                if (value instanceof Map<?, ?> known) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Command> commands = (Map<String, Command>) known;
+                    return commands;
+                }
+                return null;
+            } catch (NoSuchFieldException e) {
+                // Declared further up the class hierarchy - check the parent next.
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private void syncCommands() {
+        try {
+            Object server = getServer();
+            server.getClass().getMethod("syncCommands").invoke(server);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // Not every server flavour has it - the next join settles it.
+        }
+    }
+
+    private static String names(List<String> commands) {
+        return String.join(", ", commands.stream().map(name -> "/" + name).toList());
+    }
+
     public void applyFeatures() {
         if (!disabled) {
             registerListeners();
@@ -1207,32 +1217,26 @@ public final class Better_Admin_Commands extends JavaPlugin {
         rebindCommands();
     }
 
-    /**
-     * Explains a command this plugin cannot use. The usual reason is another
-     * plugin that declares the same name and got to it first, which would
-     * otherwise look like this plugin's command silently doing nothing.
-     */
     private void warnCommandUnavailable(String name) {
         getLogger().warning("Command '" + name + "' is not available to this plugin. Most likely "
                 + "another plugin also declares '/" + name + "' and won that name - check the "
                 + "start-up log for a duplicate command warning.");
     }
 
-    /**
-     * Commands this plugin registered that it can no longer reach, for example
-     * because another plugin took the name over.
-     */
     public List<String> unboundCommands() {
         List<String> unbound = new ArrayList<>();
         for (String name : executors.keySet()) {
-            if (!name.equals(DEFAULT_ROOT_COMMAND) && getCommand(name) == null) {
+            if (!name.equals(DEFAULT_ROOT_COMMAND) && getCommand(name) == null
+                    && !releasedCommands.containsKey(name)) {
                 unbound.add(name);
             }
         }
         return unbound;
     }
 
-    /* ----------------------------------------------------------- getters --- */
+    public List<String> unregisteredCommands() {
+        return new ArrayList<>(releasedCommands.keySet());
+    }
 
     public static Better_Admin_Commands get_Instance() {
         return instance;
@@ -1246,17 +1250,14 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return permissions;
     }
 
-    /** The feature modules from config.yml - which commands, listeners and tasks run. */
     public FeatureService features() {
         return features;
     }
 
-    /** The per-player toggles behind {@code /notify}. */
     public NotificationService notifications() {
         return notifications;
     }
 
-    /** The shared economy admin command behind /eco, /money and /balance. */
     public Eco_Command ecoCommand() {
         return ecoCommand;
     }
@@ -1305,7 +1306,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return nicks;
     }
 
-    /** The optional hook into the TAB plugin (tab list, name tags, sorting). */
     public TabService tabs() {
         return tabs;
     }
@@ -1366,6 +1366,10 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return worth;
     }
 
+    public Sell_Gui sellGui() {
+        return sellGui;
+    }
+
     public PlaytimeService playtime() {
         return playtime;
     }
@@ -1394,7 +1398,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return shopEditor;
     }
 
-    /** The /shop command, so the editor can hand control back to the normal view. */
     public Shop_Command shopCommand() {
         return shopCommand;
     }
@@ -1451,7 +1454,6 @@ public final class Better_Admin_Commands extends JavaPlugin {
         return chatPrompts;
     }
 
-    /** One-value input shown as a dialog (with a chat fallback for old clients). */
     public DialogPromptService dialogs() {
         return dialogs;
     }

@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Toggles invulnerability for a player. */
 public class God_Command implements TabExecutor {
 
     @Override

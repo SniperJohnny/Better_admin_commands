@@ -11,7 +11,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
-/** Keeps jailed players inside their cell and reports when their time is up. */
 public class Jail_Listener implements Listener {
 
     private final Better_Admin_Commands plugin;
@@ -57,7 +56,6 @@ public class Jail_Listener implements Listener {
         }
     }
 
-    /** Releases players whose jail time has run out and reminds the rest. */
     public void checkExpired() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             var entry = plugin.jails().entryOf(player.getUniqueId());

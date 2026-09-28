@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-/** Replies to the last private message. */
 public class Reply_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

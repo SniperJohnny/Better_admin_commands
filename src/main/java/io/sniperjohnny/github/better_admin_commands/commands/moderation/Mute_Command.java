@@ -14,10 +14,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Mutes a player for a duration such as 30m, 2h or 7d. Without a duration the
- * configured default is used, {@code perm} mutes permanently.
- */
 public class Mute_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

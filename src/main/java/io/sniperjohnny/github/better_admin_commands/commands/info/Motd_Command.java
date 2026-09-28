@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Shows the message of the day from config.yml. */
 public class Motd_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

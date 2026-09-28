@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Restores the health of a player and puts them out if they are burning. */
 public class Heal_Command implements TabExecutor {
 
     @Override

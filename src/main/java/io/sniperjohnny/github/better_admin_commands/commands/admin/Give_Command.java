@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Gives an item to a player. */
 public class Give_Command implements TabExecutor {
 
     @Override

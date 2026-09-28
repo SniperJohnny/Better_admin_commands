@@ -11,14 +11,6 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 
-/**
- * The personal time menu behind {@code /ptime}: one button per preset, plus a
- * reset and a custom tick count entered in a dialog.
- *
- * <p>The presets and the way a value is applied come from
- * {@link PersonalDisplay}, so the menu and the command always accept exactly the
- * same values.</p>
- */
 public class Ptime_Gui {
 
     private final Better_Admin_Commands plugin;

@@ -10,14 +10,8 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The richest-players menu behind {@code /baltop}. One head per player, with the
- * rank in front of the name, paged, plus a button showing where the viewer
- * stands so they do not have to page through to find themselves.
- */
 public class Baltop_Gui {
 
-    /** How many players the leaderboard looks at. */
     private static final int LIMIT = 200;
 
     private final Better_Admin_Commands plugin;
@@ -76,7 +70,6 @@ public class Baltop_Gui {
         menu.open(player);
     }
 
-    /** The button that says where the viewer stands, even when they are far down. */
     private org.bukkit.inventory.ItemStack ownRank(List<EconomyService.BalanceEntry> entries, Player player) {
         int rank = 0;
         for (int index = 0; index < entries.size(); index++) {
@@ -95,7 +88,6 @@ public class Baltop_Gui {
                 "&7Your balance: &a" + plugin.economy().format(balance));
     }
 
-    /** A colour cue for the top three places. */
     private static String medal(int rank) {
         return switch (rank) {
             case 1 -> "&6#1 ";

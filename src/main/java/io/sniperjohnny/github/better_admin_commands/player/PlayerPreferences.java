@@ -25,22 +25,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Per player settings that do not deserve their own column: nickname,
- * social spy, teleport requests toggle, ignore list and the afk flag.
- *
- * They live in the {@code player_settings} key/value table so new settings can
- * be added without a database migration.
- */
 public class PlayerPreferences {
 
     public static final String NICKNAME = "nickname";
     public static final String NICK_GROUP = "nick_group";
-    /** Stored as the nick prefix when a player asked for no prefix at all. */
+
     public static final String PREFIX_NONE = "-";
-    /** Start of every scoreboard team created to hide a player's name tag. */
+
     private static final String NAME_TAG_TEAM_PREFIX = "bacn";
-    /** Packed {@code value|signature|source} of a skin borrowed with /skinchange. */
+
     public static final String SKIN = "skin";
     public static final String SOCIAL_SPY = "socialspy";
     public static final String TELEPORT_TOGGLE = "tptoggle";
@@ -59,11 +52,6 @@ public class PlayerPreferences {
         this.local = local;
     }
 
-    /**
-     * Loads all settings of a player. Called synchronously when they join. Uses
-     * the local safe file while MySQL is unavailable and refreshes the safe file
-     * when the database is the source.
-     */
     public void load(Player player) {
         Map<String, String> settings = new ConcurrentHashMap<>();
         if (database.isAvailable()) {
@@ -120,7 +108,6 @@ public class PlayerPreferences {
         return row;
     }
 
-    /** Removes the cached settings when a player leaves. */
     public void unload(UUID uuid) {
         cache.remove(uuid);
         lastReplyTarget.remove(uuid);
@@ -156,44 +143,23 @@ public class PlayerPreferences {
         set(uuid, key, Boolean.toString(value));
     }
 
-    /* --------------------------------------------------------- nickname --- */
-
     public String nickname(UUID uuid) {
         return settings(uuid).get(NICKNAME);
     }
 
-    /**
-     * The nickname of a player with every colour code stripped, or {@code null}
-     * when no nickname is set. This is the form that is used as a command
-     * argument and in tab completion, where colour codes would only get in the
-     * way.
-     */
     public String plainNickname(UUID uuid) {
         String nickname = nickname(uuid);
         return nickname == null ? null : stripColor(nickname);
     }
 
-    /** Removes legacy {@code &} and section-sign colour codes from a string. */
     public static String stripColor(String value) {
         return value == null ? null : value.replaceAll("(?i)[&\u00A7][0-9a-fk-or]", "");
     }
 
-    /**
-     * The LuckPerms group whose prefix is shown in front of the nickname.
-     * {@code null} means "use the player's own rank", {@link #PREFIX_NONE} means
-     * "no prefix at all".
-     */
     public String nicknameGroup(UUID uuid) {
         return settings(uuid).get(NICK_GROUP);
     }
 
-    /**
-     * The nickname prefix as a legacy string, never {@code null}.
-     *
-     * <p>When no group is stored the player's own rank prefix is used, so a worn
-     * rank shows up with the nickname without anyone naming a group. A stored
-     * {@link #PREFIX_NONE} suppresses the prefix entirely.</p>
-     */
     public String nicknamePrefix(UUID uuid) {
         String group = nicknameGroup(uuid);
         if (PREFIX_NONE.equals(group)) {
@@ -207,39 +173,17 @@ public class PlayerPreferences {
         return prefix == null ? "" : prefix;
     }
 
-    /**
-     * The nickname with its group prefix as a legacy string, or {@code null}
-     * when no nickname is set. Used to hand the nickname to placeholders such as
-     * the ones a tab list plugin reads.
-     */
     public String nicknameDisplay(UUID uuid) {
         String nickname = nickname(uuid);
         return nickname == null ? null : nicknamePrefix(uuid) + nickname;
     }
 
-    /**
-     * The name a player is shown with everywhere in the plugin: the rank prefix
-     * (the player's own rank, or the group borrowed with {@code /nick}) followed
-     * by the nickname, or the real name when no nickname is set.
-     *
-     * <p>Returns a legacy string, so it can be dropped into the existing
-     * {@code &}-code messages.</p>
-     */
     public String displayName(UUID uuid, String realName) {
         String nickname = nickname(uuid);
         String base = nickname == null ? (realName == null ? "" : realName) : nickname;
         return nicknamePrefix(uuid) + base;
     }
 
-    /**
-     * Applies the stored nickname and its rank prefix.
-     *
-     * <p>With TAB installed the tab list name, the borrowed rank and the hidden
-     * name tag are handed to TAB. Without it the display name and the tab list
-     * entry are set directly, and the name tags are hidden with scoreboard
-     * teams. A vanished player additionally gets the configured cue in the tab
-     * list, so the staff who are allowed to see them can tell them apart.</p>
-     */
     public void applyNickname(Player player) {
         Component shown = tabName(player.getUniqueId(), player.getName());
         player.displayName(shown);
@@ -255,32 +199,15 @@ public class PlayerPreferences {
         updateNameTag(player);
     }
 
-    /**
-     * The name shown for a player in the tab list and above their head. It is the
-     * rank prefix plus the nickname, or the rank prefix plus the real name when
-     * no nickname is set - so a rank stays visible even without a nickname.
-     */
     public Component tabName(UUID uuid, String realName) {
         return LegacyComponentSerializer.legacyAmpersand()
                 .deserialize(displayName(uuid, realName));
     }
 
-    /** Whether the name tag above players' heads is hidden (config: {@code nick.hide-nametag}). */
     public boolean hideNameTags() {
         return plugin.getConfig().getBoolean("nick.hide-nametag", true);
     }
 
-    /**
-     * Hides or shows the name tags above every player's head from {@code /nametags}.
-     *
-     * <p>The choice is written back into config.yml ({@code nick.hide-nametag}), so
-     * it survives a restart, and it is applied to everyone who is online right
-     * away - hiding is on by default, so a server owner only has to turn it off
-     * to bring the tags back.</p>
-     *
-     * @param hidden {@code true} to hide the name tags, {@code false} to show them
-     * @return the state that was stored, i.e. {@code hidden}
-     */
     public boolean setNameTagsHidden(boolean hidden) {
         plugin.getConfig().set("nick.hide-nametag", hidden);
         plugin.saveConfig();
@@ -290,17 +217,6 @@ public class PlayerPreferences {
         return hidden;
     }
 
-    /**
-     * Hides the name tag above a player's head, by putting them into a scoreboard
-     * team whose name tag visibility is off.
-     *
-     * <p>This is the fallback for a server without TAB, or with TAB's name tag
-     * feature switched off - then TAB hides the tag itself. The tag is hidden for
-     * <em>every</em> player, nick or not, so the tab list is the only place a
-     * name shows. {@code nick.hide-nametag} (on by default) turns this off for
-     * servers where another plugin relies on the scoreboard teams; the team this
-     * plugin created is then removed again.</p>
-     */
     private void updateNameTag(Player player) {
         boolean hide = hideNameTags() && !plugin.tabs().nameTagsAvailable();
         String teamName = nameTagTeam(player.getUniqueId());
@@ -325,11 +241,6 @@ public class PlayerPreferences {
         }
     }
 
-    /**
-     * Puts every player back into their hidden name tag team. Called when someone
-     * joins, because a scoreboard plugin may have handed them a scoreboard of
-     * their own that knows nothing about the teams yet.
-     */
     public void refreshNameTags(Player joiner) {
         ScoreboardManager manager = plugin.getServer().getScoreboardManager();
         if (manager == null || joiner.getScoreboard() == manager.getMainScoreboard()) {
@@ -340,7 +251,6 @@ public class PlayerPreferences {
         }
     }
 
-    /** Every scoreboard a name tag team has to exist on. */
     private Set<Scoreboard> scoreboards() {
         Set<Scoreboard> boards = new LinkedHashSet<>();
         ScoreboardManager manager = plugin.getServer().getScoreboardManager();
@@ -354,10 +264,6 @@ public class PlayerPreferences {
         return boards;
     }
 
-    /**
-     * Removes every name tag team this plugin created, so the name tags come back
-     * when the plugin is switched off or unloaded.
-     */
     public void removeNameTagTeams() {
         for (Scoreboard board : scoreboards()) {
             for (Team team : new ArrayList<>(board.getTeams())) {
@@ -368,7 +274,6 @@ public class PlayerPreferences {
         }
     }
 
-    /** Removes the name tag team of one player, used when they leave. */
     private void removeNameTagTeam(UUID uuid) {
         if (plugin.getServer().getScoreboardManager() == null) {
             return;
@@ -382,54 +287,36 @@ public class PlayerPreferences {
         }
     }
 
-    /** A scoreboard team name that fits the 16 character limit. */
     private static String nameTagTeam(UUID uuid) {
         return NAME_TAG_TEAM_PREFIX + uuid.toString().replace("-", "").substring(0, 12);
     }
 
-    /** The tab list marker for vanished players, configured under moderation. */
     private Component vanishCue() {
         return LegacyComponentSerializer.legacyAmpersand().deserialize(vanishCueText());
     }
 
-    /** The same marker as a legacy string, for TAB's string-based API. */
     private String vanishCueText() {
         return plugin.getConfig().getString("moderation.vanish-tab-cue", "&7[&8V&7] &r");
     }
 
-    /** Changes the nickname, keeping the group prefix that is already set. */
     public void setNickname(Player player, String nickname) {
         setNickname(player, nickname, nicknameGroup(player.getUniqueId()));
     }
 
-    /**
-     * Sets the nickname and the LuckPerms group whose prefix is shown with it.
-     * A {@code null} nickname or group removes that part.
-     */
     public void setNickname(Player player, String nickname, String group) {
         set(player.getUniqueId(), NICKNAME, nickname);
         set(player.getUniqueId(), NICK_GROUP, group);
         applyNickname(player);
     }
 
-    /* ----------------------------------------------------- notifications --- */
-
-    /**
-     * Whether a player left a notification switched on. An unset value falls
-     * back to the configured default, so a new notification is on until someone
-     * turns it off.
-     */
     public boolean notificationEnabled(UUID uuid, String category, boolean fallback) {
         String value = settings(uuid).get("notify." + category);
         return value == null ? fallback : Boolean.parseBoolean(value);
     }
 
-    /** Stores a notification toggle; {@code null} restores the configured default. */
     public void setNotification(UUID uuid, String category, Boolean value) {
         set(uuid, "notify." + category, value == null ? null : Boolean.toString(value));
     }
-
-    /* ----------------------------------------------------------- ignore --- */
 
     public Set<String> ignored(UUID uuid) {
         String raw = settings(uuid).get(IGNORE);
@@ -449,7 +336,6 @@ public class PlayerPreferences {
         return ignored(uuid).contains(name.toLowerCase(Locale.ROOT));
     }
 
-    /** Toggles a name on the ignore list, returning the new state. */
     public boolean toggleIgnore(UUID uuid, String name) {
         Set<String> names = new LinkedHashSet<>(ignored(uuid));
         String key = name.toLowerCase(Locale.ROOT);
@@ -464,8 +350,6 @@ public class PlayerPreferences {
         set(uuid, IGNORE, names.isEmpty() ? null : String.join(",", names));
         return nowIgnored;
     }
-
-    /* -------------------------------------------------------- last reply --- */
 
     public void setLastReplyTarget(UUID uuid, UUID target) {
         if (target == null) {
@@ -487,21 +371,16 @@ public class PlayerPreferences {
         }
     }
 
-    /* ------------------------------------------------------------ backup --- */
-
-    /** Every key of a single player, used by features with dynamic keys. */
     public Map<String, String> allEntries(UUID uuid) {
         return Map.copyOf(settings(uuid));
     }
 
-    /** Every loaded setting, used by the backup command. */
     public Map<UUID, Map<String, String>> all() {
         Map<UUID, Map<String, String>> copy = new LinkedHashMap<>();
         cache.forEach((uuid, map) -> copy.put(uuid, Map.copyOf(map)));
         return copy;
     }
 
-    /** Settings of players who are not online, read from the database or the local safe file. */
     public List<Map<String, Object>> readAllFromDatabase() throws SQLException {
         if (!database.isAvailable()) {
             return local.snapshot();
@@ -523,10 +402,6 @@ public class PlayerPreferences {
         });
     }
 
-    /**
-     * Replaces the settings table with the local safe file after a reconnect.
-     * The safe file is a complete mirror, so deletions propagate too.
-     */
     public void resyncToDatabase() {
         if (!database.isAvailable()) {
             return;

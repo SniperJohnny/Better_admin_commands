@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Removes an IP ban, accepting either an address or a player name. */
 public class Unbanip_Command implements TabExecutor {
 
     @Override

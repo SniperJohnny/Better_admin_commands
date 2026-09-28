@@ -16,12 +16,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Offline messages (mail) stored in the {@code mail} table.
- */
 public class MailService {
 
-    /** A single stored mail message. */
     public record Mail(long id, UUID senderUuid, String senderName, UUID targetUuid,
                        String message, long sentAt, boolean read) {
     }
@@ -36,11 +32,6 @@ public class MailService {
         this.local = local;
     }
 
-    /**
-     * Runs one piece of mail work off the main thread and reports when it is
-     * done, so a menu can redraw only after a write has actually landed instead
-     * of racing it.
-     */
     private CompletableFuture<Void> runAsync(Runnable work) {
         CompletableFuture<Void> done = new CompletableFuture<>();
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -53,11 +44,6 @@ public class MailService {
         return done;
     }
 
-    /**
-     * Stores a new message. Runs asynchronously. Always mirrored locally.
-     *
-     * @return completed once the message is stored (or locally mirrored)
-     */
     public CompletableFuture<Void> send(Player sender, UUID target, String message) {
         long sentAt = System.currentTimeMillis();
         String key = UUID.randomUUID().toString();
@@ -89,7 +75,6 @@ public class MailService {
         });
     }
 
-    /** All messages of a player, oldest first. */
     public List<Mail> inbox(UUID uuid, boolean onlyUnread) throws SQLException {
         if (database.isAvailable()) {
             String sql = "SELECT * FROM `" + database.table("mail") + "` WHERE `target_uuid` = ?"
@@ -162,7 +147,6 @@ public class MailService {
         }
     }
 
-    /** Number of unread messages. */
     public int unreadCount(UUID uuid) {
         if (database.isAvailable()) {
             try {
@@ -184,7 +168,6 @@ public class MailService {
         return localInbox(uuid, true).size();
     }
 
-    /** Marks every message of a player as read. */
     public CompletableFuture<Void> markAllRead(UUID uuid) {
         return runAsync(() -> {
             local.updateWhere(row -> uuid.toString().equals(LocalStore.string(row, "target_uuid")),
@@ -208,11 +191,6 @@ public class MailService {
         });
     }
 
-    /**
-     * Marks one message as read. Matched by target and send time, so it works
-     * both against the database and against the local safe file - the local rows
-     * carry no auto-increment id.
-     */
     public CompletableFuture<Void> markRead(UUID target, Mail mail) {
         if (target == null || mail == null) {
             return CompletableFuture.completedFuture(null);
@@ -240,7 +218,6 @@ public class MailService {
         });
     }
 
-    /** Deletes a single message of a player. */
     public CompletableFuture<Void> delete(UUID target, Mail mail) {
         if (target == null || mail == null) {
             return CompletableFuture.completedFuture(null);
@@ -268,13 +245,11 @@ public class MailService {
         });
     }
 
-    /** Whether a safe-file row is the given message of the given player. */
     private static boolean matches(UUID target, Mail mail, Map<String, Object> row) {
         return target.toString().equals(LocalStore.string(row, "target_uuid"))
                 && LocalStore.longValue(row, "sent_at", -1L) == mail.sentAt();
     }
 
-    /** Deletes every message of a player. */
     public CompletableFuture<Void> clear(UUID uuid) {
         return runAsync(() -> {
             local.deleteWhere(row -> uuid.toString().equals(LocalStore.string(row, "target_uuid")));
@@ -297,7 +272,6 @@ public class MailService {
         });
     }
 
-    /** Raw rows used by the backup command. */
     public List<Map<String, Object>> readAll() throws SQLException {
         if (!database.isAvailable()) {
             return local.snapshot();
@@ -319,10 +293,6 @@ public class MailService {
         });
     }
 
-    /**
-     * Appends every locally stored message that the database does not know yet.
-     * Messages are matched on sender, target and timestamp to avoid duplicates.
-     */
     public void resyncToDatabase() {
         if (!database.isAvailable()) {
             return;

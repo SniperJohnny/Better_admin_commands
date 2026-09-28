@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Opens an ender chest. */
 public class Enderchest_Command implements TabExecutor {
 
     @Override

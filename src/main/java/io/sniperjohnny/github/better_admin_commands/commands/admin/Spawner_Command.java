@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Changes the type of a mob spawner. */
 public class Spawner_Command implements TabExecutor {
 
     @Override

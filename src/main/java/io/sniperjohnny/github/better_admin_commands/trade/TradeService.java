@@ -16,21 +16,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Player to player trading.
- *
- * <p>{@code /trade <player>} first asks the other side to accept (unless
- * {@code trade.require-accept} is off) and then opens two windows, one per
- * player. Each side drops items and money into their own half and confirms;
- * when both sides confirm, the offers are exchanged and the trade is written to
- * the history.</p>
- *
- * <p>Every failure path returns whatever was placed back to its owner, so a
- * closed window, a disconnect or too little money can never eat an item.</p>
- */
 public class TradeService {
 
-    /** A pending trade request, keyed by the player who has to answer it. */
     private record Request(UUID requester, long expiresAt) {
     }
 
@@ -41,8 +28,6 @@ public class TradeService {
     public TradeService(Better_Admin_Commands plugin) {
         this.plugin = plugin;
     }
-
-    /* ------------------------------------------------------------ config --- */
 
     public boolean enabled() {
         // Honours both the module switch and the older trade.enabled key.
@@ -61,14 +46,10 @@ public class TradeService {
         return sessions.containsKey(uuid);
     }
 
-    /** The open session of a player, or {@code null} when they are not trading. */
     public TradeSession sessionOf(Player player) {
         return player == null ? null : sessions.get(player.getUniqueId());
     }
 
-    /* ---------------------------------------------------------- requests --- */
-
-    /** Starts a trade with a player, asking them first when that is configured. */
     public void request(Player requester, Player target) {
         if (!enabled()) {
             Msg.error(requester, "Trading is disabled on this server.");
@@ -106,7 +87,6 @@ public class TradeService {
         target.sendMessage(line);
     }
 
-    /** Accepts a pending request, opening the trade window. */
     public void accept(Player target, String requesterName) {
         Request request = requests.get(target.getUniqueId());
         if (request == null) {
@@ -135,7 +115,6 @@ public class TradeService {
         Msg.send(requester, "&a" + target.getName() + " accepted your trade request.");
     }
 
-    /** Declines a pending request. */
     public void deny(Player target, String requesterName) {
         Request request = requests.remove(target.getUniqueId());
         if (request == null) {
@@ -148,8 +127,6 @@ public class TradeService {
             Msg.send(requester, "&c" + target.getName() + " declined your trade request.");
         }
     }
-
-    /* ---------------------------------------------------------- sessions --- */
 
     private void open(Player first, Player second) {
         if (isTrading(first.getUniqueId()) || isTrading(second.getUniqueId())) {
@@ -171,7 +148,6 @@ public class TradeService {
         Msg.send(second, "&7Trading with &f" + first.getName() + "&7. Add items and confirm when ready.");
     }
 
-    /** Redraws both windows from the current state. */
     public void render(TradeSession session) {
         if (session.isFinished()) {
             return;
@@ -181,12 +157,6 @@ public class TradeService {
         }
     }
 
-    /**
-     * Reopens the window of one side after a dialog answered. Opening the dialog
-     * closed the window without cancelling the trade, so this puts the player
-     * back where they were. Does nothing when the trade ended meanwhile or when
-     * the window is already open again.
-     */
     public void reopen(TradeSession session, Player player) {
         if (session == null || session.isFinished()) {
             return;
@@ -285,9 +255,6 @@ public class TradeService {
                 : Items.of(Material.RED_CONCRETE, "&cThey have not confirmed yet");
     }
 
-    /* ------------------------------------------------------------ actions --- */
-
-    /** Called when a player changes their offer; both confirmations are cleared. */
     public void offerChanged(TradeSession session) {
         if (session.isFinished()) {
             return;
@@ -296,7 +263,6 @@ public class TradeService {
         render(session);
     }
 
-    /** Sets the money one side offers. */
     public void setMoney(Player player, double amount) {
         TradeSession session = sessions.get(player.getUniqueId());
         if (session == null || session.isFinished()) {
@@ -307,7 +273,6 @@ public class TradeService {
         Msg.send(player, "&7You now offer &f" + plugin.economy().format(amount) + "&7.");
     }
 
-    /** Confirms or un-confirms and, when both sides are ready, completes the trade. */
     public void toggleConfirm(Player player) {
         TradeSession session = sessions.get(player.getUniqueId());
         if (session == null || session.isFinished()) {
@@ -336,7 +301,6 @@ public class TradeService {
         }
     }
 
-    /** Cancels the trade of a player, returning everything they placed. */
     public void cancel(Player player, String reason) {
         TradeSession session = sessions.get(player.getUniqueId());
         if (session != null) {
@@ -344,7 +308,6 @@ public class TradeService {
         }
     }
 
-    /** Cancels a session that is no longer driven by a specific player. */
     public void cancel(TradeSession session, String reason) {
         if (session.isFinished()) {
             return;
@@ -450,7 +413,6 @@ public class TradeService {
         secondPlayer.playSound(secondPlayer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.4f);
     }
 
-    /** Handles a player leaving; their partner is told and the trade is undone. */
     public void onQuit(Player player) {
         requests.remove(player.getUniqueId());
         TradeSession session = sessions.get(player.getUniqueId());
@@ -464,7 +426,6 @@ public class TradeService {
         }
     }
 
-    /** Number of trades currently open, shown by {@code /bac info}. */
     public int openCount() {
         return sessions.size() / 2;
     }

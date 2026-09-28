@@ -9,11 +9,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-/**
- * Registers the player account in the economy, loads their settings, applies the
- * nickname and borrowed skin, and handles spawn and vanish rules when someone
- * joins.
- */
 public class Join_Listener implements Listener {
 
     private final Better_Admin_Commands plugin;

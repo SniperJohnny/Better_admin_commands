@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Kills yourself. */
 public class Suicide_Command implements TabExecutor {
 
     @Override

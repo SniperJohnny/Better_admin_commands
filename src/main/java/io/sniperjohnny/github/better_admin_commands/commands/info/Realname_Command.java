@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Finds the player behind a nickname. */
 public class Realname_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

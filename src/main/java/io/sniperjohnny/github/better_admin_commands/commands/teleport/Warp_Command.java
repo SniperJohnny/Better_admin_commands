@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Teleports the sender to a named warp. */
 public class Warp_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

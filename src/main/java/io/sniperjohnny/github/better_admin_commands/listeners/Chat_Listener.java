@@ -12,19 +12,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
-/**
- * Handles the chat side of the plugin: GUI prompts are swallowed, muted players
- * are blocked, and messages are rendered with the player's nickname.
- *
- * <p>The renderer runs at {@link EventPriority#LOWEST}, so a chat formatting
- * plugin that sets its own renderer at a later priority replaces this one. When
- * nobody else formats chat, this keeps {@code /nick} and the player's rank
- * prefix working in chat without any extra setup. The real name behind a
- * nickname is never revealed here.</p>
- */
 public class Chat_Listener implements Listener {
 
-    /** Lets a player use '&' colour codes in their own chat messages. */
     private static final String COLOR_PERMISSION = "betteradmincommands.chat.color";
 
     private static final String NICK_TOKEN = "%nickname%";
@@ -74,17 +63,12 @@ public class Chat_Listener implements Listener {
                 render(source, message));
     }
 
-    /**
-     * Builds one chat line from the player's rank prefix and nickname (or real
-     * name when no nickname is set).
-     */
     private Component render(Player source, Component message) {
         Component name = plugin.preferences().tabName(source.getUniqueId(), source.getName());
         return format(plugin.getConfig().getString("nick.chat-format", "&f<%nickname%>&r %message%"),
                 name, message);
     }
 
-    /** Fills {@code %nickname%} and {@code %message%} into the configured format. */
     private static Component format(String template, Component nickname, Component message) {
         if (template == null || template.isEmpty()) {
             return Component.text("<").append(nickname).append(Component.text("> ")).append(message);

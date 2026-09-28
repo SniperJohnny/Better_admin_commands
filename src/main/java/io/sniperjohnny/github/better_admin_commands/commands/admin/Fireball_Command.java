@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Launches a fireball in the direction you are looking. */
 public class Fireball_Command implements TabExecutor {
 
     @Override

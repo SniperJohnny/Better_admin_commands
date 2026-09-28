@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-/** Accepts a pending teleport request. */
 public class Tpaccept_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

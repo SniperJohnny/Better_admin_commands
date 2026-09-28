@@ -9,11 +9,6 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 
-/**
- * The unlimited-items menu behind {@code /unlimited}: a switch that shows the
- * current state instead of a command whose effect you have to remember, and -
- * for staff - who else has it turned on.
- */
 public class Unlimited_Gui {
 
     private final Better_Admin_Commands plugin;
@@ -66,7 +61,6 @@ public class Unlimited_Gui {
         menu.open(player);
     }
 
-    /** Lists everyone with the mode on, so staff can see it at a glance. */
     private void showActive(Player player) {
         List<String> names = plugin.unlimited().activePlayers();
         int rows = Math.max(3, Math.min(6, plugin.getConfig().getInt("unlimited.gui-rows", 4)));

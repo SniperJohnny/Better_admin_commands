@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Shows the inventory of another player. */
 public class Invsee_Command implements TabExecutor {
 
     @Override

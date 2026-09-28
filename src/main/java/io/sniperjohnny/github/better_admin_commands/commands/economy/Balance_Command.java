@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Shows the balance of the sender or of another player. */
 public class Balance_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -58,7 +57,6 @@ public class Balance_Command implements TabExecutor {
         return true;
     }
 
-    /** True when the first argument names an economy action (for tab completion). */
     private static boolean isAction(String value) {
         return switch (value.toLowerCase(java.util.Locale.ROOT)) {
             case "give", "add", "take", "remove", "reduce", "set", "reset", "resetall",

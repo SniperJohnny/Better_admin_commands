@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Lists every online player, each with their rank prefix and nickname. */
 public class List_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

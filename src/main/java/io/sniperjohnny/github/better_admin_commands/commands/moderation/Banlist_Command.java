@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-/** Shows every ban, both names and IPs. */
 public class Banlist_Command implements TabExecutor {
 
     @Override

@@ -22,24 +22,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * The auction house store.
- *
- * <p>Listings are kept in memory the whole time the server runs (like balances),
- * mirrored into {@code data/auction.yml} on every change and pushed to MySQL in
- * the background, so neither buying nor selling ever blocks the server thread on
- * the database.</p>
- *
- * <p>Each listing keeps its own serialized {@link ItemStack}; when it expires or
- * is cancelled the item waits in the seller's claims instead of being dropped.</p>
- */
 public class AuctionService {
 
     public static final String ACTIVE = "ACTIVE";
     public static final String EXPIRED = "EXPIRED";
     public static final String CANCELLED = "CANCELLED";
 
-    /** One auction listing. {@code expiresAt == 0} means it never expires. */
     public record Listing(String id, UUID sellerUuid, String sellerName, ItemStack item, double price,
                           long createdAt, long expiresAt, String state, boolean claimed, String buyerName) {
 
@@ -52,7 +40,6 @@ public class AuctionService {
 
     public enum BuyResult { SUCCESS, NOT_FOUND, OWN_LISTING, TOO_POOR, NO_SPACE }
 
-    /** The orders the browse menu offers. */
     public enum Sort {
         NEWEST("Newest first"),
         OLDEST("Oldest first"),
@@ -70,7 +57,6 @@ public class AuctionService {
             return label;
         }
 
-        /** The next order, so one button can cycle through all of them. */
         public Sort next() {
             Sort[] values = values();
             return values[(ordinal() + 1) % values.length];
@@ -99,8 +85,6 @@ public class AuctionService {
         this.local = local;
     }
 
-    /* ------------------------------------------------------------ config --- */
-
     public boolean enabled() {
         // Honours both the module switch and the older auction.enabled key.
         return plugin.features().enabled("auction");
@@ -110,22 +94,18 @@ public class AuctionService {
         return Math.max(3, Math.min(6, plugin.getConfig().getInt("auction.gui-rows", 6)));
     }
 
-    /** How long an active listing stays up, in hours; {@code 0} means never. */
     public long listingHours() {
         return Math.max(0L, plugin.getConfig().getLong("auction.listing-hours", 48L));
     }
 
-    /** How many active listings one player may have at once. */
     public int maxListings() {
         return Math.max(1, plugin.getConfig().getInt("auction.max-listings-per-player", 10));
     }
 
-    /** Share of a sale the server keeps, as a percentage. */
     public double taxPercent() {
         return percent("auction.tax-percent", 0.0);
     }
 
-    /** Fee charged when listing, as a percentage of the price. */
     public double listingFeePercent() {
         return percent("auction.listing-fee-percent", 0.0);
     }
@@ -143,9 +123,6 @@ public class AuctionService {
         return Math.max(minPrice(), plugin.getConfig().getDouble("auction.max-price", 1_000_000_000.0));
     }
 
-    /* -------------------------------------------------------------- load --- */
-
-    /** Reads every listing into memory, preferring MySQL and falling back locally. */
     public void loadAll() {
         listings.clear();
         if (database.isAvailable()) {
@@ -242,8 +219,6 @@ public class AuctionService {
         return row;
     }
 
-    /* ------------------------------------------------------------ reads --- */
-
     public List<Listing> active() {
         return listings.values().stream()
                 .filter(Listing::isActive)
@@ -251,14 +226,6 @@ public class AuctionService {
                 .toList();
     }
 
-    /**
-     * The active listings a buyer sees: optionally filtered by a search term and
-     * always in the chosen order.
-     *
-     * <p>The search term is matched against the item's type name, its custom
-     * display name and the seller's name, all case-insensitively, so "diamond"
-     * finds diamond listings and "sniper" finds listings by SniperJohnny.</p>
-     */
     public List<Listing> browse(String query, Sort sort) {
         String needle = query == null ? "" : query.trim().toLowerCase(java.util.Locale.ROOT);
         Sort order = sort == null ? Sort.NEWEST : sort;
@@ -277,7 +244,6 @@ public class AuctionService {
                 && listing.sellerName().toLowerCase(java.util.Locale.ROOT).contains(needle);
     }
 
-    /** The name a listing is searched and sorted by: its custom name, else its material. */
     private static String itemName(ItemStack item) {
         if (item == null) {
             return "";
@@ -297,7 +263,6 @@ public class AuctionService {
                 .toList();
     }
 
-    /** Items waiting for a seller, from cancelled or expired listings. */
     public List<Listing> claims(UUID uuid) {
         return listings.values().stream()
                 .filter(listing -> !listing.claimed() && listing.sellerUuid().equals(uuid)
@@ -314,9 +279,6 @@ public class AuctionService {
         return id == null ? null : listings.get(id);
     }
 
-    /* ----------------------------------------------------------- writes --- */
-
-    /** Creates a listing. The item is copied, so the caller still owns their stack. */
     public ListResult list(Player seller, ItemStack item, double price) {
         if (!enabled()) {
             return ListResult.NO_ITEM;
@@ -352,7 +314,6 @@ public class AuctionService {
         return ListResult.SUCCESS;
     }
 
-    /** Buys a listing and moves the money and the item. Runs on the server thread. */
     public BuyResult buy(Player buyer, String id) {
         Listing listing = listings.get(id);
         if (listing == null || !listing.isActive()) {
@@ -387,7 +348,6 @@ public class AuctionService {
         return BuyResult.SUCCESS;
     }
 
-    /** Cancels an own listing; the item waits in the seller's claims. */
     public boolean cancel(Player player, String id) {
         Listing listing = listings.get(id);
         if (listing == null || !listing.isActive() || !listing.sellerUuid().equals(player.getUniqueId())) {
@@ -397,7 +357,6 @@ public class AuctionService {
         return true;
     }
 
-    /** Hands a waiting item back. Returns the item, or {@code null} when there is nothing to claim. */
     public ItemStack claim(Player player, String id) {
         Listing listing = listings.get(id);
         if (listing == null || listing.claimed() || !listing.sellerUuid().equals(player.getUniqueId())) {
@@ -410,7 +369,6 @@ public class AuctionService {
         return item;
     }
 
-    /** Marks overdue listings as expired and tells sellers who are online. */
     public void expire() {
         long now = System.currentTimeMillis();
         List<Listing> expired = new ArrayList<>();
@@ -435,8 +393,6 @@ public class AuctionService {
         local.merge(updated.id(), rowOf(updated));
         persist(updated);
     }
-
-    /* --------------------------------------------------------- persistence - */
 
     private void persist(Listing listing) {
         String sql = "INSERT INTO `" + database.table("ah_listings")
@@ -493,9 +449,6 @@ public class AuctionService {
         });
     }
 
-    /* ------------------------------------------------------------ helpers -- */
-
-    /** Whether the item still fits into the inventory without being dropped. */
     public static boolean hasRoom(PlayerInventory inventory, ItemStack item) {
         for (ItemStack slot : inventory.getStorageContents()) {
             if (slot == null || slot.getType().isAir()) {
@@ -508,7 +461,6 @@ public class AuctionService {
         return false;
     }
 
-    /** Adds an item, dropping whatever does not fit at the player's feet. */
     public static void give(Player player, ItemStack item) {
         Map<Integer, ItemStack> leftover = player.getInventory().addItem(item);
         for (ItemStack rest : leftover.values()) {

@@ -12,22 +12,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Turns the name tags above the players' heads on or off for the whole server.
- *
- * <p>The hidden name tag is a server-wide setting ({@code nick.hide-nametag}),
- * not a per-player one, so this command is aimed at server owners rather than
- * players: {@code /nametags disable} hides the tag above <em>every</em> head,
- * {@code /nametags enable} brings them back. The choice is stored in config.yml
- * and applied to everyone online at once.</p>
- *
- * <ul>
- *   <li>{@code /nametags} - shows the current state</li>
- *   <li>{@code /nametags enable} - shows the name tags again</li>
- *   <li>{@code /nametags disable} - hides the name tags for every player</li>
- *   <li>{@code /nametags toggle} - flips the current state</li>
- * </ul>
- */
 public class Nametags_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -61,7 +45,6 @@ public class Nametags_Command implements TabExecutor {
         return true;
     }
 
-    /** Stores the new state and tells the sender what happened. */
     private void set(CommandSender sender, boolean hidden) {
         plugin.preferences().setNameTagsHidden(hidden);
         Msg.success(sender, hidden
@@ -69,7 +52,6 @@ public class Nametags_Command implements TabExecutor {
                 : "Name tags are now shown above every player.");
     }
 
-    /** Reports the current state without changing it. */
     private void status(CommandSender sender, boolean hidden) {
         Msg.send(sender, hidden
                 ? "&7Name tags are currently &chidden&7 for every player."

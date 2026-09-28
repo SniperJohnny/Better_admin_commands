@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Gives written books and edits their author and title. */
 public class Book_Command implements TabExecutor {
 
     @Override

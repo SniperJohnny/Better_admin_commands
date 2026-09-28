@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/** Sends a private message to another player, with social spy support. */
 public class Msg_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

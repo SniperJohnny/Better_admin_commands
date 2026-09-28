@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Deletes one of the player's homes. */
 public class Delhome_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

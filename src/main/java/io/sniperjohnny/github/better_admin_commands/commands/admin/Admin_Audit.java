@@ -12,28 +12,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Reports the use of an administration command to the staff.
- *
- * <p>Every command of the {@code admin} module is wrapped in here, so a
- * {@code /gm}, {@code /enchant}, {@code /give} and the rest announce who used
- * them and with which arguments. The report goes through the {@code /notify}
- * system under the {@code admin} category, so a staff member can switch it off
- * with {@code /notify admin off} and only whoever holds
- * {@link #PERMISSION} receives it. Only players are reported; the console is
- * left out, as there is no name to show and the action is already in the log.</p>
- */
 public final class Admin_Audit {
 
-    /** The {@code /notify} category that carries the administration reports. */
     public static final String CATEGORY = "admin";
-    /** The node that decides who receives the reports. */
+
     public static final String PERMISSION = "betteradmincommands.admin.notify";
 
     private Admin_Audit() {
     }
 
-    /** Wraps a tab-completing administration command. */
     public static TabExecutor wrap(TabExecutor delegate) {
         return new TabExecutor() {
             @Override
@@ -52,7 +39,6 @@ public final class Admin_Audit {
         };
     }
 
-    /** Wraps an administration command that does not complete arguments. */
     public static CommandExecutor wrap(CommandExecutor delegate) {
         return (sender, command, label, args) -> {
             boolean handled = delegate.onCommand(sender, command, label, args);
@@ -61,7 +47,6 @@ public final class Admin_Audit {
         };
     }
 
-    /** Sends the report for one command use to every subscribed staff member. */
     private static void report(CommandSender sender, String label, String[] args) {
         if (!(sender instanceof Player player)) {
             return;

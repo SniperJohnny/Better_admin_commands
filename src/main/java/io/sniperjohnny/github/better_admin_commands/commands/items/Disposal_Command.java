@@ -18,10 +18,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Opens a trash can whose contents disappear when it is closed. */
 public class Disposal_Command implements TabExecutor {
 
-    /** Marks the trash inventory so it can be cleared on close. */
     public static final class DisposalHolder implements InventoryHolder {
 
         private Inventory inventory;
@@ -36,7 +34,6 @@ public class Disposal_Command implements TabExecutor {
         }
     }
 
-    /** Empties the trash when the window is closed. */
     public static final class Disposal_Listener implements Listener {
 
         @EventHandler

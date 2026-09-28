@@ -9,10 +9,6 @@ import org.bukkit.OfflinePlayer;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Exposes the MySQL backed balance store through the Vault economy API so any
- * Vault aware plugin can use it as the server economy.
- */
 public class VaultEconomy implements Economy {
 
     private final Better_Admin_Commands plugin;
@@ -27,8 +23,6 @@ public class VaultEconomy implements Economy {
         this.currencyNameSingular = plugin.getConfig().getString("economy.currency-name-singular", "Dollar");
         this.currencyNamePlural = plugin.getConfig().getString("economy.currency-name-plural", "Dollars");
     }
-
-    /* ------------------------------------------------------------ metadata -- */
 
     @Override
     public boolean isEnabled() {
@@ -64,8 +58,6 @@ public class VaultEconomy implements Economy {
     public String currencyNameSingular() {
         return currencyNameSingular;
     }
-
-    /* ------------------------------------------------------------ accounts -- */
 
     private UUID uuid(OfflinePlayer player) {
         return player == null ? null : player.getUniqueId();
@@ -144,8 +136,6 @@ public class VaultEconomy implements Economy {
         return has(player, amount);
     }
 
-    /* ------------------------------------------------------- transactions --- */
-
     @Override
     @Deprecated
     public EconomyResponse withdrawPlayer(String playerName, double amount) {
@@ -213,8 +203,6 @@ public class VaultEconomy implements Economy {
         return depositPlayer(player, amount);
     }
 
-    /* -------------------------------------------------------------- banks --- */
-
     @Override
     @Deprecated
     public EconomyResponse createBank(String name, String player) {
@@ -277,8 +265,6 @@ public class VaultEconomy implements Economy {
     public List<String> getBanks() {
         return List.of();
     }
-
-    /* ------------------------------------------------------ create account -- */
 
     @Override
     @Deprecated

@@ -11,15 +11,6 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The nickname overview behind {@code /realname}: everyone online who is using a
- * nickname, with the real account name underneath, and a lookup button for
- * asking about one nickname directly.
- *
- * <p>The list answers the usual question ("who is that player?") without typing
- * anything, which is what {@code /realname} alone cannot do - it needs the
- * nickname up front.</p>
- */
 public class Realname_Gui {
 
     private final Better_Admin_Commands plugin;
@@ -99,7 +90,6 @@ public class Realname_Gui {
         menu.open(player);
     }
 
-    /** The same answer {@code /realname <nickname>} gives, so both agree. */
     private void lookup(Player player, String query, int returnPage) {
         List<String> matches = new ArrayList<>();
         for (Player online : plugin.getServer().getOnlinePlayers()) {

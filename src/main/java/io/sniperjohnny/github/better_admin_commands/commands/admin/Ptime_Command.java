@@ -15,14 +15,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Sets a personal client side time for the sender. Without an argument this
- * opens the time menu instead.
- *
- * <p>The accepted values and the way they are applied live in
- * {@link PersonalDisplay}, which the menu uses as well, so the two cannot
- * disagree about what a value means.</p>
- */
 public class Ptime_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

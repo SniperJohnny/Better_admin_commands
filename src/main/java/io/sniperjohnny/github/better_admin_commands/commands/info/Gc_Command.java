@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Shows runtime and memory information. */
 public class Gc_Command implements TabExecutor {
 
     @Override

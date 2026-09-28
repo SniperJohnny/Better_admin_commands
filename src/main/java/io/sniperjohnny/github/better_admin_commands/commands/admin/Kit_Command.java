@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Gives a kit defined in config.yml to the sender. */
 public class Kit_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

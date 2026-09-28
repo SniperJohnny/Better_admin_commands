@@ -17,7 +17,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/** Shows information about a player. */
 public class Whois_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

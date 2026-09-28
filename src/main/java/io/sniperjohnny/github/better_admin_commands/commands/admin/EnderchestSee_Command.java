@@ -12,15 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Opens the ender chest of another player: {@code /ecsee <player>}.
- *
- * <p>A standalone form of {@code /enderchest <player>}, so staff can reach
- * another player's ender chest without the optional argument that the normal
- * command has. The chest is opened editable, exactly like {@code /enderchest}
- * does for another player, and the same permission is used
- * ({@code betteradmincommands.enderchest.others}).</p>
- */
 public class EnderchestSee_Command implements TabExecutor {
 
     @Override

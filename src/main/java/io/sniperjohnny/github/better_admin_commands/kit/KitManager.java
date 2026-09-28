@@ -20,10 +20,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Kits are defined in config.yml under {@code kits.<name>} so server owners can
- * change them without recompiling. Cooldowns are kept in memory.
- */
 public class KitManager {
 
     private final Better_Admin_Commands plugin;
@@ -69,7 +65,6 @@ public class KitManager {
         return seconds <= 0 ? 0L : seconds * 1000L;
     }
 
-    /** Milliseconds until the player may use the kit again, 0 when ready. */
     public long remainingMillis(Player player, String name) {
         Map<String, Long> used = lastUsed.get(player.getUniqueId());
         if (used == null) {
@@ -99,18 +94,11 @@ public class KitManager {
         }
     }
 
-    /** How a claim attempt ended, so the command and the GUI can react the same way. */
     public enum ClaimResult { SUCCESS, UNKNOWN, NO_ITEMS, NO_PERMISSION, COOLDOWN }
 
-    /** The outcome of a claim, with the remaining cooldown when there is one. */
     public record Claim(ClaimResult result, long remainingMillis) {
     }
 
-    /**
-     * Gives a kit to a player, checking the permission and the cooldown first.
-     * Everything that does not fit is dropped at the player's feet, and the
-     * cooldown only starts when the kit really was handed out.
-     */
     public Claim claim(Player player, String name) {
         if (!exists(name)) {
             return new Claim(ClaimResult.UNKNOWN, 0L);
@@ -135,7 +123,6 @@ public class KitManager {
         return new Claim(ClaimResult.SUCCESS, 0L);
     }
 
-    /** The icon configured for a kit, or {@code null} when none is set. */
     public Material icon(String name) {
         ConfigurationSection kit = section(name);
         if (kit == null) {
@@ -149,11 +136,6 @@ public class KitManager {
         return material == null || material.isAir() ? null : material;
     }
 
-    /**
-     * Builds the item list of a kit. Entry format:
-     * {@code MATERIAL}, {@code MATERIAL:AMOUNT} or
-     * {@code MATERIAL:AMOUNT:ENCHANTMENT:LEVEL}.
-     */
     public List<ItemStack> items(String name) {
         List<ItemStack> result = new ArrayList<>();
         ConfigurationSection kit = section(name);

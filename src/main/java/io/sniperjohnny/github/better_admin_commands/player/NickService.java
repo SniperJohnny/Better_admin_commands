@@ -5,14 +5,6 @@ import io.sniperjohnny.github.better_admin_commands.Better_Admin_Commands;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Access to the LuckPerms group data {@code /nick} uses.
- *
- * <p>The point of this wrapper is that LuckPerms stays optional: the API is only
- * touched through {@link LuckPermsBridge}, which is created when the LuckPerms
- * plugin is installed and left alone otherwise. Every method therefore answers
- * something sensible on a server without LuckPerms.</p>
- */
 public class NickService {
 
     private final LuckPermsBridge bridge;
@@ -35,43 +27,26 @@ public class NickService {
         }
     }
 
-    /** Whether group prefixes can be read from LuckPerms. */
     public boolean available() {
         return bridge != null;
     }
 
-    /** Every group LuckPerms has loaded, for tab completion. */
     public List<String> groupNames() {
         return bridge == null ? List.of() : bridge.groupNames();
     }
 
-    /** Whether a group with this name exists. */
     public boolean hasGroup(String group) {
         return bridge != null && group != null && bridge.hasGroup(group);
     }
 
-    /**
-     * The prefix of a group, or {@code null} when the group has none or when
-     * LuckPerms is not installed.
-     */
     public String prefix(String group) {
         return bridge == null || group == null ? null : bridge.prefix(group);
     }
 
-    /**
-     * The prefix of a player's own rank, used by {@code /nick <nickname>} when no
-     * group is named. Returns {@code null} when LuckPerms is absent or the rank
-     * has no prefix.
-     */
     public String userPrefix(UUID uuid) {
         return bridge == null || uuid == null ? null : bridge.userPrefix(uuid);
     }
 
-    /**
-     * The name of a player's primary group, used by {@code /reveal} to report the
-     * real rank behind a nickname. Returns {@code null} when LuckPerms is absent
-     * or the player has no group.
-     */
     public String userGroup(UUID uuid) {
         return bridge == null || uuid == null ? null : bridge.userGroup(uuid);
     }

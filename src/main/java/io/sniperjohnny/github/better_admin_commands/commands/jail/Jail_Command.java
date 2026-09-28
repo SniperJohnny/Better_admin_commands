@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Jails a player: /jail &lt;player&gt; [cell] [duration]. */
 public class Jail_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

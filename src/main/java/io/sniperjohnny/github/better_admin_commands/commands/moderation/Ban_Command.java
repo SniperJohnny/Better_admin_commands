@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-/** Bans a player by name, using the vanilla ban list. */
 public class Ban_Command implements TabExecutor {
 
     @Override

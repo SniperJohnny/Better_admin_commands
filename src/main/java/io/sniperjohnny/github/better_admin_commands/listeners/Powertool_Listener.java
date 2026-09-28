@@ -8,7 +8,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
-/** Runs commands bound to an item through /powertool. */
 public class Powertool_Listener implements Listener {
 
     private final Better_Admin_Commands plugin;

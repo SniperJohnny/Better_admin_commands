@@ -6,7 +6,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
-/** Moves the respawn point to the configured spawn when enabled. */
 public class Respawn_Listener implements Listener {
 
     private final Better_Admin_Commands plugin;

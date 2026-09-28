@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/** Randomly teleports you to a safe spot in your world. */
 public class Rtp_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

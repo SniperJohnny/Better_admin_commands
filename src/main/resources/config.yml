@@ -6,7 +6,7 @@
 
 # Version of this file. Do not change it by hand - the plugin uses it to add
 # new options to an existing config.yml. Values you changed are never replaced.
-config-version: 14
+config-version: 18
 
 # ------------------------------------------------------------ permissions ---
 # How the plugin hands out its own commands. With a permission plugin such as
@@ -47,14 +47,15 @@ commands:
 # without taking the plugin apart.
 #
 # Switching a module off:
-#   * its commands stay registered, but answer with a short note naming the option
-#     that switched the feature off - a command that silently vanishes confuses
-#     players more than one that explains itself,
+#   * its commands are not registered at all, so their names are free for other
+#     plugins - a server with its own shop plugin can switch the shop module off
+#     and keep /shop,
 #   * its listeners are not registered and its repeating tasks do not run, so a
 #     switched-off feature costs nothing while the server runs.
 #
 # Changes are applied by /betteradmincommands reload (or a restart).
-# /betteradmincommands modules lists the state of every module.
+# /betteradmincommands modules lists the state of every module and which of its
+# commands are not registered right now.
 #
 # Four modules also have an older switch of their own further down this file -
 # economy.enabled, trade.enabled, auction.enabled and shop.enabled. They are
@@ -133,7 +134,8 @@ modules:
     enabled: true
   # Single commands switched off on top of their module, by command name or by
   # one of its aliases - for example ["sell", "pay"] or ["ah"]. Everything else
-  # in those modules keeps working.
+  # in those modules keeps working. A command listed here is not registered
+  # either, so another plugin can take its name.
   disabled-commands: []
 
 # ----------------------------------------------------------------- MySQL -----
@@ -367,6 +369,16 @@ economy:
   # Smallest payment, to avoid pointless 0.0 transactions.
   minimum-payment: 0.01
 
+# ---------------------------------------------------------------- sell -------
+# /sell without an argument opens a window: drop in whatever should be sold and
+# close it - everything the server buys is sold at once and paid into the
+# balance, and anything without a price in the "worth" section below is handed
+# straight back, so nothing can be lost by dropping it in. /sell hand|all|amount
+# keeps its old text behaviour.
+sell:
+  # Rows of the window (1-6). Every slot can be filled with items.
+  gui-rows: 6
+
 # --------------------------------------------------------------- menus -------
 # Layout of the menus that do not belong to one feature. Everything is a button;
 # the commands keep their text form (see the README).
@@ -437,6 +449,13 @@ moderation:
   # Shown in the tab list in front of a vanished player. Only staff with the
   # permission betteradmincommands.vanish.see can see them at all.
   vanish-tab-cue: "&7[&8V&7] &r"
+  # A vanished player must not give themselves away. While this is on, mobs stop
+  # targeting them and any mob that was already chasing them forgets them.
+  vanish-mobs-ignore: true
+  # While this is on, opening a chest, barrel, shulker box, hopper, ender chest
+  # and the like does not swing the lid open or play a sound - the container is
+  # opened directly instead, so nobody nearby notices a vanished player.
+  vanish-silent-containers: true
 
 # ------------------------------------------------------------------- afk -----
 afk:

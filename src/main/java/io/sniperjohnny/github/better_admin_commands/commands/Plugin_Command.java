@@ -19,9 +19,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Plugin management command: {@code /betteradmincommands reload|backup|info}.
- */
 public class Plugin_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -55,10 +52,6 @@ public class Plugin_Command implements TabExecutor {
         return true;
     }
 
-    /**
-     * Reloads every file the plugin reads at runtime. New options in
-     * config.yml are added while the values already in the file are kept.
-     */
     private void reload(CommandSender sender) {
         int added = plugin.reloadAll();
         Msg.success(sender, "config.yml, spawn.yml, warps.yml and jails.yml were reloaded"
@@ -66,10 +59,6 @@ public class Plugin_Command implements TabExecutor {
         Msg.send(sender, "&7Note: database, economy and skin settings need a full restart.");
     }
 
-    /**
-     * Switches the plugin's features off or on without unloading it. The
-     * management command keeps working, so disabling can be undone in-game.
-     */
     private void setEnabled(CommandSender sender, boolean enable) {
         boolean currentlyDisabled = plugin.isPluginDisabled();
         if (enable && !currentlyDisabled) {
@@ -90,10 +79,6 @@ public class Plugin_Command implements TabExecutor {
         }
     }
 
-    /**
-     * Lists every feature module with its state, so it is obvious which parts of
-     * the plugin are switched on without reading config.yml.
-     */
     private void listModules(CommandSender sender) {
         Msg.raw(sender, "&6Feature modules &8(config.yml » modules)");
         for (String line : plugin.features().describeAll()) {
@@ -103,15 +88,18 @@ public class Plugin_Command implements TabExecutor {
         if (!off.isEmpty()) {
             Msg.raw(sender, " &cOff on their own: &f" + String.join(", ", off));
         }
+        List<String> free = plugin.unregisteredCommands();
+        if (!free.isEmpty()) {
+            Msg.raw(sender, " &cNot registered (feature off): &f"
+                    + String.join(", ", free.stream().map(name -> "/" + name).toList()));
+        }
         Msg.raw(sender, " &7Switch a module off with &fmodules.<id>.enabled: false&7, a single"
                 + " command with &fmodules.disabled-commands&7, then run &f/"
                 + plugin.rootLabel() + " reload&7.");
+        Msg.raw(sender, " &7Commands of a switched-off feature are not registered at all, so"
+                + " another plugin can use their names.");
     }
 
-    /**
-     * Walks through the database connection step by step, so a problem can be
-     * narrowed down to the address, the port, the login or the tables.
-     */
     private void diagnose(CommandSender sender) {
         Msg.send(sender, "&7Checking the database connection, this can take a moment...");
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {

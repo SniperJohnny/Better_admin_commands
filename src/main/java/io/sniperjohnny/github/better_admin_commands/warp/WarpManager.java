@@ -12,9 +12,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Named teleport points stored in {@code warps.yml}.
- */
 public class WarpManager {
 
     private final Better_Admin_Commands plugin;
@@ -82,7 +79,6 @@ public class WarpManager {
         return true;
     }
 
-    /** All warp names, sorted alphabetically. */
     public java.util.Set<String> names() {
         return warps.keySet();
     }

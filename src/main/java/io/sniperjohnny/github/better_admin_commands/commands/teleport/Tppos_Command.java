@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Teleports the sender to coordinates, optionally in another world. */
 public class Tppos_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

@@ -9,27 +9,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-/**
- * Asks a player for one chat line and hands the answer to a callback.
- *
- * <p>This is the <em>fallback</em> for clients that cannot show a dialog, not the
- * normal way to ask a question: everything a menu button needs is collected with
- * {@link DialogPromptService}, which arms this service so the same question can
- * still be answered in chat. The message is swallowed by {@code Chat_Listener} so
- * it never reaches public chat, and the callback always runs on the server
- * thread.</p>
- *
- * <p>A pending prompt only lives for {@link #LIFETIME_MILLIS}. That matters
- * because a dialog can be dismissed with escape or a click outside, which answers
- * nothing: without a deadline the armed prompt would sit there and quietly eat the
- * player's next chat message.</p>
- */
 public class ChatPromptService {
 
-    /** How long a question waits for an answer before it is forgotten. */
     private static final long LIFETIME_MILLIS = 120_000L;
 
-    /** One armed question, with the moment it stops being valid. */
     private record Pending(Consumer<String> answer, long expiresAt) {
     }
 
@@ -40,16 +23,10 @@ public class ChatPromptService {
         this.plugin = plugin;
     }
 
-    /** Asks for a value. The window is closed so the player can type. */
     public void request(Player player, String prompt, Consumer<String> onAnswer) {
         request(player, prompt, onAnswer, true);
     }
 
-    /**
-     * Asks for a value while keeping the open window open. Used where closing it
-     * would be wrong, for example the trade money button: the trade window has
-     * to stay on screen while the amount is typed in chat.
-     */
     public void request(Player player, String prompt, Consumer<String> onAnswer, boolean closeWindow) {
         arm(player.getUniqueId(), onAnswer);
         if (closeWindow) {
@@ -63,12 +40,6 @@ public class ChatPromptService {
         return live(uuid) != null;
     }
 
-    /**
-     * Consumes the next chat line of a player. Called from the async chat event,
-     * so the callback is scheduled back onto the server thread.
-     *
-     * @return whether the message was consumed by a prompt
-     */
     public boolean handle(UUID uuid, String message) {
         Pending entry = live(uuid);
         if (entry == null) {
@@ -80,23 +51,14 @@ public class ChatPromptService {
         return true;
     }
 
-    /** Drops a pending prompt, for example when a player disconnects. */
     public void clear(UUID uuid) {
         pending.remove(uuid);
     }
 
-    /**
-     * Arms a chat answer without printing a question of its own. Used by
-     * {@link DialogPromptService} as the fallback for clients that cannot show
-     * a dialog: the question is already in chat, this only picks up the line.
-     * The message is still swallowed by {@code Chat_Listener}, and the callback
-     * still runs on the server thread.
-     */
     public void arm(UUID uuid, Consumer<String> onAnswer) {
         pending.put(uuid, new Pending(onAnswer, System.currentTimeMillis() + LIFETIME_MILLIS));
     }
 
-    /** The pending prompt of a player, or {@code null} when there is none (any more). */
     private Pending live(UUID uuid) {
         Pending entry = pending.get(uuid);
         if (entry == null) {

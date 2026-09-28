@@ -5,10 +5,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 
-/**
- * One trade between two players: the two windows, the money each side offers and
- * whether each side has confirmed. The {@link TradeService} owns the lifecycle.
- */
 public class TradeSession {
 
     private final UUID first;
@@ -23,13 +19,9 @@ public class TradeSession {
     private double secondMoney;
     private boolean firstConfirmed;
     private boolean secondConfirmed;
-    /** Set once the trade ended (completed or cancelled), so close events stop. */
+
     private boolean finished;
-    /**
-     * Set while a money dialog is open for one side. The window closes when the
-     * dialog opens, but the trade must not be cancelled - the window is reopened
-     * as soon as the dialog answers or times out.
-     */
+
     private boolean awaitingInput;
 
     public TradeSession(Player first, Player second) {
@@ -60,7 +52,6 @@ public class TradeSession {
         return startedAt;
     }
 
-    /** The other player of the pair, or {@code null} when the id is not part of it. */
     public UUID other(UUID uuid) {
         if (first.equals(uuid)) {
             return second;
@@ -112,7 +103,6 @@ public class TradeSession {
         }
     }
 
-    /** Clears both confirmations; called whenever an offer changes. */
     public void resetConfirmations() {
         firstConfirmed = false;
         secondConfirmed = false;
@@ -130,7 +120,6 @@ public class TradeSession {
         this.finished = true;
     }
 
-    /** Whether a money dialog is open and the windows are expected to be closed. */
     public boolean isAwaitingInput() {
         return awaitingInput;
     }
@@ -139,7 +128,6 @@ public class TradeSession {
         this.awaitingInput = value;
     }
 
-    /** The items a player put into their own side of the trade. */
     public ItemStack[] itemsOf(UUID uuid) {
         TradeMenu menu = menu(uuid);
         if (menu == null) {
@@ -152,7 +140,6 @@ public class TradeSession {
         return items;
     }
 
-    /** Whether either side offered anything at all. */
     public boolean isEmptyTrade() {
         return isBlank(itemsOf(first)) && isBlank(itemsOf(second))
                 && firstMoney <= 0.0 && secondMoney <= 0.0;
@@ -167,7 +154,6 @@ public class TradeSession {
         return true;
     }
 
-    /** Empties both own areas, so the items can be handed over exactly once. */
     public void clearOffers() {
         clearOwn(first);
         clearOwn(second);

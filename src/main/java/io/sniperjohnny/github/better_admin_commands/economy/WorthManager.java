@@ -6,11 +6,6 @@ import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.Locale;
 
-/**
- * Item prices for {@code /worth} and {@code /sell}, read from the
- * {@code worth} section of config.yml. Items without an entry are worthless and
- * cannot be sold.
- */
 public class WorthManager {
 
     private final Better_Admin_Commands plugin;
@@ -19,7 +14,6 @@ public class WorthManager {
         this.plugin = plugin;
     }
 
-    /** Price of a single item, 0.0 when the item cannot be sold. */
     public double price(Material material) {
         if (material == null || material.isAir()) {
             return 0.0;
@@ -45,7 +39,6 @@ public class WorthManager {
         return price(material) > 0.0;
     }
 
-    /** Formats a price using the currency settings. */
     public String format(double amount) {
         return plugin.economy().format(amount);
     }

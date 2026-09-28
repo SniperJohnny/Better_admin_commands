@@ -15,13 +15,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Combines loose materials into their block form, e.g. nine iron ingots
- * become one iron block.
- */
 public class Condense_Command implements TabExecutor {
 
-    /** Material to block mapping for everything that condenses 9:1. */
     private static final Map<Material, Material> NINE_TO_ONE = Map.ofEntries(
             Map.entry(Material.IRON_INGOT, Material.IRON_BLOCK),
             Map.entry(Material.GOLD_INGOT, Material.GOLD_BLOCK),

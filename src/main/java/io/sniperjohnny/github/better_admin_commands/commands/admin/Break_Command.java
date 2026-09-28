@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Breaks the block you are looking at. */
 public class Break_Command implements TabExecutor {
 
     @Override

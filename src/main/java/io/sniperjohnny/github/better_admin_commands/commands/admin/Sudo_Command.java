@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/** Forces a player to run a command. */
 public class Sudo_Command implements TabExecutor {
 
     @Override

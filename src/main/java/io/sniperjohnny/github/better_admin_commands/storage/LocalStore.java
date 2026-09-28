@@ -12,23 +12,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-/**
- * A small YAML backed row store that mirrors one database table on disk.
- *
- * <p>It serves two purposes:</p>
- * <ul>
- *   <li>it is the fallback the plugin reads from while MySQL is unavailable, so
- *       the server keeps working offline;</li>
- *   <li>it is an always-on local safe copy - every write the plugin makes is
- *       mirrored here, even while the database is reachable.</li>
- * </ul>
- *
- * <p>Every row carries a synthetic {@value #KEY} column holding a stable
- * identifier for the row (usually the primary key, or a composite of it).</p>
- */
 public class LocalStore {
 
-    /** Name of the synthetic column that identifies a row. */
     public static final String KEY = "_key";
 
     private final Better_Admin_Commands plugin;
@@ -45,7 +30,6 @@ public class LocalStore {
         return file;
     }
 
-    /** Reads the safe file from disk, replacing the in-memory contents. */
     public void load() {
         synchronized (lock) {
             rows.clear();
@@ -68,7 +52,6 @@ public class LocalStore {
         }
     }
 
-    /** A deep-ish copy of every stored row, without the synthetic key column. */
     public List<Map<String, Object>> snapshot() {
         synchronized (lock) {
             List<Map<String, Object>> copy = new ArrayList<>(rows.size());
@@ -79,7 +62,6 @@ public class LocalStore {
         }
     }
 
-    /** Every stored row, including the synthetic {@value #KEY} column. */
     public List<Map<String, Object>> rawSnapshot() {
         synchronized (lock) {
             List<Map<String, Object>> copy = new ArrayList<>(rows.size());
@@ -90,7 +72,6 @@ public class LocalStore {
         }
     }
 
-    /** Replaces the whole store with the given rows and writes the safe file. */
     public void replaceAll(List<Map<String, Object>> newRows) {
         synchronized (lock) {
             rows.clear();
@@ -107,7 +88,6 @@ public class LocalStore {
         }
     }
 
-    /** Inserts or updates a single row and writes the safe file. */
     public void merge(String key, Map<String, Object> values) {
         if (key == null || key.isBlank()) {
             return;
@@ -128,10 +108,6 @@ public class LocalStore {
         }
     }
 
-    /**
-     * Inserts or updates several rows in one go, writing the safe file once.
-     * The map is keyed by the synthetic row key.
-     */
     public void mergeAll(Map<String, Map<String, Object>> entries) {
         if (entries.isEmpty()) {
             return;
@@ -157,7 +133,6 @@ public class LocalStore {
         }
     }
 
-    /** Removes a single row and writes the safe file. */
     public void delete(String key) {
         synchronized (lock) {
             if (rows.remove(key) != null) {
@@ -166,7 +141,6 @@ public class LocalStore {
         }
     }
 
-    /** Applies the given updates to every row matching the predicate. */
     public void updateWhere(Predicate<Map<String, Object>> test, Map<String, Object> updates) {
         synchronized (lock) {
             boolean changed = false;
@@ -182,7 +156,6 @@ public class LocalStore {
         }
     }
 
-    /** Removes every row matching the predicate and writes the safe file. */
     public void deleteWhere(Predicate<Map<String, Object>> test) {
         synchronized (lock) {
             if (rows.values().removeIf(test)) {
@@ -191,7 +164,6 @@ public class LocalStore {
         }
     }
 
-    /** Looks a row up by its synthetic key, or {@code null}. */
     public Map<String, Object> find(String key) {
         synchronized (lock) {
             Map<String, Object> row = rows.get(key);
@@ -205,7 +177,6 @@ public class LocalStore {
         }
     }
 
-    /** Reads a value from a row, tolerant about numeric/string representations. */
     public static String string(Map<String, Object> row, String column) {
         Object value = row.get(column);
         return value == null ? null : String.valueOf(value);
@@ -262,7 +233,6 @@ public class LocalStore {
         return copy;
     }
 
-    /** Builds a composite key from the given parts, e.g. uuid + ":" + home. */
     public static String composite(Object... parts) {
         StringBuilder builder = new StringBuilder();
         for (Object part : parts) {

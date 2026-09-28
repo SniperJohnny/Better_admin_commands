@@ -16,20 +16,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * The in-game shop editor behind {@code /shop edit}.
- *
- * <p>Everything the shop shows can be changed here without touching YAML: a
- * shop's access permission, and per entry its buy price, its sell price, the
- * amount one purchase hands out, and whether the entry exists at all. Edits go
- * straight into memory, the local safe file and MySQL, so they survive a
- * restart; a re-import from EconomyShopGUI would overwrite them, which is called
- * out in the menu.</p>
- *
- * <p>Entries that arrived without a price are marked, because a shop file with an
- * unusual price spelling is the usual reason an import looks half-broken - and
- * this is where it gets fixed.</p>
- */
 public class Shop_Editor {
 
     private final Better_Admin_Commands plugin;
@@ -37,8 +23,6 @@ public class Shop_Editor {
     public Shop_Editor(Better_Admin_Commands plugin) {
         this.plugin = plugin;
     }
-
-    /* --------------------------------------------------------- shop list -- */
 
     public void openShopList(Player player, int page) {
         List<ShopService.Shop> shops = plugin.shops().shops();
@@ -89,8 +73,6 @@ public class Shop_Editor {
         }
         menu.open(player);
     }
-
-    /* ------------------------------------------------------------- items -- */
 
     private void openShop(Player player, String shopId, int page) {
         ShopService.Shop shop = plugin.shops().shop(shopId);
@@ -226,8 +208,6 @@ public class Shop_Editor {
         menu.open(player);
     }
 
-    /* ---------------------------------------------------------- settings -- */
-
     private void openSettings(Player player, String shopId, int shopPage) {
         ShopService.Shop shop = plugin.shops().shop(shopId);
         if (shop == null) {
@@ -291,8 +271,6 @@ public class Shop_Editor {
         menu.open(player);
     }
 
-    /* ----------------------------------------------------------- helpers -- */
-
     private void promptPrice(Player player, ShopService.ShopItem item, boolean buying,
                              String shopId, int shopPage) {
         String what = buying ? "buy" : "sell";
@@ -329,7 +307,6 @@ public class Shop_Editor {
                 });
     }
 
-    /** The entry with its prices written into the lore, so the menu reads itself. */
     private ItemStack describe(ShopService.ShopItem item) {
         ItemStack display = item.display().clone();
         ItemMeta meta = display.getItemMeta();
@@ -356,7 +333,6 @@ public class Shop_Editor {
         return display;
     }
 
-    /** A friendly name for an entry, used in messages. */
     static String nameOf(ShopService.ShopItem item) {
         ItemMeta meta = item.display().getItemMeta();
         if (meta != null && meta.hasDisplayName() && meta.displayName() != null) {

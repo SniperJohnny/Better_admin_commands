@@ -14,12 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * /tp &lt;player&gt; - teleport yourself to a player.
- * /tp &lt;x&gt; &lt;y&gt; &lt;z&gt; - teleport yourself to coordinates.
- * /tp &lt;player&gt; &lt;target&gt; - teleport a player to another player.
- * /tp &lt;player&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt; - teleport a player to coordinates.
- */
 public class Tp_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Repairs the held item, or the whole inventory with {@code /repair all}. */
 public class Repair_Command implements TabExecutor {
 
     @Override

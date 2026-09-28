@@ -5,10 +5,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 
-/**
- * The one listener every GUI relies on: it finds the {@link Menu} behind an
- * inventory and lets it handle the click, and blocks dragging items around.
- */
 public class Gui_Listener implements Listener {
 
     @EventHandler

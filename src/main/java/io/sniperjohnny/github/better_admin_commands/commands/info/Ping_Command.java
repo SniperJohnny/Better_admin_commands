@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Shows the connection latency of a player. */
 public class Ping_Command implements TabExecutor {
 
     @Override

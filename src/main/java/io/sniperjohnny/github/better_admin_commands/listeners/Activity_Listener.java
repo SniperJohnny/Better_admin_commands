@@ -10,7 +10,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
-/** Records player activity so the AFK task knows who has been idle. */
 public class Activity_Listener implements Listener {
 
     private final Better_Admin_Commands plugin;

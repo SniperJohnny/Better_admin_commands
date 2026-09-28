@@ -13,11 +13,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * The home menu behind {@code /homes}. Left-clicking a home teleports, and
- * right-clicking opens a confirmation before the home is deleted, so a misclick
- * cannot lose a home.
- */
 public class Home_Gui {
 
     private final Better_Admin_Commands plugin;

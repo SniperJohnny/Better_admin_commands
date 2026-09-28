@@ -6,7 +6,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-/** Persists economy data and clears per-player state when a player leaves. */
 public class Quit_Listener implements Listener {
 
     private final Better_Admin_Commands plugin;

@@ -15,13 +15,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Staff lookup behind a nickname: {@code /reveal <name|nickname>} answers with the
- * original account name and the real LuckPerms rank of an online player.
- *
- * <p>Unlike the automatic reveal that used to sit in chat, this is a deliberate,
- * permission-gated command - nobody sees the real name by accident.</p>
- */
 public class Reveal_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -57,7 +50,6 @@ public class Reveal_Command implements TabExecutor {
         return true;
     }
 
-    /** Finds an online player by their real name or their nickname. */
     private Player findOnline(String query) {
         String wanted = plain(query);
         for (Player online : Bukkit.getOnlinePlayers()) {
@@ -72,7 +64,6 @@ public class Reveal_Command implements TabExecutor {
         return null;
     }
 
-    /** Strips colour codes, so a coloured nickname still matches what was typed. */
     private static String plain(String value) {
         return value == null ? "" : value.replaceAll("(?i)[&\u00a7][0-9a-fk-or]", "").trim();
     }

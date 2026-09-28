@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-/** Bans the IP address of an online player. */
 public class Ipban_Command implements TabExecutor {
 
     @Override

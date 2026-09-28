@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Applies a potion effect to a player. */
 public class Potion_Command implements TabExecutor {
 
     @Override

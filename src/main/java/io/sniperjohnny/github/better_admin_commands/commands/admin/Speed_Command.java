@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Changes the walking or flying speed of a player. */
 public class Speed_Command implements TabExecutor {
 
     @Override

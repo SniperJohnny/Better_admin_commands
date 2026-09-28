@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Stores the current position as one of the player's homes. */
 public class Sethome_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

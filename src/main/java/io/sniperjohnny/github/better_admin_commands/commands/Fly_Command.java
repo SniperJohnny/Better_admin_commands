@@ -26,12 +26,6 @@ public class Fly_Command implements CommandExecutor {
             p.sendMessage(ChatColor.DARK_RED + "Du kannst jetzt nichtmehr Fliegen");
         }
 
-
-
-
-
-
         return true;
     }
 }
-

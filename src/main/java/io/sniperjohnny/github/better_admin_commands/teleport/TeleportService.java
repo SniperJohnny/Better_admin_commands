@@ -10,17 +10,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Every teleport in the plugin goes through here so that warm-ups, movement
- * cancellation, cooldowns and /back all behave the same way.
- */
 public class TeleportService {
 
-    /**
-     * Permission that skips the teleport warm-up and the /back cooldown, so
-     * staff teleport instantly. Granted to everyone with
-     * {@code betteradmincommands.admin}.
-     */
     public static final String BYPASS_PERMISSION = "betteradmincommands.teleport.bypass";
 
     private final Better_Admin_Commands plugin;
@@ -38,7 +29,6 @@ public class TeleportService {
         this.backCooldownMillis = Math.max(0, plugin.getConfig().getLong("teleport.back-cooldown-seconds", 0)) * 1000L;
     }
 
-    /** Stores the current position so /back can return to it later. */
     public void remember(Player player) {
         if (backEnabled) {
             backLocations.put(player.getUniqueId(), player.getLocation().clone());
@@ -54,7 +44,6 @@ public class TeleportService {
         return backLocations.containsKey(uuid);
     }
 
-    /** Teleports with the configured warm-up, remembering the previous location. */
     public void requestTeleport(Player player, Location destination) {
         if (destination == null || destination.getWorld() == null) {
             Msg.error(player, "That destination is not valid any more.");
@@ -97,7 +86,6 @@ public class TeleportService {
         }.runTaskTimer(plugin, 20L, 20L);
     }
 
-    /** Teleports without warm-up or messages, still remembering the old position. */
     public void teleportNow(Player player, Location destination) {
         remember(player);
         if (destination != null) {
@@ -105,7 +93,6 @@ public class TeleportService {
         }
     }
 
-    /** Teleports a player to their previous location. */
     public boolean back(Player player) {
         if (!backEnabled) {
             Msg.error(player, "/back is disabled on this server.");
@@ -131,7 +118,6 @@ public class TeleportService {
         return true;
     }
 
-    /** Whether this player teleports without the warm-up and cooldowns. */
     public boolean bypassesWarmup(Player player) {
         return player.hasPermission(BYPASS_PERMISSION);
     }

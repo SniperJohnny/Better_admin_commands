@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Creates a jail cell at your position. */
 public class Setjail_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Sets a player on fire. */
 public class Burn_Command implements TabExecutor {
 
     @Override

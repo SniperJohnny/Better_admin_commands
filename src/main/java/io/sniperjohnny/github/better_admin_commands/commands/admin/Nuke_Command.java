@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/** Drops a ring of primed TNT on a player. */
 public class Nuke_Command implements TabExecutor {
 
     private final Random random = new Random();

@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Toggles seeing the private messages of other players. */
 public class SocialSpy_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

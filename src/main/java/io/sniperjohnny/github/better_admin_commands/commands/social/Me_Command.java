@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Broadcasts an action message in third person. */
 public class Me_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

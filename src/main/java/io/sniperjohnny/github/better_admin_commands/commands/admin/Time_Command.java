@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Sets or advances the time of a world. */
 public class Time_Command implements TabExecutor {
 
     private static final Map<String, Long> PRESETS = Map.of(

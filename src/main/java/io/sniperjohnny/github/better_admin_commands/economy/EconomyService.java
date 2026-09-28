@@ -17,16 +17,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Player balances for the whole server.
- *
- * <p>The in-memory map is the source of truth during a running server; every
- * changed entry is marked dirty and written back to MySQL asynchronously, so
- * the main thread never has to wait for the database.</p>
- */
 public class EconomyService {
 
-    /** A single row of the balance leaderboard. */
     public record BalanceEntry(UUID uuid, String name, double balance) {
     }
 
@@ -59,16 +51,10 @@ public class EconomyService {
         this.format = parsed;
     }
 
-    /** Formats an amount with the configured symbol and number pattern. */
     public String format(double amount) {
         return currencySymbol + format.format(amount);
     }
 
-    /**
-     * Reads every stored balance into memory. Called once at start-up. Uses the
-     * local safe file when the database is unavailable and always refreshes the
-     * safe file when the database is the source.
-     */
     public void loadAll() throws SQLException {
         balances.clear();
         names.clear();
@@ -133,7 +119,6 @@ public class EconomyService {
         return row;
     }
 
-    /** Creates the account in memory and in the database when it does not exist yet. */
     public void ensureAccount(UUID uuid, String name) {
         names.put(uuid, name);
         if (balances.containsKey(uuid)) {
@@ -152,7 +137,6 @@ public class EconomyService {
         return player != null && hasAccount(player.getUniqueId());
     }
 
-    /** Returns the balance, creating the account with the starting balance when needed. */
     public double getBalance(UUID uuid) {
         Double balance = balances.get(uuid);
         if (balance == null) {
@@ -183,14 +167,12 @@ public class EconomyService {
         return name;
     }
 
-    /** Overwrites a balance, clamped to the configured maximum. */
     public void setBalance(UUID uuid, double amount) {
         double clamped = Math.max(0.0, Math.min(maxBalance, amount));
         balances.put(uuid, clamped);
         dirty.add(uuid);
     }
 
-    /** Adds money and returns the new balance. */
     public double deposit(UUID uuid, double amount) {
         double updated = Math.max(0.0, Math.min(maxBalance, getBalance(uuid) + amount));
         balances.put(uuid, updated);
@@ -198,7 +180,6 @@ public class EconomyService {
         return updated;
     }
 
-    /** Removes money when the player can afford it. Returns {@code false} otherwise. */
     public boolean withdraw(UUID uuid, double amount) {
         double current = getBalance(uuid);
         if (current < amount) {
@@ -213,17 +194,8 @@ public class EconomyService {
         return getBalance(uuid) >= amount;
     }
 
-    /** How a transfer between two players ended. */
     public enum TransferResult { SUCCESS, PAYMENTS_DISABLED, SELF, TOO_SMALL, TOO_POOR }
 
-    /**
-     * Moves money from one player to another, checking the same rules however the
-     * transfer was started. Shared by {@code /pay} and the balance menu so both
-     * cannot drift apart.
-     *
-     * @param amount the amount to send; the message for {@code TOO_SMALL} is the
-     *               caller's job, since the minimum comes from the config
-     */
     public TransferResult transfer(Player from, UUID target, double amount) {
         if (!plugin.getConfig().getBoolean("economy.allow-payments", true)) {
             return TransferResult.PAYMENTS_DISABLED;
@@ -242,27 +214,22 @@ public class EconomyService {
         return TransferResult.SUCCESS;
     }
 
-    /** The smallest amount {@code /pay} and the balance menu accept. */
     public double minimumPayment() {
         return plugin.getConfig().getDouble("economy.minimum-payment", 0.01);
     }
 
-    /** Whether payments between players are allowed at all. */
     public boolean paymentsAllowed() {
         return plugin.getConfig().getBoolean("economy.allow-payments", true);
     }
 
-    /** The balance a fresh account starts with, used by {@code /eco reset}. */
     public double startingBalance() {
         return startingBalance;
     }
 
-    /** Every account the plugin knows about, used by {@code /eco resetall}. */
     public java.util.Set<UUID> accountIds() {
         return new java.util.LinkedHashSet<>(balances.keySet());
     }
 
-    /** The richest players, highest balance first. */
     public List<BalanceEntry> top(int limit) {
         List<BalanceEntry> entries = new ArrayList<>();
         for (Map.Entry<UUID, Double> entry : balances.entrySet()) {
@@ -276,16 +243,10 @@ public class EconomyService {
         return maxBalance;
     }
 
-    /** The configured currency symbol, handy for plain-text output. */
     public String currencySymbol() {
         return currencySymbol;
     }
 
-    /**
-     * Writes all dirty balances back to MySQL. Blocking - call from an async
-     * task. The local safe file is always written first, so nothing is lost if
-     * the database is down or the write fails.
-     */
     public void saveDirty() {
         if (dirty.isEmpty()) {
             return;
@@ -337,7 +298,6 @@ public class EconomyService {
         }
     }
 
-    /** Pushes every locally stored profile back into MySQL after a reconnect. */
     public void resyncToDatabase() {
         if (!database.isAvailable()) {
             return;
@@ -371,7 +331,6 @@ public class EconomyService {
         }
     }
 
-    /** Schedules an async flush of all dirty balances. */
     public void saveAsync() {
         if (dirty.isEmpty()) {
             return;
@@ -379,18 +338,15 @@ public class EconomyService {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, this::saveDirty);
     }
 
-    /** Updates name and last-seen time without touching the balance. */
     public void saveAsync(UUID uuid) {
         dirty.add(uuid);
         saveAsync();
     }
 
-    /** Best effort synchronous flush, used on shutdown. */
     public void saveBlocking() {
         saveDirty();
     }
 
-    /** Marks a player as dirty so their name and last-seen are refreshed. */
     public void touch(Player player) {
         ensureAccount(player.getUniqueId(), player.getName());
     }

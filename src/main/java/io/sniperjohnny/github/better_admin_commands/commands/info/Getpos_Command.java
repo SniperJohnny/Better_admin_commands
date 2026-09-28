@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Shows the position of a player. */
 public class Getpos_Command implements TabExecutor {
 
     @Override

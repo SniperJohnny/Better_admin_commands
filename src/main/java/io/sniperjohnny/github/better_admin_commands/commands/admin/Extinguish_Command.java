@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Puts out a burning player. */
 public class Extinguish_Command implements TabExecutor {
 
     @Override

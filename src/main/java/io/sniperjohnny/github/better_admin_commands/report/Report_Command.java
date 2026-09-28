@@ -25,26 +25,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * The report system.
- *
- * <ul>
- *   <li>{@code /report} - the menu: create a ticket, browse your own tickets and,
- *       for staff, all open and closed tickets.</li>
- *   <li>{@code /reports} - staff shortcut straight to the open tickets.</li>
- *   <li>{@code /report view <id>} - opens one ticket (used by the chat buttons).</li>
- * </ul>
- *
- * <p>Every ticket is a two-way thread: the player and any number of staff reply
- * into the same ticket, and everybody involved is told when a new message
- * arrives.</p>
- */
 public class Report_Command implements TabExecutor {
 
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
     private static final int MESSAGE_SLOTS = 36;
 
-    /** A configured report type. */
     private record Preset(String id, String display, Material icon, String description, boolean targetRequired) {
     }
 
@@ -100,8 +85,6 @@ public class Report_Command implements TabExecutor {
         return true;
     }
 
-    /* -------------------------------------------------------- main menu --- */
-
     private void openMain(Player player) {
         boolean staff = player.hasPermission(ReportService.STAFF_PERMISSION);
         Menu menu = new Menu("&8Reports", 5);
@@ -136,8 +119,6 @@ public class Report_Command implements TabExecutor {
         menu.button(40, Items.of(Material.BARRIER, "&cClose"), event -> player.closeInventory());
         menu.open(player);
     }
-
-    /* ------------------------------------------------------- preset menu --- */
 
     private void openPresets(Player player, int page) {
         List<Preset> presets = presets();
@@ -179,8 +160,6 @@ public class Report_Command implements TabExecutor {
         menu.open(player);
     }
 
-    /* ------------------------------------------------------- target menu --- */
-
     private void openTargets(Player player, Preset preset, int page) {
         List<Player> online = new ArrayList<>(Bukkit.getOnlinePlayers());
         online.removeIf(other -> other.equals(player));
@@ -213,8 +192,6 @@ public class Report_Command implements TabExecutor {
         }
         menu.open(player);
     }
-
-    /* -------------------------------------------------------- ticket list -- */
 
     private void openList(Player player, boolean staffView, boolean openOnly, int page) {
         if (staffView && !player.hasPermission(ReportService.STAFF_PERMISSION)) {
@@ -291,8 +268,6 @@ public class Report_Command implements TabExecutor {
         return Items.of(icon, (report.isOpen() ? "&a" : "&7") + categoryDisplay(report.category())
                 + " &8#" + ReportService.shortId(report.id()), lore);
     }
-
-    /* -------------------------------------------------------- ticket view - */
 
     private void openTicket(Player player, String reportId, int page) {
         ReportService.Report report = plugin.reports().find(reportId);
@@ -376,8 +351,6 @@ public class Report_Command implements TabExecutor {
         menu.open(player);
     }
 
-    /* ------------------------------------------------------------- flows --- */
-
     private void startCreate(Player player, Preset preset, String target) {
         plugin.dialogs().message(player, "Reports » Create",
                 "&7Describe the &f" + preset.display() + "&7 report.",
@@ -427,8 +400,6 @@ public class Report_Command implements TabExecutor {
                 });
     }
 
-    /* ----------------------------------------------------------- presets --- */
-
     private List<Preset> presets() {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("report.presets");
         List<Preset> presets = new ArrayList<>();
@@ -473,8 +444,6 @@ public class Report_Command implements TabExecutor {
         Material material = name == null ? null : Material.matchMaterial(name.toUpperCase(Locale.ROOT));
         return material == null ? Material.PAPER : material;
     }
-
-    /* ----------------------------------------------------------- helpers --- */
 
     private static String date(long millis) {
         return DATE.format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()));

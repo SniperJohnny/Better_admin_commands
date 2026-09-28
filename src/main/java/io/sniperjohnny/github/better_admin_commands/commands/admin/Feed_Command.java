@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Fills the hunger bar of a player. */
 public class Feed_Command implements TabExecutor {
 
     @Override

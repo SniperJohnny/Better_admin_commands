@@ -8,10 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Players in "unlimited" mode place blocks and consume items without losing
- * them. The flag is stored in the player settings.
- */
 public class UnlimitedService {
 
     private static final String SETTING = "unlimited";
@@ -30,7 +26,6 @@ public class UnlimitedService {
         return isUnlimited(player.getUniqueId());
     }
 
-    /** Toggles the mode and returns the new state. */
     public boolean toggle(Player player) {
         boolean enabled = !isUnlimited(player);
         plugin.preferences().setBoolean(player.getUniqueId(), SETTING, enabled);
@@ -41,7 +36,6 @@ public class UnlimitedService {
         plugin.preferences().setBoolean(player.getUniqueId(), SETTING, false);
     }
 
-    /** Names of every online player who currently has unlimited items. */
     public List<String> activePlayers() {
         List<String> names = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {

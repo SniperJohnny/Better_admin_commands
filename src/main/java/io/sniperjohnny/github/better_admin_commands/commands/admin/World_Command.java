@@ -25,12 +25,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
 
-/**
- * World management and teleporting:
- * {@code /world [name]}, {@code /world list}, {@code /world tp <name>},
- * {@code /world create <name> [type]}, {@code /world load <name>},
- * {@code /world unload <name>} and {@code /world delete <name> confirm}.
- */
 public class World_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

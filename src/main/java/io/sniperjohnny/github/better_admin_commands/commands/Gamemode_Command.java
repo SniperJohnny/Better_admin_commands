@@ -16,34 +16,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Changes the gamemode, as a number ({@code /gm 1}) or by name
- * ({@code /gm creative}), for yourself or for another player.
- *
- * <p>Permissions are finer grained than one switch: the general node
- * {@code betteradmincommands.gamemode} grants <em>every</em> mode, while
- * {@code betteradmincommands.gamemode.survival}, {@code .creative},
- * {@code .adventure} and {@code .spectator} each grant only that one mode (the
- * mode numbers 0-3 map to the same node). Changing someone else's gamemode needs
- * the general node or {@code betteradmincommands.gamemode.others}, so a rank
- * that is only allowed to take <em>itself</em> to creative cannot do that to
- * others.</p>
- *
- * <ul>
- *   <li>{@code /gm <0-3|mode>} - your own gamemode</li>
- *   <li>{@code /gm <0-3|mode> <player>} - another player's gamemode</li>
- * </ul>
- */
 public class Gamemode_Command implements TabExecutor {
 
-    /** The general node: every mode, on yourself and on others. */
     public static final String ALL = "betteradmincommands.gamemode";
-    /** Node for changing the gamemode of another player. */
+
     public static final String OTHERS = ALL + ".others";
-    /** Prefix of the per-mode nodes, e.g. {@code betteradmincommands.gamemode.creative}. */
+
     public static final String MODE_PREFIX = ALL + ".";
 
-    /** The four modes, with the number and the short names each one answers to. */
     private static final List<String> CHOICES = List.of(
             "0", "survival", "s",
             "1", "creative", "c",
@@ -109,7 +89,6 @@ public class Gamemode_Command implements TabExecutor {
         return true;
     }
 
-    /** The mode an argument names, or {@code null} when it names none. */
     private static GameMode parse(String input) {
         return switch (input.toLowerCase(Locale.ROOT)) {
             case "0", "survival", "s" -> GameMode.SURVIVAL;
@@ -120,12 +99,10 @@ public class Gamemode_Command implements TabExecutor {
         };
     }
 
-    /** The permission key of a mode: {@code survival}, {@code creative}, … */
     public static String key(GameMode mode) {
         return mode.name().toLowerCase(Locale.ROOT);
     }
 
-    /** The mode as it is written in chat. */
     private static String display(GameMode mode) {
         return key(mode);
     }
@@ -153,7 +130,6 @@ public class Gamemode_Command implements TabExecutor {
         return Collections.emptyList();
     }
 
-    /** Whether the sender may use a mode the completion is about to offer. */
     private boolean mayUse(CommandSender sender, String choice) {
         if (plugin.permissions().has(sender, ALL)) {
             return true;

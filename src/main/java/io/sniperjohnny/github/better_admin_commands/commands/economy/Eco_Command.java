@@ -19,27 +19,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-/**
- * The administrative economy command, modelled on XConomy.
- *
- * <ul>
- *   <li>{@code /eco give|add <player> <amount>}</li>
- *   <li>{@code /eco take|remove|reduce <player> <amount>}</li>
- *   <li>{@code /eco set <player> <amount>}</li>
- *   <li>{@code /eco reset <player>} and {@code /eco resetall}</li>
- *   <li>{@code /eco balance <player>}</li>
- *   <li>{@code /eco top [page]}</li>
- * </ul>
- *
- * <p>The same logic is reachable through {@code /money …} and
- * {@code /balance …}, which are aliases of the balance command, so the usual
- * {@code /money set player 1000} works. Every action needs
- * {@code betteradmincommands.eco}, or the finer
- * {@code betteradmincommands.eco.<action>} node.</p>
- */
 public class Eco_Command implements TabExecutor {
 
-    /** Subcommands that mean "administrative action" rather than a player name. */
     private static final List<String> ACTIONS = List.of("give", "add", "take", "remove", "reduce",
             "set", "reset", "resetall", "balance", "bal", "top", "help");
 
@@ -58,14 +39,6 @@ public class Eco_Command implements TabExecutor {
         return true;
     }
 
-    /**
-     * Runs the economic subcommand in {@code args}, if it is one.
-     *
-     * @return {@code true} when the arguments named a subcommand and were handled
-     *         (even if they were wrong), {@code false} when the first argument is
-     *         not an economy action at all - the balance command uses that to
-     *         tell {@code /money set …} from {@code /money Steve}
-     */
     public boolean admin(CommandSender sender, Command command, String[] args) {
         if (args.length < 1) {
             return false;
@@ -90,8 +63,6 @@ public class Eco_Command implements TabExecutor {
         }
         return true;
     }
-
-    /* ------------------------------------------------------------ actions --- */
 
     private void help(CommandSender sender, Command command) {
         Msg.raw(sender, "&6Economy commands");
@@ -230,15 +201,11 @@ public class Eco_Command implements TabExecutor {
         }
     }
 
-    /** The name shown in the leaderboard: the nickname while the player is online. */
     private static String shown(EconomyService.BalanceEntry entry) {
         Player online = Bukkit.getPlayer(entry.uuid());
         return online != null ? Targets.displayName(online) : entry.name();
     }
 
-    /* ------------------------------------------------------------ helpers --- */
-
-    /** Whether the sender may run an economic action. */
     private boolean may(CommandSender sender, String action) {
         if (plugin.permissions().has(sender, "betteradmincommands.eco")
                 || plugin.permissions().has(sender, "betteradmincommands.eco." + action)) {

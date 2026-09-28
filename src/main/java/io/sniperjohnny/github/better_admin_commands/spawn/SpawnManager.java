@@ -8,10 +8,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Stores the server spawn in {@code spawn.yml} next to config.yml.
- * /setspawn writes the coordinates of the executing player, /spawn reads them.
- */
 public class SpawnManager {
 
     private final Better_Admin_Commands plugin;

@@ -18,17 +18,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * The mailbox behind {@code /mail}: the inbox newest first, one head per sender.
- * Opening a message marks it read; from there it can be answered or deleted.
- * Composing picks the receiver from the online players, or by typing a name, so
- * offline players can still be written to.
- *
- * <p>The mailbox is read <strong>off the main thread</strong> and the window is
- * drawn afterwards, so a slow database delays the window instead of freezing the
- * server. A redraw after a write waits for that write to finish, so a deleted or
- * newly sent message never shows up stale.</p>
- */
 public class Mail_Gui {
 
     private static final SimpleDateFormat STAMP = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -39,9 +28,6 @@ public class Mail_Gui {
         this.plugin = plugin;
     }
 
-    /* ----------------------------------------------------------- loading -- */
-
-    /** Opens the mailbox, reading it in the background first. */
     public void open(Player player, int page) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             List<MailService.Mail> box;
@@ -63,7 +49,6 @@ public class Mail_Gui {
         });
     }
 
-    /** Redraws once an async write has finished, back on the server thread. */
     private void redrawAfter(CompletableFuture<Void> write, Player player, int page) {
         write.whenComplete((ignored, failure) ->
                 plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -72,8 +57,6 @@ public class Mail_Gui {
                     }
                 }));
     }
-
-    /* ------------------------------------------------------------- inbox -- */
 
     private void render(Player player, List<MailService.Mail> mailbox, int page) {
         // Newest first is what people expect from a mailbox.
@@ -153,8 +136,6 @@ public class Mail_Gui {
         menu.open(player);
     }
 
-    /* -------------------------------------------------------- one message - */
-
     private void openMessage(Player player, MailService.Mail mail, int returnPage) {
         // Opening a message is what marks it read, so the list keeps showing which
         // ones are new until they are actually looked at.
@@ -219,8 +200,6 @@ public class Mail_Gui {
         });
         menu.open(player);
     }
-
-    /* ---------------------------------------------------------- compose --- */
 
     private void openCompose(Player player, int page) {
         List<Player> receivers = new ArrayList<>();
@@ -308,9 +287,6 @@ public class Mail_Gui {
         });
     }
 
-    /* ---------------------------------------------------------- helpers --- */
-
-    /** Splits a message into lore-sized lines so a long message stays readable. */
     static List<String> wrap(String message) {
         List<String> lines = new ArrayList<>();
         if (message == null || message.isBlank()) {

@@ -15,13 +15,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 
-/**
- * Jail cells live in {@code jails.yml}, the state of a jailed player is kept in
- * their player settings so it survives restarts.
- */
 public class JailManager {
 
-    /** A player serving time. */
     public record JailEntry(String jail, long until) {
 
         public boolean permanent() {
@@ -112,12 +107,9 @@ public class JailManager {
         return jails.size();
     }
 
-    /** The configured cell size players are contained in. */
     public double radius() {
         return Math.max(1.0, plugin.getConfig().getDouble("jail.radius", 8.0));
     }
-
-    /* ---------------------------------------------------------- prisoners -- */
 
     public JailEntry entryOf(UUID uuid) {
         String raw = plugin.preferences().get(uuid, SETTING, null);
@@ -147,7 +139,6 @@ public class JailManager {
         return true;
     }
 
-    /** Jails a player. {@code until} is an epoch millisecond timestamp or -1. */
     public void jail(UUID uuid, String jailName, long until) {
         plugin.preferences().set(uuid, SETTING, jailName + ";" + until);
     }
@@ -156,7 +147,6 @@ public class JailManager {
         plugin.preferences().set(uuid, SETTING, null);
     }
 
-    /** Moves a jailed player back to their cell. */
     public void sendToCell(Player player) {
         JailEntry entry = entryOf(player.getUniqueId());
         if (entry == null) {

@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Clears the inventory of a player. */
 public class Clear_Command implements TabExecutor {
 
     @Override

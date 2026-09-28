@@ -16,14 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Sends money from the sender to another player:
- *
- * <ul>
- *   <li>{@code /pay <player> <amount>} - send straight away</li>
- *   <li>{@code /pay <player>} - ask for the amount in chat</li>
- * </ul>
- */
 public class Pay_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -78,7 +70,6 @@ public class Pay_Command implements TabExecutor {
         return true;
     }
 
-    /** Moves the money and reports the outcome to both sides. */
     private void pay(Player self, OfflinePlayer target, double amount) {
         // The rules live in the economy service, so /pay and the balance menu
         // behave identically.
@@ -104,7 +95,8 @@ public class Pay_Command implements TabExecutor {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String @NotNull[] args) {
         if (args.length == 1) {
-            return Targets.complete(args[0]);
+            // Offline players are paid too, so their names are offered as well.
+            return Targets.completeIncludingOffline(args[0]);
         }
         if (args.length == 2) {
             return Targets.completeFrom(args[1], "10", "100", "1000");

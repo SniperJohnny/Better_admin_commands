@@ -12,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Teleports the sender to their previous location. */
 public class Back_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

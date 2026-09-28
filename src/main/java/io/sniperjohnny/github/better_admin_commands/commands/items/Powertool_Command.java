@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Binds a command to the item in your hand. */
 public class Powertool_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

@@ -11,11 +11,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Answer that every command hands out while the plugin is switched off with
- * {@code /betteradmincommands disable}. Only the management command itself
- * keeps working, so the plugin can be switched back on.
- */
 public class Disabled_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

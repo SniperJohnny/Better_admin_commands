@@ -11,7 +11,6 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 
-/** Keeps items of players who are in unlimited mode. */
 public class Unlimited_Listener implements Listener {
 
     private final Better_Admin_Commands plugin;

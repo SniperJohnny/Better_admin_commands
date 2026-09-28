@@ -13,11 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * The kit menu behind {@code /kit}. Every kit is a button that hands the kit
- * out; kits on cooldown or without permission are shown in grey with the reason,
- * so a player can tell the difference between "not yet" and "not for me".
- */
 public class Kit_Gui {
 
     private final Better_Admin_Commands plugin;
@@ -106,11 +101,6 @@ public class Kit_Gui {
         menu.open(player);
     }
 
-    /**
-     * Claims a kit and reports the outcome.
-     *
-     * @param returnPage the page to reopen afterwards, or -1 to leave the menu closed
-     */
     public void claim(Player player, String name, int returnPage) {
         KitManager.Claim claim = plugin.kits().claim(player, name);
         switch (claim.result()) {

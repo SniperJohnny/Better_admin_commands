@@ -18,20 +18,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
-/**
- * Puts the skin of a premium account on the player running the command.
- *
- * <ul>
- *   <li>{@code /skinchange <username>} - uses the skin of that account</li>
- *   <li>{@code /skinchange <uuid>} - same, but the account is named by its UUID</li>
- *   <li>{@code /skinchange off} - back to your own skin</li>
- * </ul>
- *
- * A name is resolved to its UUID at Mojang first and the skin is then read from
- * that UUID, exactly like sending the UUID straight away would. The lookup runs
- * off the main thread and the borrowed skin is stored, so it is applied again on
- * every join.
- */
 public class Skinchange_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -95,7 +81,6 @@ public class Skinchange_Command implements TabExecutor {
         return true;
     }
 
-    /** Applies a borrowed skin, or explains why it could not be applied. */
     private void report(CommandSender sender, Player player, String input, SkinService.Skin skin,
                         Throwable error) {
         if (error != null) {
@@ -120,7 +105,6 @@ public class Skinchange_Command implements TabExecutor {
         Msg.success(sender, "Your skin is now the one of " + skin.source() + ".");
     }
 
-    /** Puts the player's own skin back by asking Mojang for it again. */
     private void resetSkin(CommandSender sender, Player player) {
         Msg.send(sender, "&7Restoring your own skin...");
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin,
@@ -153,11 +137,6 @@ public class Skinchange_Command implements TabExecutor {
                 || value.equalsIgnoreCase("clear") || value.equalsIgnoreCase("own");
     }
 
-    /**
-     * Reads a UUID that is written with or without dashes. Returns {@code null}
-     * when the input is not a UUID at all, which is the signal that the argument
-     * should be treated as a username instead.
-     */
     private static UUID parseUuid(String value) {
         String trimmed = value == null ? "" : value.trim();
         if (trimmed.matches("[0-9a-fA-F]{32}")) {
@@ -175,7 +154,6 @@ public class Skinchange_Command implements TabExecutor {
         }
     }
 
-    /** A readable reason for a failed lookup. */
     private static String describe(Throwable error) {
         Throwable cause = error instanceof CompletionException && error.getCause() != null
                 ? error.getCause() : error;

@@ -8,23 +8,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 
-/**
- * Hands the {@code /nick} nickname to PlaceholderAPI, so a plugin that formats
- * the tab list or the name tag (TAB, for example) can show it without the two
- * plugins fighting over the same packets.
- *
- * <ul>
- *   <li>{@code %betteradmincommands_nickname%} - the borrowed group prefix plus
- *       the nickname, or the real name when no nickname is set</li>
- *   <li>{@code %betteradmincommands_nickname_raw%} - just the nickname, or the
- *       real name when none is set</li>
- *   <li>{@code %betteradmincommands_nick_prefix%} - the borrowed group prefix,
- *       or empty</li>
- * </ul>
- *
- * <p>The class is only loaded when PlaceholderAPI is actually installed, so the
- * plugin works on a server without it.</p>
- */
 public class NicknamePlaceholders extends PlaceholderExpansion {
 
     private final Better_Admin_Commands plugin;
@@ -48,7 +31,6 @@ public class NicknamePlaceholders extends PlaceholderExpansion {
         return plugin.getDescription().getVersion();
     }
 
-    /** Kept registered across a PlaceholderAPI reload. */
     @Override
     public boolean persist() {
         return true;

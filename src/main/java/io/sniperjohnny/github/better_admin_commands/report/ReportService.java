@@ -23,18 +23,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Report tickets and the message thread behind them.
- *
- * <p>A ticket has one creator (the player) and any number of staff who answer it,
- * so several staff can work on the same ticket. Everyone who took part is a
- * "participant": that is what drives the unread counts and who gets notified when
- * a new message arrives.</p>
- *
- * <p>Everything is cached in memory and written to MySQL in the background. This
- * feature is the one part of the plugin that needs the database to be reachable
- * - unlike balances or mail there is no local fallback for it.</p>
- */
 public class ReportService {
 
     public static final String BASE_PERMISSION = "betteradmincommands.report";
@@ -43,7 +31,6 @@ public class ReportService {
     public static final String OPEN = "OPEN";
     public static final String CLOSED = "CLOSED";
 
-    /** A ticket. */
     public record Report(String id, UUID reporterUuid, String reporterName, String targetName,
                          String category, String status, long createdAt, long updatedAt) {
         public boolean isOpen() {
@@ -51,12 +38,10 @@ public class ReportService {
         }
     }
 
-    /** One message in a ticket's thread. */
     public record Message(String id, String reportId, UUID authorUuid, String authorName,
                           boolean staff, String message, long createdAt) {
     }
 
-    /** Someone involved in a ticket: the creator, or any staff who answered it. */
     public record Participant(String reportId, UUID uuid, String name, boolean staff, long lastRead) {
     }
 
@@ -71,12 +56,9 @@ public class ReportService {
         this.database = database;
     }
 
-    /** Whether reports can be used at all (they need MySQL). */
     public boolean available() {
         return database.isAvailable();
     }
-
-    /* -------------------------------------------------------------- load --- */
 
     public void loadAll() {
         reports.clear();
@@ -160,8 +142,6 @@ public class ReportService {
         }
     }
 
-    /* ------------------------------------------------------------- reads --- */
-
     public Report find(String id) {
         if (id == null || id.isBlank()) {
             return null;
@@ -178,7 +158,6 @@ public class ReportService {
                 .findFirst().orElse(null);
     }
 
-    /** Open first, then most recently updated. */
     private static Comparator<Report> order() {
         return Comparator.comparing((Report report) -> !report.isOpen())
                 .thenComparing(Comparator.comparingLong(Report::updatedAt).reversed());
@@ -215,7 +194,6 @@ public class ReportService {
         return messages.getOrDefault(reportId, List.of()).size();
     }
 
-    /** Whether a player already took part in a ticket. */
     public boolean isParticipant(UUID uuid, String reportId) {
         return participants.getOrDefault(reportId, List.of()).stream()
                 .anyMatch(participant -> participant.uuid().equals(uuid));
@@ -248,9 +226,6 @@ public class ReportService {
         return total;
     }
 
-    /* ------------------------------------------------------------ writes --- */
-
-    /** Creates a ticket and its first message, then tells the staff who are online. */
     public Report create(Player reporter, String category, String targetName, String description) {
         long now = System.currentTimeMillis();
         String id = UUID.randomUUID().toString();
@@ -279,7 +254,6 @@ public class ReportService {
         return report;
     }
 
-    /** Adds a reply and notifies everybody else involved. */
     public Message reply(Player author, String reportId, String text) {
         Report report = reports.get(reportId);
         if (report == null) {
@@ -313,7 +287,6 @@ public class ReportService {
         return message;
     }
 
-    /** Marks a ticket as open or closed. */
     public void setStatus(String reportId, String status) {
         Report report = reports.get(reportId);
         if (report == null) {
@@ -325,7 +298,6 @@ public class ReportService {
         saveReport(updated);
     }
 
-    /** Adds a player to the ticket and marks them as caught up. */
     public void touch(Player player, String reportId) {
         Report report = reports.get(reportId);
         if (report == null) {
@@ -344,7 +316,6 @@ public class ReportService {
         saveParticipant(updated);
     }
 
-    /** Tells a player about unread tickets when they join. */
     public void notifyOnJoin(Player player) {
         int unread = totalUnread(player.getUniqueId());
         if (unread <= 0) {
@@ -370,8 +341,6 @@ public class ReportService {
     public static String shortId(String id) {
         return id == null ? "" : id.substring(0, Math.min(8, id.length()));
     }
-
-    /* --------------------------------------------------------- persistence - */
 
     private void saveReport(Report report) {
         String sql = "INSERT INTO `" + database.table("reports")
@@ -446,7 +415,6 @@ public class ReportService {
         });
     }
 
-    /** Category ids currently used, newest first, for the staff overview. */
     public Set<String> categoriesInUse() {
         Set<String> categories = new HashSet<>();
         for (Report report : reports.values()) {
@@ -455,7 +423,6 @@ public class ReportService {
         return categories;
     }
 
-    /** Counts per status, used by the menu labels. */
     public Map<String, Integer> counts() {
         Map<String, Integer> counts = new LinkedHashMap<>();
         counts.put(OPEN, 0);
@@ -466,7 +433,6 @@ public class ReportService {
         return counts;
     }
 
-    /** Free-text search across reporter, target and category, used by the staff menu. */
     public List<Report> search(String query, boolean openOnly) {
         String needle = query.toLowerCase(Locale.ROOT);
         List<Report> matches = new ArrayList<>();

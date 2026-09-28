@@ -5,16 +5,11 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 
-/**
- * Serialises locations to a compact string so they can be stored in YAML files
- * or single database columns without losing the world or rotation.
- */
 public final class Locations {
 
     private Locations() {
     }
 
-    /** Format: {@code world;x;y;z;yaw;pitch} */
     public static String serialize(Location location) {
         if (location == null || location.getWorld() == null) {
             return null;

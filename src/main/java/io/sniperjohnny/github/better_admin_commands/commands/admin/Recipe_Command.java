@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Shows how an item is crafted or smelted. */
 public class Recipe_Command implements TabExecutor {
 
     @Override

@@ -16,10 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Vertical movement helpers, registered for {@code /top}, {@code /bottom} and
- * {@code /descend}.
- */
 public class Vertical_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -73,7 +69,6 @@ public class Vertical_Command implements TabExecutor {
         return true;
     }
 
-    /** Walks from start to end looking for a two block high pocket. */
     private Location scan(World world, int x, int z, int start, int end, int step, Location original) {
         for (int y = start; step > 0 ? y <= end : y >= end; y += step) {
             Block below = world.getBlockAt(x, y - 1, z);

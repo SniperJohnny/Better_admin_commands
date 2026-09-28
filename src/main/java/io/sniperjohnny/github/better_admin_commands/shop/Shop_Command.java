@@ -23,18 +23,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * The shop. {@code /shop} opens a GUI: a list of shops (or the only shop
- * directly), the items of a page, and one detail view per item where the amount
- * and the trade are chosen. The contents come from
- * {@link EconomyShopGuiImporter}, so this is also what replaces EconomyShopGUI.
- *
- * <p>{@code /shop import} (for staff) re-reads the EconomyShopGUI files, and
- * {@code /shop search <text>} jumps straight to the search results.</p>
- */
 public class Shop_Command implements TabExecutor {
 
-    /** The amounts offered as one-click buttons. Anything else goes through chat. */
     private static final int[] QUANTITIES = {1, 8, 16, 32, 64};
 
     private final Better_Admin_Commands plugin;
@@ -81,7 +71,6 @@ public class Shop_Command implements TabExecutor {
         return true;
     }
 
-    /** Re-reads the EconomyShopGUI files and swaps the shop over. Staff only. */
     private void importNow(Player player) {
         if (!player.hasPermission("betteradmincommands.shop.admin")) {
             Msg.noPermission(player);
@@ -109,7 +98,6 @@ public class Shop_Command implements TabExecutor {
         return null;
     }
 
-    /** Opens the in-game editor. Staff only. */
     private void editNow(Player player) {
         if (!player.hasPermission("betteradmincommands.shop.admin")) {
             Msg.noPermission(player);
@@ -118,13 +106,10 @@ public class Shop_Command implements TabExecutor {
         plugin.shopEditor().openShopList(player, 0);
     }
 
-    /* -------------------------------------------------------- shop list --- */
-
     void openMain(Player player) {
         openMain(player, 0);
     }
 
-    /** The ordinary shop entry point, also used by the editor's "back to the shop". */
     void openMain(Player player, int page) {
         List<ShopService.Shop> shops = plugin.shops().visibleShops(player);
         if (shops.isEmpty()) {
@@ -214,8 +199,6 @@ public class Shop_Command implements TabExecutor {
         menu.open(player);
     }
 
-    /* ------------------------------------------------------------ shop ---- */
-
     private void openShop(Player player, String shopId, int page) {
         ShopService.Shop shop = plugin.shops().shop(shopId);
         if (shop == null) {
@@ -261,8 +244,6 @@ public class Shop_Command implements TabExecutor {
         }
         menu.open(player);
     }
-
-    /* ------------------------------------------------------------ item ---- */
 
     private void openItem(Player player, String itemKey, String shopId, int shopPage) {
         ShopService.ShopItem item = plugin.shops().findItem(itemKey);
@@ -328,8 +309,6 @@ public class Shop_Command implements TabExecutor {
         menu.open(player);
     }
 
-    /* ---------------------------------------------------------- search ---- */
-
     private void promptSearch(Player player, Runnable onCancel) {
         plugin.dialogs().text(player, "Shop » Search",
                 "&7What are you looking for? &8(part of an item name)",
@@ -387,8 +366,6 @@ public class Shop_Command implements TabExecutor {
         }
         menu.open(player);
     }
-
-    /* ------------------------------------------------------------ trade --- */
 
     private void promptAmount(Player player, String mode, ShopService.ShopItem item,
                               String shopId, int shopPage) {
@@ -462,9 +439,6 @@ public class Shop_Command implements TabExecutor {
         openItem(player, item.key(), shopId, shopPage);
     }
 
-    /* ---------------------------------------------------------- helpers --- */
-
-    /** The item with its trade details written into the lore. */
     private ItemStack describe(ShopService.ShopItem item, String footer) {
         ItemStack display = item.display().clone();
         ItemMeta meta = display.getItemMeta();
@@ -491,7 +465,6 @@ public class Shop_Command implements TabExecutor {
         return display;
     }
 
-    /** A friendly item name, preferring a custom display name. */
     private static String pretty(ItemStack item) {
         ItemMeta meta = item.getItemMeta();
         if (meta != null && meta.hasDisplayName() && meta.displayName() != null) {

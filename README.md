@@ -87,9 +87,9 @@ Two deliberate design choices are worth knowing before you install it:
 | Area | What it covers |
 | --- | --- |
 | **Admin** | gamemode, fly, god, vanish, heal, feed, speed, repair, give, clear, enchant, exp, broadcast, hat, craft, enderchest, invsee, sudo, near, time/weather (personal too), world tools, spawner/mob tools |
-| **Moderation** | kick, kickall, ban, tempban, IP ban, unban, unbanip, banlist, mute/unmute with timers, vanish with a tab-list cue for staff |
+| **Moderation** | kick, kickall, ban, tempban, IP ban, unban, unbanip, banlist, mute/unmute with timers, vanish with a tab-list cue for staff, mobs ignoring vanished players and containers opening silently |
 | **Teleporting** | spawn, warps, homes, `/tp`, `/tphere`, `/tpall`, `/tppos`, `/tpa` and `/tpahere` with clickable accept/deny, `/tptoggle`, `/tpaall`, `/back`, `/rtp`, `/top`, `/bottom`, `/descend`, `/jump` |
-| **Economy** | balances, `/pay`, `/baltop`, `/eco`, `/worth`, `/sell`, exposed to other plugins through **Vault** |
+| **Economy** | balances, `/pay` (online *and* offline players), `/baltop`, `/eco`, `/worth`, `/sell` with a drop-in sell window, exposed to other plugins through **Vault** |
 | **Trading** | `/trade` with a two-sided window, items and money, dual confirmation, full rollback, and a searchable history |
 | **Auction house** | `/ah` as a GUI: browse, sort, search, sell, my listings, claims, taxes and fees |
 | **Shop** | `/shop`, imported from EconomyShopGUI, with per-shop permissions and an in-game editor |
@@ -99,7 +99,7 @@ Two deliberate design choices are worth knowing before you install it:
 | **Items** | `/more`, `/rename`, `/lore`, `/skull`, `/book`, `/sort`, `/stack`, `/condense`, `/powertool`, `/unlimited`, `/disposal` |
 | **Jail** | named cells, `/jail`, `/unjail`, `/togglejail`, automatic release when the timer runs out |
 | **Nick & skin** | `/nick` (tab list, chat, rank prefix, borrowed ranks), `/skinchange` (Mojang skin lookup) |
-| **Menus** | `/warps`, `/homes`, `/kit`, `/balance`, `/baltop`, `/mail`, `/ignorelist`, `/jails`, `/ptime`, `/pweather`, `/unlimited`, `/realname`, `/ah`, `/shop`, `/report` |
+| **Menus** | `/warps`, `/homes`, `/kit`, `/balance`, `/baltop`, `/mail`, `/ignorelist`, `/jails`, `/ptime`, `/pweather`, `/unlimited`, `/realname`, `/ah`, `/shop`, `/report`, `/sell` (drop-in window) |
 
 Everything player-related — balances, homes, mutes, settings, mail, listings, shops, trades — lives
 in MySQL, with an always-updated local YAML copy in `plugins/Better_Admin_Commands/data/`.
@@ -275,19 +275,22 @@ modules:
 
 What switching a module off does:
 
-- its **commands stay registered** but answer with a short note naming the option that switched the
-  feature off. A command that silently vanishes confuses players more than one that explains itself;
+- its **commands are not registered at all**, so their names are free for other plugins. A server
+  that runs its own shop plugin can set `modules.shop.enabled: false` and keep `/shop` — the plugin
+  stops claiming the name, so whoever asks for it can take it;
 - its **listeners are not registered** and its **repeating tasks do not run**, so a switched-off
   feature costs nothing while the server runs;
 - the **management command always works**, whatever else is off.
 
-Changes are applied by `/betteradmincommands reload` or a restart. `/betteradmincommands modules`
-prints the state of every module:
+Changes are applied by `/betteradmincommands reload` or a restart; a reload takes the names out of
+the command map (or puts them back) right away, without a restart. `/betteradmincommands modules`
+prints the state of every module and which of its commands are not registered right now:
 
 ```
 [BetterAdmin] Feature modules (config.yml » modules)
  &aON  &7admin &8(Administration, 36 command(s))
  &cOFF &7shop &8(Shop, 1 command(s))
+ &cNot registered (feature off): &f/shop
  ...
 ```
 
@@ -316,7 +319,8 @@ The modules are:
 | `afk` | afk (+ activity tracking and auto-away) |
 
 `disabled-commands` takes a command name or one of its aliases, so `sell`, `money` or `ah` all
-work. Everything else in those modules keeps working.
+work. A command switched off this way is not registered either, so another plugin can take its
+name; everything else in those modules keeps working.
 
 > **Four modules have an older switch of their own.** `economy.enabled`, `trade.enabled`,
 > `auction.enabled` and `shop.enabled` already existed before modules did, and they still count:
@@ -331,8 +335,8 @@ back. Because the plugin stays loaded, replacing the jar still needs a restart.
 ## Menus and dialogs
 
 Almost every browsable command has a menu: `/warps`, `/homes`, `/kit`, `/balance`, `/baltop`,
-`/mail`, `/ignorelist`, `/jails`, `/ptime`, `/pweather`, `/unlimited`, `/realname`, `/ah`, `/shop`
-and `/report`. Every window shares one theme — a dark border, a lighter background, consistent
+`/mail`, `/ignorelist`, `/jails`, `/ptime`, `/pweather`, `/unlimited`, `/realname`, `/ah`, `/shop`,
+`/report` and the bare `/sell` window. Every window shares one theme — a dark border, a lighter background, consistent
 headings and a navigation row — so they feel like one piece instead of a pile of screens. Text
 forms stay available where they existed (`/warps list`, `/homes list`, `/baltop list`, …), which is
 also what the console gets.
@@ -438,6 +442,11 @@ they carry the cue from `moderation.vanish-tab-cue` (default `[V]`) in front of 
 with TAB installed the cue is drawn through TAB's API. Vanish state is in memory only: a restart
 brings everyone back visible.
 
+A vanished player is also made not to give themselves away: **mobs stop targeting them** (and any mob
+already chasing them forgets them), and **containers open silently** — a chest, barrel, shulker box,
+hopper, ender chest and the like no longer swing open or play a sound, so nobody nearby notices.
+Turn either off with `moderation.vanish-mobs-ignore` / `moderation.vanish-silent-containers`.
+
 ### Economy — module `economy`
 
 | Command | Usage | Permission |
@@ -447,12 +456,24 @@ brings everyone back visible.
 | `/pay` | `/pay <player> <amount>` | `betteradmincommands.pay` |
 | `/eco` | `/eco <give\|take\|set\|reset\|resetall\|balance\|top> <player> [amount]` | `betteradmincommands.eco` (or `.eco.<action>`) |
 | `/worth` | `/worth [item]` | `betteradmincommands.worth` |
-| `/sell` | `/sell <hand\|all\|amount>` | `betteradmincommands.sell` |
+| `/sell` | `/sell [hand\|all\|amount]` (no argument opens the sell window) | `betteradmincommands.sell` |
 
 `/balance` prints the amount **and** opens the balance menu, where **Send money** picks the receiver
-from the online players (no name to type) and then asks for the amount in a window. `/baltop` is a
-paged grid of heads with the viewer's own rank highlighted. Every transfer through the menu goes
-through the same code as `/pay`, so the rules cannot differ between the two.
+from the online players (or from an offline player, typed in by name) and then asks for the amount
+in a window. `/baltop` is a paged grid of heads with the viewer's own rank highlighted. Every
+transfer through the menu goes through the same code as `/pay`, so the rules cannot differ between
+the two.
+
+`/pay <player> <amount>` works whether the receiver is online or not — an offline payment simply
+waits in their balance until they are back, and tab completion offers the names of players who have
+played here before as well.
+
+`/sell` without an argument opens a **sell window**: drop in whatever should go, close it, and
+everything the server buys (the `worth` section) is sold at once and paid into your balance. Anything
+without a price is handed straight back, so nothing can be lost by dropping it in. The text forms
+`/sell hand`, `/sell all` and `/sell <amount>` still work. The window is sized by `sell.gui-rows`
+(default 6), and because every slot is usable there is no navigation row — nothing but your own
+items is ever in it.
 
 ### Trading — module `trade`
 
@@ -852,8 +873,8 @@ Extra permissions used for finer control:
 - `betteradmincommands.report` (default `true`), `.report.staff` (default `op`) — open tickets / see
   and answer every ticket
 - `betteradmincommands.trade` (default `true`), `.trade.log.others`, `.trade.notify`
-- `betteradmincommands.kick.notify`, `.ban.notify`, `.unban.notify` — staff notifications (each can be
-  switched off per player with `/notify`)
+- `betteradmincommands.kick.notify`, `.ban.notify`, `.unban.notify`, `.admin.notify` — staff
+  notifications (each can be switched off per player with `/notify`)
 - `betteradmincommands.enderchest.others`, `.broadcast.receive`, `.unlimited.list`
 - `betteradmincommands.world.manage` — create and remove worlds
 - `betteradmincommands.teleport.bypass` — skips the teleport warm-up and the `/back` cooldown
@@ -888,7 +909,7 @@ All settings live in `config.yml` (generated on first start).
 The file starts with a version marker:
 
 ```yaml
-config-version: 14
+config-version: 15
 ```
 
 On every start (and on `/betteradmincommands reload`) the plugin compares your file with the template
@@ -1033,6 +1054,8 @@ premium edition are both found without editing the list.
 | `moderation.default-mute-seconds` | `-1` | Default mute length; `-1` means permanent |
 | `moderation.mute-message` | see file | Message muted players see when they chat (`%reason%`) |
 | `moderation.vanish-tab-cue` | `&7[&8V&7] &r` | Marker shown in front of a vanished player in the tab list |
+| `moderation.vanish-mobs-ignore` | `true` | Mobs stop targeting a vanished player (and forget them) |
+| `moderation.vanish-silent-containers` | `true` | Containers a vanished player opens make no sound and no animation |
 | `afk.auto-afk-enabled` | `true` | Mark players as away automatically |
 | `afk.auto-afk-minutes` | `10` | Idle minutes before auto-afk kicks in |
 | `jail.radius` | `8.0` | How far a jailed player may move before being pulled back |
@@ -1052,12 +1075,13 @@ premium edition are both found without editing the list.
 | `unlimited.gui-rows` | `4` | Rows of the unlimited-items menu |
 | `realname.gui-rows` | `6` | Rows of the nickname overview |
 | `kit-gui.rows` / `kit-gui.icon` | `3` / `CHEST` | Layout of the `/kit` menu; a single kit can set its own `icon:` |
+| `sell.gui-rows` | `6` | Rows of the `/sell` window (1-6) |
 
 ### `notifications`, `worth`, `kits`, `messages`
 
 - **`notifications.categories.<id>`** — `display`, `permission` and `default` for each notification a
-  player can toggle with `/notify`. The shipped ids are `trade`, `report`, `kick`, `ban`, `unban` and
-  `mail`; add your own and they show up in the command automatically.
+  player can toggle with `/notify`. The shipped ids are `trade`, `report`, `kick`, `ban`, `unban`,
+  `mail` and `admin`; add your own and they show up in the command automatically.
 - **`worth`** — map of `MATERIAL: price` used by `/worth` and `/sell`. Only listed items can be sold.
 - **`kits`** — kit definitions. Item format: `"MATERIAL[:AMOUNT]"` or
   `"MATERIAL:AMOUNT:ENCHANTMENT:LEVEL"`. A cooldown of `-1` disables the cooldown. Kit entries are
@@ -1171,7 +1195,8 @@ src/main/java/io/sniperjohnny/github/better_admin_commands/
 ├── config/                      ConfigUpdater: adds missing options to config.yml
 ├── commands/                    one class per command, grouped by area
 │   └── admin/ economy/ home/ info/ items/ jail/ moderation/ social/ teleport/
-├── listeners/                   join, quit, chat, activity, respawn, trade, jail, powertool, unlimited
+├── listeners/                   join, quit, chat, activity, respawn, trade, jail, powertool,
+│                                 unlimited, vanish (mobs and silent containers)
 ├── gui/                         Menu, Items, Theme, Gui_Listener, ChatPromptService, DialogPromptService
 ├── storage/                     Database (JDBC pool) and LocalStore (the data/*.yml mirror)
 ├── economy/ auction/ shop/ trade/ report/ mail/ jail/ kit/ home/ warp/ spawn/
@@ -1291,18 +1316,24 @@ Public API:
 | `modules()` / `moduleIds()` / `module(id)` | the module table, for `/betteradmincommands modules` and tab completion |
 | `moduleOf(command)` / `display(id)` | which module a command belongs to, and its display name |
 | `enabled(id)` | module on? Honours the module key **and** the legacy `economy.enabled` / `trade.enabled` / `auction.enabled` / `shop.enabled` key (both must be on) |
-| `commandEnabled(command)` | module on **and** not in `modules.disabled-commands` |
-| `blockReason(command)` | the message shown by a switched-off command, or `null` |
+| `commandEnabled(command)` | module on **and** not in `modules.disabled-commands` (the caller also checks the aliases) |
 | `describeAll()` | pre-formatted lines for the command output |
 
 Where it is enforced:
 
 - **commands** — `Better_Admin_Commands#bind(name)` is the single decision point. It points a
-  `PluginCommand` at its real executor, at `FeatureDisabled_Command` (which reads the module back
-  out of the `Command` it is handed and prints `blockReason`), or at `Disabled_Command` when the
-  whole plugin is off. `register(...)`, `rebindCommands()`, `setPluginDisabled(...)` and
-  `applyFeatures()` all funnel through it, so a binding can never drift away from `config.yml`.
-  The management command is deliberately left alone.
+  `PluginCommand` at its real executor, at `Disabled_Command` when the whole plugin is off, or
+  takes it **out of the command map** when its feature is off. `bindAll()` (used by
+  `registerCommands()`, `rebindCommands()`, `setPluginDisabled(...)` and `applyFeatures()`) runs
+  `bind` for every command and reports what changed in one log line, so a binding can never drift
+  away from `config.yml`. The management command is deliberately left alone.
+- **released commands** — `release(name, command)` drops every name the command answers to (its
+  own, its aliases and the prefixed forms) from the server's command table, so another plugin can
+  claim it (`/shop` while the shop module is off). `claim(...)` registers it back with
+  `commandMap.register(...)` when the feature returns, and `syncCommands()` refreshes the clients'
+  command list. The names are kept in `releasedCommands`, so `bind` can find the `PluginCommand`
+  again; `unregisteredCommands()` feeds `/betteradmincommands modules` and `unboundCommands()`
+  skips them on purpose.
 - **listeners** — `registerListeners()` consults `features.enabled(...)` per module and always
   starts with `unregisterListeners()` so re-registering cannot double-handle events.
 - **tasks** — `startTasks()` / `start*Task()` check the module before scheduling.
@@ -1318,8 +1349,8 @@ Where it is enforced:
    `config-version` so existing installs pick the new section up.
 4. Document it in the README table.
 
-Modules only control what is *registered*. Gating a command that is already bound is enough to make
-it answer with the "switched off" note, which is why nothing has to exist twice.
+Modules only control what is *registered*. A command whose module is off is taken out of the
+command map, so nothing has to exist twice — and its name is free for another plugin.
 
 ## Adding a command
 
@@ -1327,7 +1358,8 @@ it answer with the "switched off" note, which is why nothing has to exist twice.
 2. Add its name, usage, description and permission to `plugin.yml` — a command that is not declared
    there cannot be bound.
 3. Register it in `registerCommands()` with `register("name", new Your_Command(this))`. `register`
-   stores the executor and calls `bind`, which applies the module state for you.
+   stores the executor; `bindAll()` at the end of `registerCommands()` applies the module state of
+   every command, so a switched-off command never reaches the command map.
 4. If it is not part of an existing module, add it to the module's `commands()` list in
    `FeatureService` and mention the permission in the README.
 

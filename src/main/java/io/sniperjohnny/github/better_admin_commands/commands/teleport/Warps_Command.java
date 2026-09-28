@@ -12,10 +12,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Opens the warp menu, where every warp is a button. {@code /warps list} keeps
- * the plain text listing, and the console always gets the text form.
- */
 public class Warps_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

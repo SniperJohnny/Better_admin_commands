@@ -16,20 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Lets a player pick which notifications they want:
- *
- * <pre>
- *   /notify                 list them all with their state
- *   /notify &lt;name&gt;          flip one on or off
- *   /notify &lt;name&gt; on|off   set one outright
- *   /notify all on|off      set every one at once
- *   /notify reset           back to the server defaults
- * </pre>
- *
- * <p>A notification only ever arrives when the player also holds its permission,
- * so the toggles narrow things down rather than granting them.</p>
- */
 public class Notify_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;
@@ -102,7 +88,6 @@ public class Notify_Command implements TabExecutor {
         };
     }
 
-    /** Prints every notification with its state and a clickable toggle. */
     private void list(Player player, String label) {
         NotificationService notifications = plugin.notifications();
         Msg.raw(player, "&6Your notifications &7(click to toggle)");

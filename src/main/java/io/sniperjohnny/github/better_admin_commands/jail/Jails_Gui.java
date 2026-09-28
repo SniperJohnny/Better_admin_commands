@@ -12,15 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * The jail list behind {@code /jails}. Every cell is a button that teleports
- * staff to it, which is the whole point of the list - checking a cell, or
- * fetching whoever is in it.
- *
- * <p>Deleting a cell is deliberately not offered here: {@code /deljail} stays
- * the only way, so a misclick in a menu cannot remove a cell that someone is
- * currently sitting in.</p>
- */
 public class Jails_Gui {
 
     private final Better_Admin_Commands plugin;

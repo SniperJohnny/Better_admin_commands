@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-/** Shows when a player was last online. */
 public class Seen_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

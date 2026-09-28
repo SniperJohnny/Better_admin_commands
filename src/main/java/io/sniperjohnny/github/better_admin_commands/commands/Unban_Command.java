@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Removes a name ban. */
 public class Unban_Command implements TabExecutor {
 
     @Override

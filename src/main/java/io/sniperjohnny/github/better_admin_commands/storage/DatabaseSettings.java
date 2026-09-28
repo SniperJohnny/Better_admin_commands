@@ -4,23 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
-/**
- * Reads the database connection out of a single connection string.
- *
- * <p>Most hosting panels hand out something like</p>
- *
- * <pre>jdbc:mysql://user:p%40ssword@127.0.0.1:3306/minecraft</pre>
- *
- * <p>and this class takes that apart: which engine it is, where the server
- * lives, which database, and the credentials - decoded, because panels
- * percent-encode the characters that would otherwise break the URL.</p>
- *
- * <p>Both the {@code jdbc:} form and the plain URL form are accepted, with or
- * without credentials, so a string can be pasted straight into config.yml.</p>
- */
 public final class DatabaseSettings {
 
-    /** What kind of server a connection string points at. */
     public enum Engine {
         MYSQL("MySQL"),
         MARIADB("MariaDB"),
@@ -34,17 +19,14 @@ public final class DatabaseSettings {
             this.label = label;
         }
 
-        /** Human readable name, for logs and messages. */
         public String label() {
             return label;
         }
 
-        /** Whether this plugin can actually talk to it. */
         public boolean supported() {
             return this == MYSQL || this == MARIADB;
         }
 
-        /** The port used when the connection string does not name one. */
         public int defaultPort() {
             return switch (this) {
                 case POSTGRESQL -> 5432;
@@ -54,11 +36,9 @@ public final class DatabaseSettings {
         }
     }
 
-    /** Everything needed to open the connection. */
     public record Connection(Engine engine, String host, int port, String database, String user,
                              String password, String parameters) {
 
-        /** A one line summary that never prints the password. */
         public String describe() {
             if (engine == Engine.SQLITE) {
                 return engine.label() + " file " + database;
@@ -81,11 +61,6 @@ public final class DatabaseSettings {
     private DatabaseSettings() {
     }
 
-    /**
-     * Parses a connection string.
-     *
-     * @return the parsed settings, or {@code null} when the input is empty
-     */
     public static Connection parse(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
@@ -171,7 +146,6 @@ public final class DatabaseSettings {
         return new Connection(engine, percentDecode(host).trim(), port, database, user, password, parameters);
     }
 
-    /** Maps a URL scheme onto the engine it belongs to. */
     public static Engine engineOf(String scheme) {
         if (scheme == null) {
             return Engine.UNKNOWN;
@@ -185,13 +159,6 @@ public final class DatabaseSettings {
         };
     }
 
-    /**
-     * Decodes {@code %XX} escapes the way a URL userinfo section is encoded.
-     *
-     * <p>Unlike a query string, a {@code +} is a literal plus here - which
-     * matters, because panels hand out passwords with {@code %2B} for a plus and
-     * a naive URL decoder would silently turn it into a space.</p>
-     */
     public static String percentDecode(String value) {
         if (value == null || value.indexOf('%') < 0) {
             return value == null ? "" : value;
@@ -213,10 +180,6 @@ public final class DatabaseSettings {
         return bytes.toString(StandardCharsets.UTF_8);
     }
 
-    /**
-     * A suggestion for the most common connection failures, or {@code null}
-     * when the message does not look familiar.
-     */
     public static String hintFor(String message) {
         if (message == null) {
             return null;

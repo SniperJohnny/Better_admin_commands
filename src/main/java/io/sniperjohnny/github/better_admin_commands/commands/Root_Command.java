@@ -7,14 +7,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * The plugin management command when its name or aliases are changed through
- * {@code commands.root-name} / {@code commands.root-aliases} in config.yml.
- *
- * <p>Command names cannot be changed in {@code plugin.yml} at runtime, so this
- * command is registered in the command map directly and forwards every call to
- * the normal {@link Plugin_Command}.</p>
- */
 public class Root_Command extends Command {
 
     private final Plugin_Command delegate;

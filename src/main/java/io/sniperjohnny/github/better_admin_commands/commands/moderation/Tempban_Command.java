@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-/** Temporarily bans a player. */
 public class Tempban_Command implements TabExecutor {
 
     @Override

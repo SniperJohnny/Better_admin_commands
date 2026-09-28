@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-/** Sorts the inventory by material name. */
 public class Sort_Command implements TabExecutor {
 
     @Override

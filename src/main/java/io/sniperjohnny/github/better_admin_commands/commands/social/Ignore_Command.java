@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Toggles ignoring the private messages of another player. */
 public class Ignore_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

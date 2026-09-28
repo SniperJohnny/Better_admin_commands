@@ -15,10 +15,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Opens the home menu, where a home can be teleported to or deleted. {@code
- * /homes list} keeps the plain text listing.
- */
 public class Homes_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

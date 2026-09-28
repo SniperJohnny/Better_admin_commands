@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Shows the richest players on the server. */
 public class Baltop_Command implements TabExecutor {
 
     private static final int PAGE_SIZE = 10;
@@ -51,7 +50,6 @@ public class Baltop_Command implements TabExecutor {
         return true;
     }
 
-    /** The text form of the leaderboard, one page at a time. */
     private void show(CommandSender sender, int page) {
         List<EconomyService.BalanceEntry> entries = plugin.economy().top(1000);
         if (entries.isEmpty()) {

@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Removes a mute from a player. */
 public class Unmute_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

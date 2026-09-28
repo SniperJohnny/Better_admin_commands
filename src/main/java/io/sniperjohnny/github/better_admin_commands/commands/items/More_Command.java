@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Fills the held stack up to its maximum size. */
 public class More_Command implements TabExecutor {
 
     @Override

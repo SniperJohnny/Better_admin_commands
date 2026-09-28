@@ -7,19 +7,12 @@ import io.sniperjohnny.github.better_admin_commands.gui.Menu;
 import io.sniperjohnny.github.better_admin_commands.util.Msg;
 import io.sniperjohnny.github.better_admin_commands.util.Targets;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The balance menu behind {@code /balance}: your balance, a shortcut to the
- * richest players and a "send money" flow that picks the receiver from the
- * online players instead of making you type a name.
- *
- * <p>Every transfer goes through {@link EconomyService#transfer}, so the menu
- * enforces exactly the same rules as {@code /pay}.</p>
- */
 public class Balance_Gui {
 
     private final Better_Admin_Commands plugin;
@@ -40,6 +33,7 @@ public class Balance_Gui {
         if (plugin.economy().paymentsAllowed() && player.hasPermission("betteradmincommands.pay")) {
             menu.button(11, Items.of(Material.GOLD_INGOT, "&aSend money",
                             "&7Pick a player and type the amount.",
+                            "&7Online and offline players both work.",
                             "",
                             "&eClick to choose a player"),
                     event -> openReceivers(player, 0));
@@ -56,19 +50,12 @@ public class Balance_Gui {
         menu.open(player);
     }
 
-    /* ------------------------------------------------------- send money --- */
-
     private void openReceivers(Player player, int page) {
         List<Player> receivers = new ArrayList<>();
         for (Player online : plugin.getServer().getOnlinePlayers()) {
             if (!online.getUniqueId().equals(player.getUniqueId())) {
                 receivers.add(online);
             }
-        }
-        if (receivers.isEmpty()) {
-            Msg.error(player, "There is nobody else online to pay.");
-            open(player);
-            return;
         }
         receivers.sort((first, second) -> first.getName().compareToIgnoreCase(second.getName()));
 
@@ -95,7 +82,15 @@ public class Balance_Gui {
         if (current > 0) {
             menu.button(nav, Items.arrow(true, true), event -> openReceivers(player, current - 1));
         }
-        menu.button(nav + 4, Items.of(Material.PAPER, "&7Page &f" + (current + 1) + "&7/&f" + pages));
+        // Paying someone who is offline: the receiver is typed in by name.
+        menu.button(nav + 2, Items.of(Material.NAME_TAG, "&aPay an offline player",
+                        "&7Someone who is not online right now.",
+                        "",
+                        "&eClick to type their name"),
+                event -> promptName(player));
+        menu.button(nav + 4, Items.of(Material.PAPER, "&7Page &f" + (current + 1) + "&7/&f" + pages,
+                receivers.isEmpty() ? "&7Nobody else is online - pay an offline player instead."
+                        : "&7Pick a player from the heads above."));
         menu.button(nav + 6, Items.of(Material.BARRIER, "&cBack"), event -> open(player));
         if (current < pages - 1) {
             menu.button(nav + 8, Items.arrow(false, true), event -> openReceivers(player, current + 1));
@@ -103,10 +98,28 @@ public class Balance_Gui {
         menu.open(player);
     }
 
-    private void promptAmount(Player player, Player receiver) {
+    private void promptName(Player player) {
+        plugin.dialogs().text(player, "Balance » Send money",
+                "&7Who do you want to pay? Type their name - they may be offline.",
+                "Player", "", 16, answer -> {
+                    if (DialogPromptService.isCancel(answer)) {
+                        Msg.send(player, "&7Payment cancelled.");
+                        openReceivers(player, 0);
+                        return;
+                    }
+                    OfflinePlayer target = Targets.offline(player, answer.trim());
+                    if (target == null) {
+                        openReceivers(player, 0);
+                        return;
+                    }
+                    promptAmount(player, target);
+                });
+    }
+
+    private void promptAmount(Player player, OfflinePlayer receiver) {
         double minimum = plugin.economy().minimumPayment();
         plugin.dialogs().number(player, "Balance » Send money",
-                "&7How much do you want to send to &f" + receiver.getName() + "&7? &8(min "
+                "&7How much do you want to send to &f" + Targets.displayName(receiver) + "&7? &8(min "
                         + plugin.economy().format(minimum) + ")", "Amount", "", 16, answer -> {
                     if (DialogPromptService.isCancel(answer)) {
                         Msg.send(player, "&7Payment cancelled.");
@@ -123,15 +136,19 @@ public class Balance_Gui {
                 });
     }
 
-    private void pay(Player player, Player receiver, double amount) {
+    private void pay(Player player, OfflinePlayer receiver, double amount) {
         EconomyService.TransferResult result =
                 plugin.economy().transfer(player, receiver.getUniqueId(), amount);
         switch (result) {
             case SUCCESS -> {
                 Msg.success(player, "You paid " + plugin.economy().format(amount)
-                        + " to " + receiver.getName() + ".");
-                Msg.send(receiver, "&7You received &a" + plugin.economy().format(amount)
-                        + " &7from &f" + player.getName() + "&7.");
+                        + " to " + Targets.displayName(receiver) + ".");
+                // The receiver only hears about it while they are online; an
+                // offline payment is simply waiting in their balance.
+                if (receiver.isOnline() && receiver.getPlayer() != null) {
+                    Msg.send(receiver.getPlayer(), "&7You received &a" + plugin.economy().format(amount)
+                            + " &7from &f" + player.getName() + "&7.");
+                }
                 player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.4f);
             }
             case PAYMENTS_DISABLED -> Msg.error(player, "Payments are disabled on this server.");

@@ -21,13 +21,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
 
-/**
- * Drives the trade windows.
- *
- * <p>Only the owner of a window can interact with it, only their own half takes
- * items, and the mirror of the partner's offer is untouchable. Every other click
- * is swallowed, so the window cannot be used to smuggle items out.</p>
- */
 public class Trade_Listener implements Listener {
 
     private final Better_Admin_Commands plugin;
@@ -127,13 +120,10 @@ public class Trade_Listener implements Listener {
         trades().onQuit(event.getPlayer());
     }
 
-    /* ------------------------------------------------------------ helpers --- */
-
     private void scheduleRender(TradeSession session) {
         plugin.getServer().getScheduler().runTask(plugin, () -> trades().offerChanged(session));
     }
 
-    /** Asks for an amount of money to offer, then sets it. */
     private void promptMoney(Player player) {
         if (plugin.economy() == null) {
             Msg.error(player, "The economy is not available.");
@@ -176,10 +166,6 @@ public class Trade_Listener implements Listener {
                 });
     }
 
-    /**
-     * Moves one stack of the player's own half back into their inventory, so a
-     * shift-click can take an offer back without closing the trade.
-     */
     private void moveBackToInventory(Player player, Inventory inventory, int slot) {
         ItemStack item = inventory.getItem(slot);
         if (item == null || item.getType().isAir()) {
@@ -195,7 +181,6 @@ public class Trade_Listener implements Listener {
         }
     }
 
-    /** Moves a stack the player shift-clicked into their own half of the trade. */
     private void shiftIntoOwn(Player player, Inventory inventory, InventoryClickEvent event,
                               TradeSession session) {
         ItemStack clicked = event.getCurrentItem();

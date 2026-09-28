@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Saves the current coordinates of the sender as the server spawn. */
 public class SetSpawn_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

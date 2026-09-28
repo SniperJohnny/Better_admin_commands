@@ -14,11 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Sets a personal client side weather for the sender. Without an argument this
- * opens the weather menu instead. Values are applied through
- * {@link PersonalDisplay}, the same code the menu uses.
- */
 public class Pweather_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

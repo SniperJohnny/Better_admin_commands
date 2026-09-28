@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** Toggles placing blocks and consuming items without using them up. */
 public class Unlimited_Command implements TabExecutor {
 
     private final Better_Admin_Commands plugin;

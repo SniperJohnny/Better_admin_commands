@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-/** Puts the held item on the head. */
 public class Hat_Command implements TabExecutor {
 
     @Override
